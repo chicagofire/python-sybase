@@ -19,9 +19,7 @@ One of the nice side effects of using callback error handling is that
 server errors while executing stored procedures will now be reported
 correctly.
 
-FreeTDS support is much improved in this version.  You will still
-experience segfaults while using FreeTDS though.  These issues are
-still being worked on.
+FreeTDS support is much improved in this version.
 
 For the adventurous, you can build for FreeTDS like this:
 
