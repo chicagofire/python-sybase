@@ -475,6 +475,8 @@ class Cursor:
         cmd.ct_dynamic(CS_EXECUTE, dyn_name)
         for fmt, param in map(None, self._fmts, params):
             buf = DataBuf(fmt)
+            if use_datetime and type(param) is DateTime.DateTimeType:
+                param = datetime(param.strftime('%d %b %Y %H:%M:%S'))
             buf[0] = param
             cmd.ct_param(buf)
         cmd.ct_send()
