@@ -40,13 +40,75 @@ static void release_ctx_lock(void)
     if (ctx_lock != NULL)
 	PyThread_release_lock(ctx_lock);
 }
-#else
 
+/* Code calls release before calling Sybase API to allow other threads
+ * to have a go at executing code which the server does something
+ * useful.  If the Sybase API invokes a callback the GIL is acquired
+ * again before other Python code is executed.
+ */
+void ctx_release_gil(CS_CONTEXTObj *ctx)
+{
+    ctx->entry_count++;
+    if (ctx->entry_count == 1) {
+	ctx->thread_state = PyEval_SaveThread();
+    }
+}
+
+void ctx_acquire_gil(CS_CONTEXTObj *ctx)
+{
+    if (ctx->entry_count >= 1) {
+	ctx->entry_count--;
+	if (ctx->entry_count == 0) {
+	    if (ctx->thread_state != NULL) {
+		PyEval_RestoreThread(ctx->thread_state);
+		ctx->thread_state = NULL;
+	    }
+	}
+    }
+}
+
+void conn_release_gil(CS_CONNECTIONObj *conn)
+{
+    conn->entry_count++;
+    if (conn->entry_count == 1) {
+	conn->thread_state = PyEval_SaveThread();
+    }
+}
+
+void conn_acquire_gil(CS_CONNECTIONObj *conn)
+{
+    if (conn->entry_count >= 1) {
+	conn->entry_count--;
+	if (conn->entry_count == 0) {
+	    if (conn->thread_state != NULL) {
+		PyEval_RestoreThread(conn->thread_state);
+		conn->thread_state = NULL;
+	    }
+	}
+    }
+}
+#else
 static void acquire_ctx_lock(void)
 {
 }
 
 static void release_ctx_lock(void)
+{
+}
+
+void ctx_acquire_gil(CS_CONTEXTObj *ctx)
+{
+}
+
+void ctx_release_gil(CS_CONTEXTObj *ctx)
+{
+}
+
+void conn_acquire_gil(CS_CONNECTIONObj *conn)
+{
+}
+
+void conn_release_gil(CS_CONNECTIONObj *conn)
 {
 }
 #endif
@@ -140,15 +202,15 @@ PyObject *ctx_find_object(CS_CONTEXT *cs_ctx)
     return NULL;
 }
 
-#ifndef WANT_THREADS
 static CS_RETCODE clientmsg_cb(CS_CONTEXT *cs_ctx,
 			       CS_CONNECTION *cs_conn,
 			       CS_CLIENTMSG *cs_msg)
 {
     CS_CONTEXTObj *ctx;
     CS_CONNECTIONObj *conn;
-    PyObject *args, *result;
-    CS_CLIENTMSGObj *client_msg;
+    PyObject *args = NULL, *result = NULL;
+    CS_CLIENTMSGObj *client_msg = NULL;
+    CS_RETCODE retcode = CS_SUCCEED;
 
     ctx = (CS_CONTEXTObj *)ctx_find_object(cs_ctx);
     if (ctx == NULL || ctx->clientmsg_cb == NULL)
@@ -156,27 +218,34 @@ static CS_RETCODE clientmsg_cb(CS_CONTEXT *cs_ctx,
     conn = (CS_CONNECTIONObj *)conn_find_object(cs_conn);
     if (conn == NULL)
 	return CS_SUCCEED;
+
+    /* Grab the GIL before doing any Python things
+     */
+    conn_acquire_gil(conn);
+
     if (ctx->debug || conn->debug)
 	debug_msg("clientmsg_cb\n");
+
     client_msg = (CS_CLIENTMSGObj *)clientmsg_alloc();
     if (client_msg == NULL)
-	return CS_SUCCEED;
+	goto error;
     memmove(&client_msg->msg, cs_msg, sizeof(*cs_msg));
 
-    args = Py_BuildValue("(OON)", ctx, conn, client_msg);
+    args = Py_BuildValue("(OOO)", ctx, conn, client_msg);
     if (args == NULL)
-	return CS_SUCCEED;
-    result = PyEval_CallObject(ctx->clientmsg_cb, args);
-    Py_DECREF(args);
-    if (result != NULL) {
-	CS_RETCODE retcode = CS_SUCCEED;
+	goto error;
 
-	if (PyInt_Check(result))
-	    retcode = PyInt_AsLong(result);
-	Py_DECREF(result);
-	return retcode;
-    }
-    return CS_SUCCEED;
+    result = PyEval_CallObject(ctx->clientmsg_cb, args);
+    if (result != NULL && PyInt_Check(result))
+	retcode = PyInt_AsLong(result);
+
+error:
+    Py_XDECREF(client_msg);
+    Py_XDECREF(args);
+    Py_XDECREF(result);
+
+    conn_release_gil(conn);
+    return retcode;
 }
 
 static CS_RETCODE servermsg_cb(CS_CONTEXT *cs_ctx,
@@ -185,8 +254,9 @@ static CS_RETCODE servermsg_cb(CS_CONTEXT *cs_ctx,
 {
     CS_CONTEXTObj *ctx;
     CS_CONNECTIONObj *conn;
-    PyObject *args, *result;
-    CS_SERVERMSGObj *server_msg;
+    PyObject *args = NULL, *result = NULL;
+    CS_SERVERMSGObj *server_msg = NULL;
+    CS_RETCODE retcode = CS_SUCCEED;
 
     ctx = (CS_CONTEXTObj *)ctx_find_object(cs_ctx);
     if (ctx == NULL || ctx->servermsg_cb == NULL)
@@ -194,28 +264,34 @@ static CS_RETCODE servermsg_cb(CS_CONTEXT *cs_ctx,
     conn = (CS_CONNECTIONObj *)conn_find_object(cs_conn);
     if (conn == NULL)
 	return CS_SUCCEED;
+
+    /* Grab the GIL before doing any Python things
+     */
+    conn_acquire_gil(conn);
+
     if (ctx->debug || conn->debug)
 	debug_msg("servermsg_cb\n");
+
     server_msg = (CS_SERVERMSGObj *)servermsg_alloc();
     if (server_msg == NULL)
-	return CS_SUCCEED;
+	goto error;
     memmove(&server_msg->msg, cs_msg, sizeof(*cs_msg));
 
-    args = Py_BuildValue("(OON)", ctx, conn, server_msg);
+    args = Py_BuildValue("(OOO)", ctx, conn, server_msg);
     if (args == NULL)
-	return CS_SUCCEED;
+	goto error;
+
     result = PyEval_CallObject(ctx->servermsg_cb, args);
-    Py_DECREF(args);
-    if (result != NULL) {
-	CS_RETCODE retcode = CS_SUCCEED;
+    if (result != NULL && PyInt_Check(result))
+	retcode = PyInt_AsLong(result);
 
-	if (PyInt_Check(result))
-	    retcode = PyInt_AsLong(result);
-	Py_DECREF(result);
-	return retcode;
-    }
+error:
+    Py_XDECREF(server_msg);
+    Py_XDECREF(args);
+    Py_XDECREF(result);
 
-    return CS_SUCCEED;
+    conn_release_gil(conn);
+    return retcode;
 }
 
 static char CS_CONTEXT_ct_callback__doc__[] = 
@@ -370,29 +446,6 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 	return NULL;
     }
 }
-#endif
-
-#ifdef HAVE_FREETDS
-static CS_RETCODE dummy_clientmsg_cb(CS_CONTEXT *cs_ctx,
-				     CS_CONNECTION *cs_conn,
-				     CS_CLIENTMSG *cs_msg)
-{
-    return CS_SUCCEED;
-}
-
-static CS_RETCODE dummy_servermsg_cb(CS_CONTEXT *cs_ctx,
-				     CS_CONNECTION *cs_conn,
-				     CS_SERVERMSG *cs_msg)
-{
-    return CS_SUCCEED;
-}
-
-static void install_inline_callbacks(CS_CONTEXT *ctx)
-{
-    ct_callback(ctx, NULL, CS_SET, CS_CLIENTMSG_CB, dummy_clientmsg_cb);
-    ct_callback(ctx, NULL, CS_SET, CS_SERVERMSG_CB, dummy_servermsg_cb);
-}
-#endif
 
 static int ct_property_type(int property)
 {
@@ -445,7 +498,6 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
     char *str_value;
     char str_buff[10240];
     CS_INT buff_len;
-    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &action))
 	return NULL;
@@ -469,12 +521,10 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 
 	    PyErr_Clear();
 
-	    SY_LOCK_ACQUIRE(self);
-	    SY_BEGIN_THREADS;
+	    SY_CTX_BEGIN_THREADS(self);
 	    status = ct_config(self->ctx, CS_SET, property,
 			       &int_value, CS_UNUSED, NULL);
-	    SY_END_THREADS;
-	    SY_LOCK_RELEASE(self);
+	    SY_CTX_END_THREADS(self);
 
 	    if (self->debug)
 		debug_msg("ct_config(ctx%d, CS_SET, %s, %d, CS_UNUSED, NULL)"
@@ -494,12 +544,10 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 
 	    PyErr_Clear();
 
-	    SY_LOCK_ACQUIRE(self);
-	    SY_BEGIN_THREADS;
+	    SY_CTX_BEGIN_THREADS(self);
 	    status = ct_config(self->ctx, CS_SET, property,
 			       str_value, CS_NULLTERM, NULL);
-	    SY_END_THREADS;
-	    SY_LOCK_RELEASE(self);
+	    SY_CTX_END_THREADS(self);
 
 	    if (self->debug)
 		debug_msg("ct_config(ctx%d, CS_SET, %s, \"%s\", CS_NULLTERM,"
@@ -527,12 +575,10 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	case OPTION_INT:
 	    PyErr_Clear();
 
-	    SY_LOCK_ACQUIRE(self);
-	    SY_BEGIN_THREADS;
+	    SY_CTX_BEGIN_THREADS(self);
 	    status = ct_config(self->ctx, CS_GET, property,
 			       &int_value, CS_UNUSED, NULL);
-	    SY_END_THREADS;
-	    SY_LOCK_RELEASE(self);
+	    SY_CTX_END_THREADS(self);
 
 	    if (self->debug)
 		debug_msg("ct_config(ctx%d, CS_GET, %s, &value, CS_UNUSED,"
@@ -548,12 +594,10 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	case OPTION_STRING:
 	    PyErr_Clear();
 
-	    SY_LOCK_ACQUIRE(self);
-	    SY_BEGIN_THREADS;
+	    SY_CTX_BEGIN_THREADS(self);
 	    status = ct_config(self->ctx, CS_GET, property,
 			       str_buff, sizeof(str_buff), &buff_len);
-	    SY_END_THREADS;
-	    SY_LOCK_RELEASE(self);
+	    SY_CTX_END_THREADS(self);
 
 	    if (buff_len > sizeof(str_buff))
 		buff_len = sizeof(str_buff);
@@ -582,12 +626,10 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self);
-	SY_BEGIN_THREADS;
+	SY_CTX_BEGIN_THREADS(self);
 	status = ct_config(self->ctx, CS_CLEAR, property,
 			   NULL, CS_UNUSED, NULL);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self);
+	SY_CTX_END_THREADS(self);
 
 	if (self->debug)
 	    debug_msg("ct_config(ctx%d, CS_CLEAR, %s, NULL, CS_UNUSED, NULL)"
@@ -653,7 +695,6 @@ static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
 {
     int version;
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (self->ctx == NULL) {
 	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
@@ -667,9 +708,7 @@ static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
     PyErr_Clear();
 
     acquire_ctx_lock();
-    SY_BEGIN_THREADS;
     status = ct_init(self->ctx, version);
-    SY_END_THREADS;
     release_ctx_lock();
 
     if (self->debug)
@@ -693,7 +732,6 @@ static PyObject *CS_CONTEXT_ct_exit(CS_CONTEXTObj *self, PyObject *args)
 {
     int option = CS_UNUSED;
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "|i", &option))
 	return NULL;
@@ -706,9 +744,7 @@ static PyObject *CS_CONTEXT_ct_exit(CS_CONTEXTObj *self, PyObject *args)
     PyErr_Clear();
 
     acquire_ctx_lock();
-    SY_BEGIN_THREADS;
     status = ct_exit(self->ctx, option);
-    SY_END_THREADS;
     release_ctx_lock();
 
     if (self->debug)
@@ -734,7 +770,6 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
     CS_VOID *buffer;
     PyObject *msg;
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &operation))
 	return NULL;
@@ -755,11 +790,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
 #else
-	SY_LOCK_ACQUIRE(self);
-	SY_BEGIN_THREADS;
+	SY_CTX_BEGIN_THREADS(self);
 	status = cs_diag(self->ctx, operation, CS_UNUSED, CS_UNUSED, NULL);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self);
+	SY_CTX_END_THREADS(self);
 #endif
 
 	if (self->debug)
@@ -781,11 +814,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
 #else
-	SY_LOCK_ACQUIRE(self);
-	SY_BEGIN_THREADS;
+	SY_CTX_BEGIN_THREADS(self);
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, &num);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self);
+	SY_CTX_END_THREADS(self);
 #endif
 
 	if (self->debug)
@@ -807,11 +838,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
 #else
-	SY_LOCK_ACQUIRE(self);
-	SY_BEGIN_THREADS;
+	SY_CTX_BEGIN_THREADS(self);
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, NULL);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self);
+	SY_CTX_END_THREADS(self);
 #endif
 
 	if (self->debug)
@@ -841,11 +870,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
 #else
-	SY_LOCK_ACQUIRE(self);
-	SY_BEGIN_THREADS;
+	SY_CTX_BEGIN_THREADS(self);
 	status = cs_diag(self->ctx, operation, type, index, buffer);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self);
+	SY_CTX_END_THREADS(self);
 #endif
 
 	if (self->debug)
@@ -874,11 +901,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
 #else
-	SY_LOCK_ACQUIRE(self);
-	SY_BEGIN_THREADS;
+	SY_CTX_BEGIN_THREADS(self);
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, &num);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self);
+	SY_CTX_END_THREADS(self);
 #endif
 
 	if (self->debug)
@@ -908,7 +933,6 @@ static char CS_CONTEXT_cs_ctx_drop__doc__[] =
 static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
 {
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
@@ -921,9 +945,7 @@ static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
     PyErr_Clear();
 
     acquire_ctx_lock();
-    SY_BEGIN_THREADS;
     status = cs_ctx_drop(self->ctx);
-    SY_END_THREADS;
     release_ctx_lock();
 
     if (self->debug)
@@ -939,9 +961,7 @@ static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
 
 static struct PyMethodDef CS_CONTEXT_methods[] = {
     { "cs_loc_alloc", (PyCFunction)CS_CONTEXT_cs_loc_alloc, METH_VARARGS, CS_CONTEXT_cs_loc_alloc__doc__ },
-#ifndef WANT_THREADS
     { "ct_callback", (PyCFunction)CS_CONTEXT_ct_callback, METH_VARARGS, CS_CONTEXT_ct_callback__doc__ },
-#endif
     { "ct_con_alloc", (PyCFunction)CS_CONTEXT_ct_con_alloc, METH_VARARGS, CS_CONTEXT_ct_con_alloc__doc__ },
     { "ct_config", (PyCFunction)CS_CONTEXT_ct_config, METH_VARARGS, CS_CONTEXT_ct_config__doc__ },
     { "ct_exit", (PyCFunction)CS_CONTEXT_ct_exit, METH_VARARGS, CS_CONTEXT_ct_exit__doc__ },
@@ -963,7 +983,6 @@ PyObject *ctx_alloc(CS_INT version)
     CS_CONTEXTObj *self;
     CS_RETCODE status;
     CS_CONTEXT *ctx;
-    SY_THREAD_STATE;
 
     self = PyObject_NEW(CS_CONTEXTObj, &CS_CONTEXTType);
     if (self == NULL)
@@ -977,13 +996,12 @@ PyObject *ctx_alloc(CS_INT version)
     self->is_global = 0;
     self->serial = ctx_serial++;
     SY_LOCK_ALLOC(self);
+    SY_THREAD_INIT(self);
 
     PyErr_Clear();
 
     acquire_ctx_lock();
-    SY_BEGIN_THREADS;
     status = cs_ctx_alloc(version, &ctx);
-    SY_END_THREADS;
     release_ctx_lock();
 
     if (self->debug)
@@ -1007,9 +1025,7 @@ PyObject *ctx_alloc(CS_INT version)
     ctx_add_object(self);
     if (self->debug)
 	debug_msg(", ctx%d\n", self->serial);
-#ifdef HAVE_FREETDS
-    install_inline_callbacks(ctx);
-#endif
+
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
@@ -1018,16 +1034,12 @@ CS_CONTEXT *global_ctx()
     static CS_CONTEXT *ctx;
 
     if (ctx == NULL) {
-	SY_THREAD_STATE;
-
 	acquire_ctx_lock();
-	SY_BEGIN_THREADS;
 #ifdef HAVE_CS_CTX_GLOBAL
 	cs_ctx_global(CS_VERSION_100, &ctx);
 #else
 	cs_ctx_alloc(CS_VERSION_100, &ctx);
 #endif
-	SY_END_THREADS;
 	release_ctx_lock();
     }
     return ctx;
@@ -1042,7 +1054,6 @@ PyObject *ctx_global(CS_INT version)
     CS_CONTEXTObj *self;
     CS_RETCODE status;
     CS_CONTEXT *ctx;
-    SY_THREAD_STATE;
 
     self = PyObject_NEW(CS_CONTEXTObj, &CS_CONTEXTType);
     if (self == NULL)
@@ -1056,13 +1067,12 @@ PyObject *ctx_global(CS_INT version)
     self->is_global = 1;
     self->serial = ctx_serial++;
     SY_LOCK_ALLOC(self);
+    SY_THREAD_INIT(self);
 
     PyErr_Clear();
 
     acquire_ctx_lock();
-    SY_BEGIN_THREADS;
     status = cs_ctx_global(version, &ctx);
-    SY_END_THREADS;
     release_ctx_lock();
 
     if (self->debug)
@@ -1087,9 +1097,7 @@ PyObject *ctx_global(CS_INT version)
     ctx_add_object(self);
     if (self->debug)
 	debug_msg(", ctx%d\n", self->serial);
-#ifdef HAVE_FREETDS
-    install_inline_callbacks(ctx);
-#endif
+
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 #endif
