@@ -46,6 +46,9 @@ elif os.name == 'nt':                   # win32
     # Not sure how the installation location is specified under NT
     if os.environ.has_key('SYBASE'):
         sybase = os.environ['SYBASE']
+        if os.environ.has_key('SYBASE_OCS'):
+            ocs = os.environ['SYBASE_OCS']
+            sybase = os.path.join(sybase, ocs)
     else:
         sybase = r'i:\sybase\sql11.5'
         if not os.access(sybase, os.F_OK):
