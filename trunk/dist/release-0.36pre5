@@ -32,7 +32,8 @@ CHANGES SINCE 0.36pre4:
 
 * Export version of FreeTDS used in sybasect.__have_freetds__
 
-* Create Sybase._ctx earlier in Sybase.py.
+* Set Sybase._ctx as the global context soon as in Sybase.py to
+  avoid problems with undefined global ctx.
 
 * Look for SYBASE_OCS on all platforms.
 
