@@ -1,3 +1,24 @@
+2005-03-21 16:13  djc
+
+	* cmd.c, freetds.h, sybasect.h: Fix compilation and remove warnings
+	  for FreeTDS.
+
+2005-03-21 10:17  djc
+
+	* .cvsignore: Ignore some files.
+
+2005-03-21 10:03  djc
+
+	* ChangeLog: Updated for new release.
+
+2005-03-21 10:02  djc
+
+	* doc/.cvsignore: Inore documentation temporary files.
+
+2005-03-21 10:02  djc
+
+	* dist/release-0.37pre2: New release.
+
 2005-03-21 09:54  djc
 
 	* Sybase.py, setup.py, sybasect.c, doc/sybase.tex: Bump release to
