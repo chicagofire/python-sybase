@@ -1,8 +1,3 @@
-- Complete CS_CONTEXT_cs_config
-
-- Enforce single result set over each connection by attaching all
-  cursors to parent connection with a weakref.
-
 - Connection.rollback() cannot be called while a cursor is in flight...
 
 - Cursor.callproc() does not return parameters - write alternative?
@@ -11,10 +6,10 @@
 
 - BLOB columns (text/image)
 
-- Document numeric, money, datetime
-
 - PyUnit
 
 - Bulkcopy copy out
 
 - DataBuf[n] = val should do more conversions
+
+- Access to CS_CONTEXT used by global_ctx() to allow callbacks.

@@ -23,6 +23,7 @@ PERFORMANCE OF THIS SOFTWARE.
 ******************************************************************/
 
 #include <stdarg.h>
+#include <cspublic.h>
 #include <ctpublic.h>
 #include <bkpublic.h>
 #include "Python.h"
@@ -78,6 +79,7 @@ PERFORMANCE OF THIS SOFTWARE.
 #else
 #define SY_DECLARE_LOCK
 #define SY_THREAD_STATE
+#define SY_THREAD_INIT(self)
 #define SY_LOCK_CLEAR(self)
 #define SY_LOCK_ALLOC(self)
 #define SY_LOCK_FREE(self)
@@ -102,13 +104,15 @@ void leak_unreg(PyObject *obj);
 #endif
 
 enum { OPTION_BOOL, OPTION_INT, OPTION_STRING, OPTION_CMD,
-       OPTION_NUMERIC, OPTION_LOCALE, OPTION_UNKNOWN };
+       OPTION_NUMERIC, OPTION_LOCALE, OPTION_CALLBACK,
+       OPTION_UNKNOWN };
 
 void debug_msg(char *fmt, ...);
 
 typedef struct CS_CONTEXTObj {
     PyObject_HEAD
     CS_CONTEXT *ctx;
+    PyObject *cslib_cb;
     PyObject *servermsg_cb;
     PyObject *clientmsg_cb;
     int is_global;
