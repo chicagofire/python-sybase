@@ -129,8 +129,6 @@ do_dynamic_insert(cmd, 'insert tempdb..test values (? ,?)', 2)
 if cmd.ct_cmd_drop() != CS_SUCCEED:
     raise CTError(conn, 'ct_cmd_drop failed')
 # close the connection to the server
-if conn.ct_close() != CS_SUCCEED:
-    raise CTError(conn, 'ct_close failed')
 status = conn.ct_close()
 cleanup_db(ctx, status)
 print 'End of program run!'
