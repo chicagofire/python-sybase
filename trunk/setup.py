@@ -3,8 +3,20 @@
 #       python setup.py install
 #
 
-import distutils, os, sys, stat
+import distutils
+import os
+import sys
+import string
+import re
 from distutils.core import setup, Extension
+
+def api_exists(func, filename):
+    try:
+        text = open(filename).read()
+    except:
+        return
+    if re.search(r'CS_PUBLIC %s' % func, text):
+        return 1
 
 if os.name == 'posix':                  # unix
     # Most people will define the location of their Sybase
@@ -55,22 +67,28 @@ for dir in (syb_incdir, syb_libdir):
         sys.stderr.write('Directory %s does not exist - cannot build.\n' % dir)
         sys.exit(1)
 
-setup (name = "Sybase",
-       version = "0.31",
-       maintainer = "Dave Cole",
-       maintainer_email = " djc@object-craft.com.au",
-       description = "Sybase Extension to Python",
-       url = "http://www.object-craft.com.au/projects/sybase/",
-       py_modules = ['Sybase'],
-       include_dirs = [syb_incdir],
-       ext_modules = [
-           Extension('sybasect',
-                     ['blk.c', 'databuf.c', 'cmd.c', 'conn.c', 'ctx.c',
-                      'datafmt.c', 'iodesc.c', 'msgs.c',
-                      'numeric.c', 'money.c', 'datetime.c', 'sybasect.c'],
-                     libraries = syb_libs,
-                     library_dirs = [syb_libdir]
-                     )
-           ],
-       )
+syb_macros = []
+for api in ('blk_rowxfer_mult',):
+    if api_exists(api, os.path.join(syb_incdir, 'bkpublic.h')):
+        syb_macros.append(('HAVE_' + string.upper(api), None))
+
+setup(name = "Sybase",
+      version = "0.31",
+      maintainer = "Dave Cole",
+      maintainer_email = " djc@object-craft.com.au",
+      description = "Sybase Extension to Python",
+      url = "http://www.object-craft.com.au/projects/sybase/",
+      py_modules = ['Sybase'],
+      include_dirs = [syb_incdir],
+      ext_modules = [
+          Extension('sybasect',
+                    ['blk.c', 'databuf.c', 'cmd.c', 'conn.c', 'ctx.c',
+                     'datafmt.c', 'iodesc.c', 'msgs.c',
+                     'numeric.c', 'money.c', 'datetime.c', 'sybasect.c'],
+                    define_macros = syb_macros,
+                    libraries = syb_libs,
+                    library_dirs = [syb_libdir]
+                    )
+          ],
+      )
 
