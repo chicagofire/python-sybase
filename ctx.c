@@ -711,6 +711,15 @@ PyObject *ctx_alloc(CS_INT version)
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
+CS_CONTEXT *global_ctx()
+{
+    static CS_CONTEXT *ctx;
+
+    if (ctx == NULL)
+	cs_ctx_global(CS_VERSION_100, &ctx);
+    return ctx;
+}
+
 PyObject *ctx_global(CS_INT version)
 {
     CS_CONTEXTObj *self;
