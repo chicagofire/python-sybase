@@ -156,6 +156,8 @@ def _row_bind(cmd, count = 1):
         if status != CS_SUCCEED:
             raise Error('ct_describe')
         fmt.count = count
+        if fmt.datatype == CS_VARBINARY_TYPE:
+            fmt.datatype = CS_BINARY_TYPE
         status, buf = cmd.ct_bind(i + 1, fmt)
         if status != CS_SUCCEED:
             raise Error('ct_bind')
