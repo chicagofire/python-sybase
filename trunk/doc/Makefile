@@ -10,16 +10,19 @@ DOCFILES= copyright.tex
 
 all:	pdf
 
-dvi:	$(DOCFILES)
+dvi:	$(DOCFILES) version
 	$(MKHOWTO) --dvi sybase.tex
 
-pdf:	$(DOCFILES)
+pdf:	$(DOCFILES) version
 	$(MKHOWTO) --pdf --$(PAPER) sybase.tex
 
-ps:	$(DOCFILES)
+ps:	$(DOCFILES) version
 	$(MKHOWTO) --ps --$(PAPER) sybase.tex
 
-html:	$(DOCFILES)
+booklet: ps
+	cat sybase.ps | psbook | psnup -2 | pstumble > sybase-booklet.ps
+
+html:	$(DOCFILES) version
 	$(MKHOWTO) --html sybase.tex
 	mkdir -p sybase/icons
 	cp $(PYTHON_SRC)/Doc/html/icons/* sybase/icons/
@@ -34,7 +37,7 @@ html:	$(DOCFILES)
 	rm sybase/sybase2
 	rm sybase/icons/icons2
 
-world:	ps pdf html
+world:	booklet pdf html
 
 pdf-$(PAPER).tgz: pdf
 	tar cf - *.pdf | gzip -9 >$@
