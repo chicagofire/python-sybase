@@ -24,10 +24,6 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
-static struct PyMethodDef CS_CLIENTMSG_methods[] = {
-    { NULL }			/* sentinel */
-};
-
 PyObject *clientmsg_alloc()
 {
     CS_CLIENTMSGObj *self;
@@ -55,13 +51,13 @@ static void CS_CLIENTMSG_dealloc(CS_CLIENTMSGObj *self)
 #endif
 
 static struct memberlist CS_CLIENTMSG_memberlist[] = {
-    { "severity", T_INT, CLIENT_OFF(severity), RO },
+    { "severity",  T_INT,    CLIENT_OFF(severity), RO },
     { "msgnumber", T_MSGNUM, CLIENT_OFF(msgnumber), RO },
     { "msgstring", T_STRING, CLIENT_OFF(msgstring), RO }, /* faked */
-    { "osnumber", T_INT, CLIENT_OFF(osnumber), RO },
-    { "osstring", T_STRING, CLIENT_OFF(osstring), RO }, /* faked */
-    { "status", T_INT, CLIENT_OFF(status), RO },
-    { "sqlstate", T_STRING, CLIENT_OFF(sqlstate), RO }, /* faked */
+    { "osnumber",  T_INT,    CLIENT_OFF(osnumber), RO },
+    { "osstring",  T_STRING, CLIENT_OFF(osstring), RO }, /* faked */
+    { "status",    T_INT,    CLIENT_OFF(status), RO },
+    { "sqlstate",  T_STRING, CLIENT_OFF(sqlstate), RO }, /* faked */
     { NULL }			/* Sentinel */
 };
 
@@ -116,10 +112,6 @@ PyTypeObject CS_CLIENTMSGType = {
     CS_CLIENTMSGType__doc__	/* Documentation string */
 };
 
-static struct PyMethodDef CS_SERVERMSG_methods[] = {
-    { NULL }			/* sentinel */
-};
-
 PyObject *servermsg_alloc()
 {
     CS_SERVERMSGObj *self;
@@ -141,14 +133,14 @@ static void CS_SERVERMSG_dealloc(CS_SERVERMSGObj *self)
 
 static struct memberlist CS_SERVERMSG_memberlist[] = {
     { "msgnumber", T_MSGNUM, SERV_OFF(msgnumber), RO },
-    { "state", T_INT, SERV_OFF(state), RO },
-    { "severity", T_INT, SERV_OFF(severity), RO },
-    { "text", T_STRING, SERV_OFF(text), RO }, /* faked */
-    { "svrname", T_STRING, SERV_OFF(svrname), RO }, /* faked */
-    { "proc", T_STRING, SERV_OFF(proc), RO }, /* faked */
-    { "line", T_INT, SERV_OFF(line), RO },
-    { "status", T_INT, SERV_OFF(status), RO },
-    { "sqlstate", T_STRING, SERV_OFF(sqlstate), RO }, /* faked */
+    { "state",     T_INT,    SERV_OFF(state), RO },
+    { "severity",  T_INT,    SERV_OFF(severity), RO },
+    { "text",      T_STRING, SERV_OFF(text), RO }, /* faked */
+    { "svrname",   T_STRING, SERV_OFF(svrname), RO }, /* faked */
+    { "proc",      T_STRING, SERV_OFF(proc), RO }, /* faked */
+    { "line",      T_INT,    SERV_OFF(line), RO },
+    { "status",    T_INT,    SERV_OFF(status), RO },
+    { "sqlstate",  T_STRING, SERV_OFF(sqlstate), RO }, /* faked */
     { NULL }			/* Sentinel */
 };
 

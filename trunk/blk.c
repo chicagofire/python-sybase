@@ -36,10 +36,10 @@ static PyObject *CS_BLKDESC_blk_bind(CS_BLKDESCObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "iO!", &colnum, BufferType, &buffer))
 	return NULL;
 
-    Py_BEGIN_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
     status = blk_bind(self->blk, colnum, &buffer->fmt,
 		      buffer->buff, buffer->copied, buffer->indicator);
-    Py_END_ALLOW_THREADS;
+    /* Py_END_ALLOW_THREADS; */
     if (self->debug)
 	fprintf(stderr, "blk_bind(%d) -> %s\n", colnum, value_str(STATUS, status));
 
@@ -60,9 +60,9 @@ static PyObject *CS_BLKDESC_blk_describe(CS_BLKDESCObj *self, PyObject *args)
 	return NULL;
 
     memset(&datafmt, 0, sizeof(datafmt));
-    Py_BEGIN_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
     status = blk_describe(self->blk, colnum, &datafmt);
-    Py_END_ALLOW_THREADS;
+    /* Py_END_ALLOW_THREADS; */
     if (self->debug)
 	fprintf(stderr, "blk_describe(%d) -> %s\n",
 		colnum, value_str(STATUS, status));
@@ -90,9 +90,9 @@ static PyObject *CS_BLKDESC_blk_done(CS_BLKDESCObj *self, PyObject *args)
 	return NULL;
 
     /* blk_done(type) -> status, outrow */
-    Py_BEGIN_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
     status = blk_done(self->blk, type, &outrow);
-    Py_END_ALLOW_THREADS;
+    /* Py_END_ALLOW_THREADS; */
     if (self->debug)
 	fprintf(stderr, "blk_done(%s) -> %s, %d\n",
 		value_str(BULK, type), value_str(STATUS, status), (int)outrow);
@@ -112,9 +112,9 @@ static PyObject *CS_BLKDESC_blk_init(CS_BLKDESCObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "is", &direction, &table))
 	return NULL;
 
-    Py_BEGIN_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
     status = blk_init(self->blk, direction, table, CS_NULLTERM);
-    Py_END_ALLOW_THREADS;
+    /* Py_END_ALLOW_THREADS; */
     self->direction = direction;
     if (self->debug)
 	fprintf(stderr, "blk_init(%s, %s) -> %s\n",
@@ -179,20 +179,20 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    bool_value = PyInt_AsLong(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    Py_BEGIN_ALLOW_THREADS;
+	    /* Py_BEGIN_ALLOW_THREADS; */
 	    status = blk_props(self->blk, CS_SET, property,
 			       &bool_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return PyInt_FromLong(status);
 
 	case OPTION_INT:
 	    int_value = PyInt_AsLong(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    Py_BEGIN_ALLOW_THREADS;
+	    /* Py_BEGIN_ALLOW_THREADS; */
 	    status = blk_props(self->blk, CS_SET, property,
 			       &int_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return PyInt_FromLong(status);
 
 	case OPTION_NUMERIC:
@@ -200,10 +200,10 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 		PyErr_SetString(PyExc_TypeError, "numeric value expected");
 		return NULL;
 	    }
-	    Py_BEGIN_ALLOW_THREADS;
+	    /* Py_BEGIN_ALLOW_THREADS; */
 	    status = blk_props(self->blk, CS_SET, property,
 			       &((NumericObj*)obj)->num, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return PyInt_FromLong(status);
 
 	default:
@@ -219,24 +219,24 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 
 	switch (property_type(property)) {
 	case OPTION_BOOL:
-	    Py_BEGIN_ALLOW_THREADS;
+	    /* Py_BEGIN_ALLOW_THREADS; */
 	    status = blk_props(self->blk, CS_GET, property,
 			       &bool_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return Py_BuildValue("ii", status, bool_value);
 
 	case OPTION_INT:
-	    Py_BEGIN_ALLOW_THREADS;
+	    /* Py_BEGIN_ALLOW_THREADS; */
 	    status = blk_props(self->blk, CS_GET, property,
 			       &int_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_NUMERIC:
-	    Py_BEGIN_ALLOW_THREADS;
+	    /* Py_BEGIN_ALLOW_THREADS; */
 	    status = blk_props(self->blk, CS_GET, property,
 			       &numeric_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    obj = (PyObject*)numeric_alloc(&numeric_value);
 	    if (obj == NULL)
 		return NULL;
@@ -257,10 +257,10 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &action, &property))
 	    return NULL;
 
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = blk_props(self->blk, CS_CLEAR, property,
 			   NULL, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	return PyInt_FromLong(status);
 
     default:
@@ -279,9 +279,9 @@ static PyObject *CS_BLKDESC_blk_rowxfer(CS_BLKDESCObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
 
-    Py_BEGIN_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
     status = blk_rowxfer(self->blk);
-    Py_END_ALLOW_THREADS;
+    /* Py_END_ALLOW_THREADS; */
     if (self->debug)
 	fprintf(stderr, "blk_rowxfer() -> %s\n", value_str(STATUS, status));
 
@@ -301,9 +301,9 @@ static PyObject *CS_BLKDESC_blk_rowxfer_mult(CS_BLKDESCObj *self, PyObject *args
 	return NULL;
     row_count = orig_count;
 
-    Py_BEGIN_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
     status = blk_rowxfer_mult(self->blk, &row_count);
-    Py_END_ALLOW_THREADS;
+    /* Py_END_ALLOW_THREADS; */
     if (self->debug)
 	fprintf(stderr, "blk_rowxfer_mult(%d) -> %s, %d\n",
 		orig_count, value_str(STATUS, status), (int)row_count);
@@ -326,9 +326,9 @@ static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s#", &buff, &buff_len))
 	    return NULL;
 
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = blk_textxfer(self->blk, buff, buff_len, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	if (self->debug)
 	    fprintf(stderr, "blk_textxfer() -> %s\n",
 		    value_str(STATUS, status));
@@ -342,9 +342,9 @@ static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 	    return NULL;
 
 	outlen = 0;
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = blk_textxfer(self->blk, buff, sizeof(buff), &outlen);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	if (self->debug)
 	    fprintf(stderr, "blk_textxfer() -> %s, %d\n",
 		    value_str(STATUS, status), (int)outlen);
@@ -366,7 +366,7 @@ static struct PyMethodDef CS_BLKDESC_methods[] = {
     { NULL }			/* sentinel */
 };
 
-PyObject *bulk_alloc(CS_CONNECTIONObj *con)
+PyObject *bulk_alloc(CS_CONNECTIONObj *conn)
 {
     CS_BLKDESCObj *self;
     CS_RETCODE status;
@@ -377,21 +377,21 @@ PyObject *bulk_alloc(CS_CONNECTIONObj *con)
 	return NULL;
 
     self->blk = NULL;
-    self->con = NULL;
+    self->conn = NULL;
     self->direction = 0;
-    self->debug = con->debug;
+    self->debug = conn->debug;
 
-    Py_BEGIN_ALLOW_THREADS;
-    status = blk_alloc(con->con, BLK_VERSION_100, &blk);
-    Py_END_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = blk_alloc(conn->conn, BLK_VERSION_100, &blk);
+    /* Py_END_ALLOW_THREADS; */
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
     }
 
     self->blk = blk;
-    self->con = con;
-    Py_INCREF(self->con);
+    self->conn = conn;
+    Py_INCREF(self->conn);
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
@@ -400,11 +400,11 @@ static void CS_BLKDESC_dealloc(CS_BLKDESCObj *self)
     if (self->blk) {
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	blk_drop(self->blk);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
     }
-    Py_XDECREF(self->con);
+    Py_XDECREF(self->conn);
     PyMem_DEL(self);
 }
 

@@ -24,65 +24,329 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
-static char CS_COMMAND_ct_send__doc__[] = 
-"ct_send() -> status";
+static char CS_COMMAND_ct_bind__doc__[] = 
+"ct_bind(int, datafmt) -> status, buffer";
 
-static PyObject *CS_COMMAND_ct_send(CS_COMMANDObj *self, PyObject *args)
+static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
 {
+    CS_INT item;
+    CS_DATAFMTObj *datafmt;
+    BufferObj *buffer;
     CS_RETCODE status;
 
-    if (!PyArg_ParseTuple(args, ""))
+    if (!PyArg_ParseTuple(args, "iO!", &item, &CS_DATAFMTType, &datafmt))
 	return NULL;
 
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_send(self->cmd);
-    Py_END_ALLOW_THREADS;
+    buffer = (BufferObj *)buffer_alloc((PyObject*)datafmt);
+    if (buffer == NULL)
+	return NULL;
 
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_bind(self->cmd, item, &datafmt->fmt,
+		     buffer->buff, buffer->copied, buffer->indicator);
+    /* Py_END_ALLOW_THREADS; */
     if (self->debug)
-	fprintf(stderr, "ct_send() -> %s\n", value_str(STATUS, status));
+	fprintf(stderr, "ct_bind(%d) -> %s\n", (int)item, value_str(STATUS, status));
+    return Py_BuildValue("iN", status, buffer);
+}
+
+static char CS_COMMAND_ct_cancel__doc__[] = 
+"ct_cancel(type) -> status";
+
+static PyObject *CS_COMMAND_ct_cancel(CS_COMMANDObj *self, PyObject *args)
+{
+    int type;
+    CS_RETCODE status;
+
+    if (!PyArg_ParseTuple(args, "i", &type))
+	return NULL;
+
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_cancel(NULL, self->cmd, type);
+    /* Py_END_ALLOW_THREADS; */
+    if (self->debug)
+	fprintf(stderr, "ct_cancel(%s) -> %s\n",
+		value_str(CANCEL, type), value_str(STATUS, status));
+
     return PyInt_FromLong(status);
 }
 
-static char CS_COMMAND_ct_send_data__doc__[] = 
-"ct_send_data(string) -> status";
+static char CS_COMMAND_ct_command__doc__[] = 
+"ct_command(CS_LANG_CMD, sql [,option]) -> status\n"
+"ct_command(CS_MSG_CMD, int) -> status\n"
+"ct_command(CS_PACKAGE_CMD, name) -> status\n"
+"ct_command(CS_RPC_CMD, name [,option]) -> status\n"
+"ct_command(CS_SEND_DATA_CMD) -> status";
 
-static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
+static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
 {
+    int type;
+    char *buffer;
+    CS_INT num;
+    CS_INT option = CS_UNUSED;
     CS_RETCODE status;
-    char *str;
-    int str_len;
+    char *type_str = NULL;
 
-    if (!PyArg_ParseTuple(args, "s#", &str, &str_len))
+    if (!first_tuple_int(args, &type))
 	return NULL;
 
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_send_data(self->cmd, str, str_len);
-    Py_END_ALLOW_THREADS;
+    switch (type) {
+    case CS_LANG_CMD:
+	/* ct_command(CS_LANG_CMD, sql [,option]) -> status */
+	type_str = "CS_LANG_CMD";
+    case CS_RPC_CMD:
+	/* ct_command(CS_RPC_CMD, name [,option]) -> status */
+	if (type_str == NULL)
+	    type_str = "CS_RPC_CMD";
+	if (!PyArg_ParseTuple(args, "is|i", &type, &buffer, &option))
+	    return NULL;
 
-    if (self->debug)
-	fprintf(stderr, "ct_send_data() -> %s\n", value_str(STATUS, status));
-    return PyInt_FromLong(status);
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_command(self->cmd, type, buffer, CS_NULLTERM, option);
+	/* Py_END_ALLOW_THREADS; */
+	if (self->debug)
+	    fprintf(stderr, "ct_command(%s, %s, %s) -> %s\n",
+		    type_str, buffer, value_str(CMD, option),
+		    value_str(STATUS, status));
+	return PyInt_FromLong(status);
+
+    case CS_MSG_CMD:
+	/* ct_command(CS_MSG_CMD, int) -> status */
+	if (!PyArg_ParseTuple(args, "ii", &type, &num))
+	    return NULL;
+
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_command(self->cmd, type, (CS_VOID*)&num, CS_UNUSED, CS_UNUSED);
+	/* Py_END_ALLOW_THREADS; */
+	if (self->debug)
+	    fprintf(stderr, "ct_command(CS_MSG_CMD, %d) -> %s\n",
+		    (int)num, value_str(STATUS, status));
+	return PyInt_FromLong(status);
+
+    case CS_PACKAGE_CMD:
+	/* ct_command(CS_PACKAGE_CMD, name) -> status */
+	if (!PyArg_ParseTuple(args, "is", &type, &buffer))
+	    return NULL;
+
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_command(self->cmd, type, buffer, CS_NULLTERM, CS_UNUSED);
+	/* Py_END_ALLOW_THREADS; */
+	if (self->debug)
+	    fprintf(stderr, "ct_command(CS_PACKAGE_CMD, %s) -> %s\n",
+		    buffer, value_str(STATUS, status));
+	return PyInt_FromLong(status);
+
+    case CS_SEND_DATA_CMD:
+	/* ct_command(CS_SEND_DATA_CMD) -> status */
+	if (!PyArg_ParseTuple(args, "i", &type))
+	    return NULL;
+
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_command(self->cmd, type, NULL, CS_UNUSED, CS_COLUMN_DATA);
+	/* Py_END_ALLOW_THREADS; */
+	if (self->debug)
+	    fprintf(stderr, "ct_command(CS_SEND_DATA_CMD) -> %s\n",
+		    value_str(STATUS, status));
+	return PyInt_FromLong(status);
+
+    default:
+	PyErr_SetString(PyExc_TypeError, "unknown type");
+	return NULL;
+    }
 }
 
-static char CS_COMMAND_ct_results__doc__[] = 
-"ct_results() -> status, result";
+static char CS_COMMAND_ct_cursor__doc__[] = 
+"ct_cursor(CS_CURSOR_DECLARE, cursor_id, sql [,options]) -> status\n"
+"ct_cursor(CS_CURSOR_UPDATE, table, sql [,options]) -> status\n"
+"ct_cursor(CS_CURSOR_OPTION [,options]) -> status\n"
+"ct_cursor(CS_CURSOR_ROWS, int) -> status\n"
+"ct_cursor(CS_CURSOR_OPEN [,options]) -> status\n"
+"ct_cursor(CS_CURSOR_DELETE, table) -> status\n"
+"ct_cursor(CS_CURSOR_CLOSE [,options]) -> status\n"
+"ct_cursor(CS_CURSOR_DEALLOC) -> status\n";
 
-static PyObject *CS_COMMAND_ct_results(CS_COMMANDObj *self, PyObject *args)
+static PyObject *CS_COMMAND_ct_cursor(CS_COMMANDObj *self, PyObject *args)
 {
+    int type;
+    char *name, *text;
+    CS_INT option = CS_UNUSED;
     CS_RETCODE status;
-    CS_INT result = 0;
+    char *type_str = NULL;
 
-    if (!PyArg_ParseTuple(args, ""))
+    if (!first_tuple_int(args, &type))
 	return NULL;
 
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_results(self->cmd, &result);
-    Py_END_ALLOW_THREADS;
-    if (self->debug)
-	fprintf(stderr, "ct_results() -> %s, %s\n",
-		value_str(STATUS, status), value_str(RESULT, result));
+    switch (type) {
+    case CS_CURSOR_DECLARE:
+	/* ct_cursor(CS_CURSOR_DECLARE, cursor_id, sql [,options]) -> status */
+	type_str = "CS_CURSOR_DECLARE";
+    case CS_CURSOR_UPDATE:
+	/* ct_cursor(CS_CURSOR_UPDATE, table, sql [,options]) -> status */
+	if (type_str == NULL)
+	    type_str = "CS_CURSOR_UPDATE";
+	if (!PyArg_ParseTuple(args, "iss|i", &type, &name, &text, &option))
+	    return NULL;
 
-    return Py_BuildValue("ii", status, result);
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_cursor(self->cmd, type,
+			   name, CS_NULLTERM, text, CS_NULLTERM, option);
+	/* Py_END_ALLOW_THREADS; */
+	if (self->debug)
+	    fprintf(stderr, "ct_cursor(%s, %s, %s, %s) -> %s\n",
+		    type_str, name, text, value_str(CURSOROPT, option),
+		    value_str(STATUS, status));
+	return PyInt_FromLong(status);
+
+    case CS_CURSOR_OPTION:
+	/* ct_cursor(CS_CURSOR_OPTION [,options]) -> status */
+	type_str = "CS_CURSOR_OPTION";
+    case CS_CURSOR_OPEN:
+	/* ct_cursor(CS_CURSOR_OPEN [,options]) -> status */
+	if (type_str == NULL)
+	    type_str = "CS_CURSOR_OPEN";
+    case CS_CURSOR_CLOSE:
+	/* ct_cursor(CS_CURSOR_CLOSE [,options]) -> status */
+	if (type_str == NULL)
+	    type_str = "CS_CURSOR_CLOSE";
+	if (!PyArg_ParseTuple(args, "i|i", &type, &option))
+	    return NULL;
+
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_cursor(self->cmd, type,
+			   NULL, CS_UNUSED, NULL, CS_UNUSED, option);
+	/* Py_END_ALLOW_THREADS; */
+	if (self->debug)
+	    fprintf(stderr, "ct_cursor(%s, %s) -> %s\n",
+		    type_str, value_str(CURSOROPT, option),
+		    value_str(STATUS, status));
+	return PyInt_FromLong(status);
+
+    case CS_CURSOR_ROWS:
+	/* ct_cursor(CS_CURSOR_ROWS, int) -> status */
+	if (!PyArg_ParseTuple(args, "ii", &type, &option))
+	    return NULL;
+
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_cursor(self->cmd, type,
+			   NULL, CS_UNUSED, NULL, CS_UNUSED, option);
+	/* Py_END_ALLOW_THREADS; */
+	if (self->debug)
+	    fprintf(stderr, "ct_cursor(CS_CURSOR_ROWS, %s) -> %s\n",
+		    value_str(CURSOROPT, option), value_str(STATUS, status));
+	return PyInt_FromLong(status);
+
+    case CS_CURSOR_DELETE:
+	/* ct_cursor(CS_CURSOR_DELETE, table) -> status */
+	if (!PyArg_ParseTuple(args, "is", &type, &name))
+	    return NULL;
+
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_cursor(self->cmd, type,
+			   name, CS_NULLTERM, NULL, CS_UNUSED, CS_UNUSED);
+	/* Py_END_ALLOW_THREADS; */
+	if (self->debug)
+	    fprintf(stderr, "ct_cursor(CS_CURSOR_DELETE, %s) -> %s\n",
+		    name, value_str(STATUS, status));
+	return PyInt_FromLong(status);
+
+    case CS_CURSOR_DEALLOC:
+	/* ct_cursor(CS_CURSOR_DEALLOC) -> status */
+	if (!PyArg_ParseTuple(args, "i", &type))
+	    return NULL;
+
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_cursor(self->cmd, type,
+			   NULL, CS_UNUSED, NULL, CS_UNUSED, CS_UNUSED);
+	/* Py_END_ALLOW_THREADS; */
+	if (self->debug)
+	    fprintf(stderr, "ct_cursor(CS_CURSOR_DEALLOC) -> %s\n",
+		    value_str(STATUS, status));
+	return PyInt_FromLong(status);
+
+    default:
+	PyErr_SetString(PyExc_TypeError, "unknown type");
+	return NULL;
+    }
+}
+
+static char CS_COMMAND_ct_data_info__doc__[] = 
+"ct_data_info(CS_SET, int, iodesc) -> status\n"
+"ct_data_info(CS_GET, int) -> status, iodesc";
+
+static PyObject *CS_COMMAND_ct_data_info(CS_COMMANDObj *self, PyObject *args)
+{
+    int action;
+    CS_INT num;
+    CS_IODESC iodesc;
+    CS_IODESCObj *desc;
+    CS_RETCODE status;
+
+    if (!first_tuple_int(args, &action))
+	return NULL;
+
+    switch (action) {
+    case CS_SET:
+	/* ct_data_info(CS_SET, int, iodesc) -> status */
+	if (!PyArg_ParseTuple(args, "iiO!",
+			      &action, &num, &CS_IODESCType, &desc))
+	    return NULL;
+	status = ct_data_info(self->cmd, CS_SET, num, &desc->iodesc);
+	if (self->debug)
+	    fprintf(stderr, "ct_data_info(CS_SET, %d) -> %s\n",
+		    (int)num, value_str(STATUS, status));
+	return PyInt_FromLong(status);
+
+    case CS_GET:
+	/* ct_data_info(CS_GET, int) -> status, iodesc */
+	if (!PyArg_ParseTuple(args, "ii", &action, &num))
+	    return NULL;
+	memset(&iodesc, 0, sizeof(iodesc));
+	status = ct_data_info(self->cmd, CS_GET, num, &iodesc);
+	if (self->debug)
+	    fprintf(stderr, "ct_data_info(CS_GET, %d) -> %s\n",
+		    (int)num, value_str(STATUS, status));
+	if (status != CS_SUCCEED)
+	    return Py_BuildValue("iO", status, Py_None);
+	desc = (CS_IODESCObj*)iodesc_alloc(&iodesc);
+	if (desc == NULL)
+	    return NULL;
+	return Py_BuildValue("iN", status, desc);
+
+    default:
+	PyErr_SetString(PyExc_TypeError, "unknown action");
+	return NULL;
+    }
+}
+
+static char CS_COMMAND_ct_describe__doc__[] = 
+"ct_describe(int) -> status, datafmt";
+
+static PyObject *CS_COMMAND_ct_describe(CS_COMMANDObj *self, PyObject *args)
+{
+    CS_INT num;
+    CS_DATAFMT datafmt;
+    PyObject *fmt;
+    CS_RETCODE status;
+
+    if (!PyArg_ParseTuple(args, "i", &num))
+	return NULL;
+
+    memset(&datafmt, 0, sizeof(datafmt));
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_describe(self->cmd, num, &datafmt);
+    /* Py_END_ALLOW_THREADS; */
+    if (self->debug)
+	fprintf(stderr, "ct_describe(%d) -> %s\n",
+		(int)num, value_str(STATUS, status));
+
+    if (status != CS_SUCCEED)
+	return Py_BuildValue("iO", status, Py_None);
+
+    fmt = datafmt_alloc(&datafmt, self->strip);
+    if (fmt == NULL)
+	return NULL;
+
+    return Py_BuildValue("iN", status, fmt);
 }
 
 static char CS_COMMAND_ct_dynamic__doc__[] = 
@@ -115,10 +379,10 @@ static PyObject *CS_COMMAND_ct_dynamic(CS_COMMANDObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "iss", &type, &id, &buff))
 	    return NULL;
 
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = ct_dynamic(self->cmd, type,
 			    id, CS_NULLTERM, buff, CS_NULLTERM);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	if (self->debug)
 	    fprintf(stderr, "ct_dynamic(%s, %s, %s) -> %s\n",
 		    cmd_str, id, buff, value_str(STATUS, status));
@@ -142,10 +406,10 @@ static PyObject *CS_COMMAND_ct_dynamic(CS_COMMANDObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "is", &type, &id))
 	    return NULL;
 
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = ct_dynamic(self->cmd, type,
 			    id, CS_NULLTERM, NULL, CS_UNUSED);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	if (self->debug)
 	    fprintf(stderr, "ct_dynamic(%s, %s) -> %s\n",
 		    cmd_str, id, value_str(STATUS, status));
@@ -156,10 +420,10 @@ static PyObject *CS_COMMAND_ct_dynamic(CS_COMMANDObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "is", &type, &buff))
 	    return NULL;
 
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = ct_dynamic(self->cmd, type,
 			    NULL, CS_UNUSED, buff, CS_NULLTERM);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	if (self->debug)
 	    fprintf(stderr, "ct_dynamic(CS_EXEC_IMMEDIATE, %s) -> %s\n",
 		    buff, value_str(STATUS, status));
@@ -169,6 +433,72 @@ static PyObject *CS_COMMAND_ct_dynamic(CS_COMMANDObj *self, PyObject *args)
 	PyErr_SetString(PyExc_TypeError, "unknown dynamic command");
 	return NULL;
     }
+}
+
+static char CS_COMMAND_ct_fetch__doc__[] = 
+"ct_fetch() -> result, rows_read";
+
+static PyObject *CS_COMMAND_ct_fetch(CS_COMMANDObj *self, PyObject *args)
+{
+    CS_RETCODE status;
+    CS_INT rows_read = 0;
+
+    if (!PyArg_ParseTuple(args, ""))
+	return NULL;
+
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_fetch(self->cmd, CS_UNUSED, CS_UNUSED, CS_UNUSED, &rows_read);
+    /* Py_END_ALLOW_THREADS; */
+    if (self->debug)
+	fprintf(stderr, "ct_fetch() -> %s, %d\n",
+		value_str(STATUS, status), (int)rows_read);
+
+    return Py_BuildValue("ii", status, rows_read);
+}
+
+static char CS_COMMAND_ct_get_data__doc__[] = 
+"ct_get_data(num, buf) -> result, len";
+
+static PyObject *CS_COMMAND_ct_get_data(CS_COMMANDObj *self, PyObject *args)
+{
+    BufferObj *buffer;
+    int num;
+    CS_RETCODE status;
+
+    if (!PyArg_ParseTuple(args, "iO!", &num, &BufferType, &buffer))
+	return NULL;
+
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_get_data(self->cmd, (CS_INT)num,
+			 buffer->buff, buffer->fmt.maxlength,
+			 &buffer->copied[0]);
+    buffer->indicator[0] = 0;
+    /* Py_END_ALLOW_THREADS; */
+    if (self->debug)
+	fprintf(stderr, "ct_get_data(%d) -> %s, %d\n",
+		num, value_str(STATUS, status), (int)buffer->copied[0]);
+
+    return Py_BuildValue("ii", status, buffer->copied[0]);
+}
+
+static char CS_COMMAND_ct_param__doc__[] = 
+"ct_param(buffer) -> status";
+
+static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
+{
+    BufferObj *buffer;
+    CS_RETCODE status;
+
+    if (!PyArg_ParseTuple(args, "O!", &BufferType, &buffer))
+	return NULL;
+
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_param(self->cmd, &buffer->fmt,
+		      buffer->buff, buffer->copied[0], buffer->indicator[0]);
+    /* Py_END_ALLOW_THREADS; */
+    if (self->debug)
+	fprintf(stderr, "ct_param() -> %s\n", value_str(STATUS, status));
+    return PyInt_FromLong(status);
 }
 
 static PyObject *build_int_list(CS_INT *values, int len)
@@ -225,9 +555,9 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
     switch (type) {
     case CS_BROWSE_INFO:
 	/* ct_res_info(CS_BROWSE_INFO) -> status, bool */
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = ct_res_info(self->cmd, type, &bool_val, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	if (self->debug)
 	    fprintf(stderr, "ct_res_info(CS_BROWSE_INFO) -> %s, %d\n",
 		    value_str(STATUS, status), (int)bool_val);
@@ -235,9 +565,9 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 
     case CS_MSGTYPE:
 	/* ct_res_info(CS_MSGTYPE) -> status, int */
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = ct_res_info(self->cmd, type, &ushort_val, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	if (self->debug)
 	    fprintf(stderr, "ct_res_info(CS_MSGTYPE) -> %s, %d\n",
 		    value_str(STATUS, status), ushort_val);
@@ -266,9 +596,9 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 	/* ct_res_info(CS_TRANS_STATE) -> status, int */
 	if (type_str == NULL)
 	    type_str = "CS_TRANS_STATE";
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = ct_res_info(self->cmd, type, &int_val, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	if (self->debug)
 	    fprintf(stderr, "ct_res_info(%s) -> %s, %d\n",
 		    type_str, value_str(STATUS, status), (int)int_val);
@@ -276,9 +606,9 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 
     case CS_ORDERBY_COLS:
 	/* ct_res_info(CS_ORDERBY_COLS) -> status, list of int */
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = ct_res_info(self->cmd, CS_NUMORDERCOLS, &int_val, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	if (self->debug)
 	    fprintf(stderr, "ct_res_info(CS_NUMORDERCOLS) -> %s, %d\n",
 		    value_str(STATUS, status), (int)int_val);
@@ -292,10 +622,10 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 	if (col_nums == NULL)
 	    return PyErr_NoMemory();
 
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = ct_res_info(self->cmd, CS_ORDERBY_COLS,
 			     col_nums, sizeof(*col_nums) * int_val, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	if (self->debug) {
 	    int i;
 
@@ -318,236 +648,63 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
     }
 }
 
-static char CS_COMMAND_ct_describe__doc__[] = 
-"ct_describe(int) -> status, datafmt";
+static char CS_COMMAND_ct_results__doc__[] = 
+"ct_results() -> status, result";
 
-static PyObject *CS_COMMAND_ct_describe(CS_COMMANDObj *self, PyObject *args)
-{
-    CS_INT num;
-    CS_DATAFMT datafmt;
-    PyObject *fmt;
-    CS_RETCODE status;
-
-    if (!PyArg_ParseTuple(args, "i", &num))
-	return NULL;
-
-    memset(&datafmt, 0, sizeof(datafmt));
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_describe(self->cmd, num, &datafmt);
-    Py_END_ALLOW_THREADS;
-    if (self->debug)
-	fprintf(stderr, "ct_describe(%d) -> %s\n",
-		(int)num, value_str(STATUS, status));
-
-    if (status != CS_SUCCEED)
-	return Py_BuildValue("iO", status, Py_None);
-
-    fmt = datafmt_alloc(&datafmt, self->strip);
-    if (fmt == NULL)
-	return NULL;
-
-    return Py_BuildValue("iN", status, fmt);
-}
-
-static char CS_COMMAND_ct_cancel__doc__[] = 
-"ct_cancel(type) -> status";
-
-static PyObject *CS_COMMAND_ct_cancel(CS_COMMANDObj *self, PyObject *args)
-{
-    int type;
-    CS_RETCODE status;
-
-    if (!PyArg_ParseTuple(args, "i", &type))
-	return NULL;
-
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_cancel(NULL, self->cmd, type);
-    Py_END_ALLOW_THREADS;
-    if (self->debug)
-	fprintf(stderr, "ct_cancel(%s) -> %s\n",
-		value_str(CANCEL, type), value_str(STATUS, status));
-
-    return PyInt_FromLong(status);
-}
-
-static char CS_COMMAND_ct_cursor__doc__[] = 
-"ct_cursor(CS_CURSOR_DECLARE, cursor_id, sql [,options]) -> status\n"
-"ct_cursor(CS_CURSOR_UPDATE, table, sql [,options]) -> status\n"
-"ct_cursor(CS_CURSOR_OPTION [,options]) -> status\n"
-"ct_cursor(CS_CURSOR_ROWS, int) -> status\n"
-"ct_cursor(CS_CURSOR_OPEN [,options]) -> status\n"
-"ct_cursor(CS_CURSOR_DELETE, table) -> status\n"
-"ct_cursor(CS_CURSOR_CLOSE [,options]) -> status\n"
-"ct_cursor(CS_CURSOR_DEALLOC) -> status\n";
-
-static PyObject *CS_COMMAND_ct_cursor(CS_COMMANDObj *self, PyObject *args)
-{
-    int type;
-    char *name, *text;
-    CS_INT option = CS_UNUSED;
-    CS_RETCODE status;
-    char *type_str = NULL;
-
-    if (!first_tuple_int(args, &type))
-	return NULL;
-
-    switch (type) {
-    case CS_CURSOR_DECLARE:
-	/* ct_cursor(CS_CURSOR_DECLARE, cursor_id, sql [,options]) -> status */
-	type_str = "CS_CURSOR_DECLARE";
-    case CS_CURSOR_UPDATE:
-	/* ct_cursor(CS_CURSOR_UPDATE, table, sql [,options]) -> status */
-	if (type_str == NULL)
-	    type_str = "CS_CURSOR_UPDATE";
-	if (!PyArg_ParseTuple(args, "iss|i", &type, &name, &text, &option))
-	    return NULL;
-
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_cursor(self->cmd, type,
-			   name, CS_NULLTERM, text, CS_NULLTERM, option);
-	Py_END_ALLOW_THREADS;
-	if (self->debug)
-	    fprintf(stderr, "ct_cursor(%s, %s, %s, %s) -> %s\n",
-		    type_str, name, text, value_str(CURSOROPT, option),
-		    value_str(STATUS, status));
-	return PyInt_FromLong(status);
-
-    case CS_CURSOR_OPTION:
-	/* ct_cursor(CS_CURSOR_OPTION [,options]) -> status */
-	type_str = "CS_CURSOR_OPTION";
-    case CS_CURSOR_OPEN:
-	/* ct_cursor(CS_CURSOR_OPEN [,options]) -> status */
-	if (type_str == NULL)
-	    type_str = "CS_CURSOR_OPEN";
-    case CS_CURSOR_CLOSE:
-	/* ct_cursor(CS_CURSOR_CLOSE [,options]) -> status */
-	if (type_str == NULL)
-	    type_str = "CS_CURSOR_CLOSE";
-	if (!PyArg_ParseTuple(args, "i|i", &type, &option))
-	    return NULL;
-
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_cursor(self->cmd, type,
-			   NULL, CS_UNUSED, NULL, CS_UNUSED, option);
-	Py_END_ALLOW_THREADS;
-	if (self->debug)
-	    fprintf(stderr, "ct_cursor(%s, %s) -> %s\n",
-		    type_str, value_str(CURSOROPT, option),
-		    value_str(STATUS, status));
-	return PyInt_FromLong(status);
-
-    case CS_CURSOR_ROWS:
-	/* ct_cursor(CS_CURSOR_ROWS, int) -> status */
-	if (!PyArg_ParseTuple(args, "ii", &type, &option))
-	    return NULL;
-
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_cursor(self->cmd, type,
-			   NULL, CS_UNUSED, NULL, CS_UNUSED, option);
-	Py_END_ALLOW_THREADS;
-	if (self->debug)
-	    fprintf(stderr, "ct_cursor(CS_CURSOR_ROWS, %s) -> %s\n",
-		    value_str(CURSOROPT, option), value_str(STATUS, status));
-	return PyInt_FromLong(status);
-
-    case CS_CURSOR_DELETE:
-	/* ct_cursor(CS_CURSOR_DELETE, table) -> status */
-	if (!PyArg_ParseTuple(args, "is", &type, &name))
-	    return NULL;
-
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_cursor(self->cmd, type,
-			   name, CS_NULLTERM, NULL, CS_UNUSED, CS_UNUSED);
-	Py_END_ALLOW_THREADS;
-	if (self->debug)
-	    fprintf(stderr, "ct_cursor(CS_CURSOR_DELETE, %s) -> %s\n",
-		    name, value_str(STATUS, status));
-	return PyInt_FromLong(status);
-
-    case CS_CURSOR_DEALLOC:
-	/* ct_cursor(CS_CURSOR_DEALLOC) -> status */
-	if (!PyArg_ParseTuple(args, "i", &type))
-	    return NULL;
-
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_cursor(self->cmd, type,
-			   NULL, CS_UNUSED, NULL, CS_UNUSED, CS_UNUSED);
-	Py_END_ALLOW_THREADS;
-	if (self->debug)
-	    fprintf(stderr, "ct_cursor(CS_CURSOR_DEALLOC) -> %s\n",
-		    value_str(STATUS, status));
-	return PyInt_FromLong(status);
-
-    default:
-	PyErr_SetString(PyExc_TypeError, "unknown type");
-	return NULL;
-    }
-}
-
-static char CS_COMMAND_ct_bind__doc__[] = 
-"ct_bind(int, datafmt) -> status, buffer";
-
-static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
-{
-    CS_INT item;
-    CS_DATAFMTObj *datafmt;
-    BufferObj *buffer;
-    CS_RETCODE status;
-
-    if (!PyArg_ParseTuple(args, "iO!", &item, &CS_DATAFMTType, &datafmt))
-	return NULL;
-
-    buffer = (BufferObj *)buffer_alloc((PyObject*)datafmt);
-    if (buffer == NULL)
-	return NULL;
-
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_bind(self->cmd, item, &datafmt->fmt,
-		     buffer->buff, buffer->copied, buffer->indicator);
-    Py_END_ALLOW_THREADS;
-    if (self->debug)
-	fprintf(stderr, "ct_bind(%d) -> %s\n", (int)item, value_str(STATUS, status));
-    return Py_BuildValue("iN", status, buffer);
-}
-
-static char CS_COMMAND_ct_fetch__doc__[] = 
-"ct_fetch() -> result, rows_read";
-
-static PyObject *CS_COMMAND_ct_fetch(CS_COMMANDObj *self, PyObject *args)
+static PyObject *CS_COMMAND_ct_results(CS_COMMANDObj *self, PyObject *args)
 {
     CS_RETCODE status;
-    CS_INT rows_read = 0;
+    CS_INT result = 0;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
 
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_fetch(self->cmd, CS_UNUSED, CS_UNUSED, CS_UNUSED, &rows_read);
-    Py_END_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_results(self->cmd, &result);
+    /* Py_END_ALLOW_THREADS; */
     if (self->debug)
-	fprintf(stderr, "ct_fetch() -> %s, %d\n",
-		value_str(STATUS, status), (int)rows_read);
+	fprintf(stderr, "ct_results() -> %s, %s\n",
+		value_str(STATUS, status), value_str(RESULT, result));
 
-    return Py_BuildValue("ii", status, rows_read);
+    return Py_BuildValue("ii", status, result);
 }
 
-static char CS_COMMAND_ct_param__doc__[] = 
-"ct_param(buffer) -> status";
+static char CS_COMMAND_ct_send__doc__[] = 
+"ct_send() -> status";
 
-static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
+static PyObject *CS_COMMAND_ct_send(CS_COMMANDObj *self, PyObject *args)
 {
-    BufferObj *buffer;
     CS_RETCODE status;
+
+    if (!PyArg_ParseTuple(args, ""))
+	return NULL;
+
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_send(self->cmd);
+    /* Py_END_ALLOW_THREADS; */
+
+    if (self->debug)
+	fprintf(stderr, "ct_send() -> %s\n", value_str(STATUS, status));
+    return PyInt_FromLong(status);
+}
+
+static char CS_COMMAND_ct_send_data__doc__[] = 
+"ct_send_data(string) -> status";
+
+static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
+{
+    CS_RETCODE status;
+    BufferObj *buffer;
 
     if (!PyArg_ParseTuple(args, "O!", &BufferType, &buffer))
 	return NULL;
 
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_param(self->cmd, &buffer->fmt,
-		      buffer->buff, buffer->copied[0], buffer->indicator[0]);
-    Py_END_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_send_data(self->cmd, buffer->buff, buffer->copied[0]);
+    /* Py_END_ALLOW_THREADS; */
+
     if (self->debug)
-	fprintf(stderr, "ct_param() -> %s\n", value_str(STATUS, status));
+	fprintf(stderr, "ct_send_data() -> %s\n", value_str(STATUS, status));
     return PyInt_FromLong(status);
 }
 
@@ -562,97 +719,13 @@ static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O!", &BufferType, &buffer))
 	return NULL;
 
-    Py_BEGIN_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
     status = ct_param(self->cmd, &buffer->fmt,
 		      buffer->buff, buffer->copied[0], buffer->indicator[0]);
-    Py_END_ALLOW_THREADS;
+    /* Py_END_ALLOW_THREADS; */
     if (self->debug)
 	fprintf(stderr, "ct_setparam() -> %s\n", value_str(STATUS, status));
     return PyInt_FromLong(status);
-}
-
-static char CS_COMMAND_ct_command__doc__[] = 
-"ct_command(CS_LANG_CMD, sql [,option]) -> status\n"
-"ct_command(CS_MSG_CMD, int) -> status\n"
-"ct_command(CS_PACKAGE_CMD, name) -> status\n"
-"ct_command(CS_RPC_CMD, name [,option]) -> status\n"
-"ct_command(CS_SEND_DATA_CMD) -> status";
-
-static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
-{
-    int type;
-    char *buffer;
-    CS_INT num;
-    CS_INT option = CS_UNUSED;
-    CS_RETCODE status;
-    char *type_str = NULL;
-
-    if (!first_tuple_int(args, &type))
-	return NULL;
-
-    switch (type) {
-    case CS_LANG_CMD:
-	/* ct_command(CS_LANG_CMD, sql [,option]) -> status */
-	type_str = "CS_LANG_CMD";
-    case CS_RPC_CMD:
-	/* ct_command(CS_RPC_CMD, name [,option]) -> status */
-	if (type_str == NULL)
-	    type_str = "CS_RPC_CMD";
-	if (!PyArg_ParseTuple(args, "is|i", &type, &buffer, &option))
-	    return NULL;
-
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_command(self->cmd, type, buffer, CS_NULLTERM, option);
-	Py_END_ALLOW_THREADS;
-	if (self->debug)
-	    fprintf(stderr, "ct_command(%s, %s, %s) -> %s\n",
-		    type_str, buffer, value_str(CMD, option),
-		    value_str(STATUS, status));
-	return PyInt_FromLong(status);
-
-    case CS_MSG_CMD:
-	/* ct_command(CS_MSG_CMD, int) -> status */
-	if (!PyArg_ParseTuple(args, "ii", &type, &num))
-	    return NULL;
-
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_command(self->cmd, type, (CS_VOID*)&num, CS_UNUSED, CS_UNUSED);
-	Py_END_ALLOW_THREADS;
-	if (self->debug)
-	    fprintf(stderr, "ct_command(CS_MSG_CMD, %d) -> %s\n",
-		    (int)num, value_str(STATUS, status));
-	return PyInt_FromLong(status);
-
-    case CS_PACKAGE_CMD:
-	/* ct_command(CS_PACKAGE_CMD, name) -> status */
-	if (!PyArg_ParseTuple(args, "is", &type, &buffer))
-	    return NULL;
-
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_command(self->cmd, type, buffer, CS_NULLTERM, CS_UNUSED);
-	Py_END_ALLOW_THREADS;
-	if (self->debug)
-	    fprintf(stderr, "ct_command(CS_PACKAGE_CMD, %s) -> %s\n",
-		    buffer, value_str(STATUS, status));
-	return PyInt_FromLong(status);
-
-    case CS_SEND_DATA_CMD:
-	/* ct_command(CS_SEND_DATA_CMD) -> status */
-	if (!PyArg_ParseTuple(args, "i", &type))
-	    return NULL;
-
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_command(self->cmd, type, NULL, CS_UNUSED, CS_UNUSED);
-	Py_END_ALLOW_THREADS;
-	if (self->debug)
-	    fprintf(stderr, "ct_command(CS_SEND_DATA_CMD) -> %s\n",
-		    value_str(STATUS, status));
-	return PyInt_FromLong(status);
-
-    default:
-	PyErr_SetString(PyExc_TypeError, "unknown type");
-	return NULL;
-    }
 }
 
 static struct PyMethodDef CS_COMMAND_methods[] = {
@@ -660,9 +733,11 @@ static struct PyMethodDef CS_COMMAND_methods[] = {
     { "ct_cancel", (PyCFunction)CS_COMMAND_ct_cancel, METH_VARARGS, CS_COMMAND_ct_cancel__doc__ },
     { "ct_command", (PyCFunction)CS_COMMAND_ct_command, METH_VARARGS, CS_COMMAND_ct_command__doc__ },
     { "ct_cursor", (PyCFunction)CS_COMMAND_ct_cursor, METH_VARARGS, CS_COMMAND_ct_cursor__doc__ },
+    { "ct_data_info", (PyCFunction)CS_COMMAND_ct_data_info, METH_VARARGS, CS_COMMAND_ct_data_info__doc__ },
     { "ct_describe", (PyCFunction)CS_COMMAND_ct_describe, METH_VARARGS, CS_COMMAND_ct_describe__doc__ },
     { "ct_dynamic", (PyCFunction)CS_COMMAND_ct_dynamic, METH_VARARGS, CS_COMMAND_ct_dynamic__doc__ },
     { "ct_fetch", (PyCFunction)CS_COMMAND_ct_fetch, METH_VARARGS, CS_COMMAND_ct_fetch__doc__ },
+    { "ct_get_data", (PyCFunction)CS_COMMAND_ct_get_data, METH_VARARGS, CS_COMMAND_ct_get_data__doc__ },
     { "ct_param", (PyCFunction)CS_COMMAND_ct_param, METH_VARARGS, CS_COMMAND_ct_param__doc__ },
     { "ct_res_info", (PyCFunction)CS_COMMAND_ct_res_info, METH_VARARGS, CS_COMMAND_ct_res_info__doc__ },
     { "ct_results", (PyCFunction)CS_COMMAND_ct_results, METH_VARARGS, CS_COMMAND_ct_results__doc__ },
@@ -672,7 +747,7 @@ static struct PyMethodDef CS_COMMAND_methods[] = {
     { NULL }			/* sentinel */
 };
 
-PyObject *cmd_alloc(CS_CONNECTIONObj *con)
+PyObject *cmd_alloc(CS_CONNECTIONObj *conn)
 {
     CS_COMMANDObj *self;
     CS_RETCODE status;
@@ -683,25 +758,25 @@ PyObject *cmd_alloc(CS_CONNECTIONObj *con)
 	return NULL;
     self->is_eed = 0;
     self->cmd = NULL;
-    self->con = NULL;
-    self->strip = con->strip;
-    self->debug = con->debug;
+    self->conn = NULL;
+    self->strip = conn->strip;
+    self->debug = conn->debug;
 
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_cmd_alloc(con->con, &cmd);
-    Py_END_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_cmd_alloc(conn->conn, &cmd);
+    /* Py_END_ALLOW_THREADS; */
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
     }
 
     self->cmd = cmd;
-    self->con = con;
-    Py_INCREF(self->con);
+    self->conn = conn;
+    Py_INCREF(self->conn);
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
-PyObject *cmd_eed(CS_CONNECTIONObj *con, CS_COMMAND *eed)
+PyObject *cmd_eed(CS_CONNECTIONObj *conn, CS_COMMAND *eed)
 {
     CS_COMMANDObj *self;
 
@@ -711,8 +786,8 @@ PyObject *cmd_eed(CS_CONNECTIONObj *con, CS_COMMAND *eed)
 
     self->is_eed = 1;
     self->cmd = eed;
-    self->con = con;
-    Py_INCREF(self->con);
+    self->conn = conn;
+    Py_INCREF(self->conn);
 
     return (PyObject*)self;
 }
@@ -722,11 +797,9 @@ static void CS_COMMAND_dealloc(CS_COMMANDObj *self)
     if (!self->is_eed && self->cmd) {
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
-	Py_BEGIN_ALLOW_THREADS;
 	ct_cmd_drop(self->cmd);
-	Py_END_ALLOW_THREADS;
     }
-    Py_XDECREF(self->con);
+    Py_XDECREF(self->conn);
     PyMem_DEL(self);
 }
 
@@ -734,7 +807,7 @@ static void CS_COMMAND_dealloc(CS_COMMANDObj *self)
 
 static struct memberlist CS_COMMAND_memberlist[] = {
     { "is_eed", T_INT, OFF(is_eed), RO },
-    { "con", T_OBJECT, OFF(con), RO },
+    { "conn", T_OBJECT, OFF(conn), RO },
     { "strip", T_INT, OFF(strip) },
     { "debug", T_INT, OFF(debug) },
     { NULL }			/* Sentinel */

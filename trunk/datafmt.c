@@ -80,6 +80,29 @@ PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip)
     return (PyObject*)self;
 }
 
+char datafmt_new__doc__[] =
+"CS_DATAFMT() -> fmt\n"
+"\n"
+"Allocate a new CS_DATAFMT object.";
+
+PyObject *datafmt_new(PyObject *module, PyObject *args)
+{
+    CS_DATAFMTObj *self;
+
+    if (!PyArg_ParseTuple(args, ""))
+	return NULL;
+
+    self = PyObject_NEW(CS_DATAFMTObj, &CS_DATAFMTType);
+    if (self == NULL)
+	return NULL;
+
+    memset(&self->fmt, 0, sizeof(self->fmt));
+    self->strip = 0;
+    char_datafmt(&self->fmt);
+    self->fmt.maxlength = 1;
+    return (PyObject*)self;
+}
+
 static void CS_DATAFMT_dealloc(CS_DATAFMTObj *self)
 {
     PyMem_DEL(self);
@@ -131,11 +154,11 @@ static int CS_DATAFMT_setattr(CS_DATAFMTObj *self, char *name, PyObject *v)
 	    return -1;
 	}
 	size = PyString_Size(v);
-	if (size > CS_MAX_NAME) {
+	if (size > sizeof(self->fmt.name)) {
 	    PyErr_SetString(PyExc_TypeError, "name too long");
 	    return -1;
 	}
-	strcpy(self->fmt.name, PyString_AsString(v));
+	strncpy(self->fmt.name, PyString_AsString(v), sizeof(self->fmt.name));
 	self->fmt.namelen = size;
 	return 0;
     }

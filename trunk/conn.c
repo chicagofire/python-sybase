@@ -24,6 +24,38 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
+static CS_CONNECTIONObj *conn_list;
+
+static void conn_add_object(CS_CONNECTIONObj *conn)
+{
+    conn->next = conn_list;
+    conn_list = conn;
+}
+
+static void conn_del_object(CS_CONNECTIONObj *conn)
+{
+    CS_CONNECTIONObj *scan, *prev;
+
+    for (prev = NULL, scan = conn_list; scan != NULL; scan = scan->next) {
+	if (scan == conn) {
+	    if (prev == NULL)
+		conn_list = scan->next;
+	    else
+		prev->next = scan->next;
+	}
+    }
+}
+
+PyObject *conn_find_object(CS_CONNECTION *cs_conn)
+{
+    CS_CONNECTIONObj *conn;
+
+    for (conn = conn_list; conn != NULL; conn = conn->next)
+	if (conn->conn == cs_conn)
+	    return (PyObject*)conn;
+    return NULL;
+}
+
 static char CS_CONNECTION_ct_diag__doc__[] = 
 "ct_diag(CS_INIT) -> status\n"
 "ct_diag(CS_MSGLIMIT, type, num) -> status\n"
@@ -48,27 +80,27 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	/* ct_diag(CS_INIT) -> status */
 	if (!PyArg_ParseTuple(args, "i", &operation))
 	    return NULL;
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_diag(self->con, operation, CS_UNUSED, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_diag(self->conn, operation, CS_UNUSED, CS_UNUSED, NULL);
+	/* Py_END_ALLOW_THREADS; */
 	return PyInt_FromLong(status);
 
     case CS_MSGLIMIT:
 	/* ct_diag(CS_MSGLIMIT, type, num) -> status */
 	if (!PyArg_ParseTuple(args, "iii", &operation, &type, &num))
 	    return NULL;
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_diag(self->con, operation, type, CS_UNUSED, &num);
-	Py_END_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_diag(self->conn, operation, type, CS_UNUSED, &num);
+	/* Py_END_ALLOW_THREADS; */
 	return PyInt_FromLong(status);
 
     case CS_CLEAR:
 	/* ct_diag(CS_CLEAR, type) -> status */
 	if (!PyArg_ParseTuple(args, "ii", &operation, &type))
 	    return NULL;
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_diag(self->con, operation, type, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_diag(self->conn, operation, type, CS_UNUSED, NULL);
+	/* Py_END_ALLOW_THREADS; */
 	return PyInt_FromLong(status);
 
     case CS_GET:
@@ -87,9 +119,9 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	    PyErr_SetString(PyExc_TypeError, "unsupported message type");
 	    return NULL;
 	}
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_diag(self->con, operation, type, index, buffer);
-	Py_END_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_diag(self->conn, operation, type, index, buffer);
+	/* Py_END_ALLOW_THREADS; */
 	if (status != CS_SUCCEED)
 	    return Py_BuildValue("iO", status, Py_None);
 	return Py_BuildValue("iN", CS_SUCCEED, msg);
@@ -99,18 +131,18 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &operation, &type))
 	    return NULL;
 	num = 0;
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_diag(self->con, operation, type, CS_UNUSED, &num);
-	Py_END_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_diag(self->conn, operation, type, CS_UNUSED, &num);
+	/* Py_END_ALLOW_THREADS; */
 	return Py_BuildValue("ii", status, num);
 
     case CS_EED_CMD:
 	/* ct_diag(CS_EED_CMD, type, index) -> status, cmd */
 	if (!PyArg_ParseTuple(args, "iii", &operation, &type, &index))
 	    return NULL;
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_diag(self->con, operation, type, index, &eed);
-	Py_END_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_diag(self->conn, operation, type, index, &eed);
+	/* Py_END_ALLOW_THREADS; */
 	cmd = cmd_eed(self, eed);
 	if (cmd == NULL)
 	    return NULL;
@@ -123,19 +155,20 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 }
 
 static char CS_CONNECTION_ct_connect__doc__[] = 
-"ct_connect(str) - > status";
+"ct_connect(str = None) - > status";
 
 static PyObject *CS_CONNECTION_ct_connect(CS_CONNECTIONObj *self, PyObject *args)
 {
     CS_RETCODE status;
     char *dsn = NULL;
 
-    if (!PyArg_ParseTuple(args, "s", &dsn))
+    if (!PyArg_ParseTuple(args, "|s", &dsn))
 	return NULL;
 
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_connect(self->con, dsn, CS_NULLTERM);
-    Py_END_ALLOW_THREADS;
+    if (dsn == NULL)
+	status = ct_connect(self->conn, NULL, 0);
+    else
+	status = ct_connect(self->conn, dsn, CS_NULLTERM);
     return PyInt_FromLong(status);
 }
 
@@ -172,9 +205,9 @@ static PyObject *CS_CONNECTION_ct_close(CS_CONNECTIONObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "|i", &option))
 	return NULL;
     
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_close(self->con, option);
-    Py_END_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_close(self->conn, option);
+    /* Py_END_ALLOW_THREADS; */
     return PyInt_FromLong(status);
 }
 
@@ -282,30 +315,30 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	    bool_value = PyInt_AsLong(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_con_props(self->con, CS_SET, property,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_con_props(self->conn, CS_SET, property,
 				  &bool_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return PyInt_FromLong(status);
 
 	case OPTION_INT:
 	    int_value = PyInt_AsLong(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_con_props(self->con, CS_SET, property,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_con_props(self->conn, CS_SET, property,
 				  &int_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return PyInt_FromLong(status);
 
 	case OPTION_STRING:
 	    str_value = PyString_AsString(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_con_props(self->con, CS_SET, property,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_con_props(self->conn, CS_SET, property,
 				  str_value, CS_NULLTERM, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return PyInt_FromLong(status);
 
 	default:
@@ -321,24 +354,24 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 
 	switch (property_type(property)) {
 	case OPTION_BOOL:
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_con_props(self->con, CS_GET, property,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_con_props(self->conn, CS_GET, property,
 				  &bool_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return Py_BuildValue("ii", status, bool_value);
 
 	case OPTION_INT:
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_con_props(self->con, CS_GET, property,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_con_props(self->conn, CS_GET, property,
 				  &int_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_STRING:
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_con_props(self->con, CS_GET, property,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_con_props(self->conn, CS_GET, property,
 				  str_buff, sizeof(str_buff), &buff_len);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    if (buff_len > sizeof(str_buff))
 		buff_len = sizeof(str_buff);
 	    return Py_BuildValue("is#", status, str_buff, buff_len);
@@ -362,10 +395,10 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	if (!PyArg_ParseTuple(args, "ii", &action, &property))
 	    return NULL;
 
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_con_props(self->con, CS_CLEAR, property,
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_con_props(self->conn, CS_CLEAR, property,
 			      NULL, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	return PyInt_FromLong(status);
 
     default:
@@ -446,30 +479,30 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	    bool_value = PyInt_AsLong(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_options(self->con, CS_SET, option,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_options(self->conn, CS_SET, option,
 				&bool_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return PyInt_FromLong(status);
 
 	case OPTION_INT:
 	    int_value = PyInt_AsLong(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_options(self->con, CS_SET, option,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_options(self->conn, CS_SET, option,
 				&int_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return PyInt_FromLong(status);
 
 	case OPTION_STRING:
 	    str_value = PyString_AsString(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_options(self->con, CS_SET, option,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_options(self->conn, CS_SET, option,
 				str_value, CS_NULLTERM, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return PyInt_FromLong(status);
 
 	default:
@@ -485,24 +518,24 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 
 	switch (option_type(option)) {
 	case OPTION_BOOL:
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_options(self->con, CS_GET, option,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_options(self->conn, CS_GET, option,
 				&bool_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return Py_BuildValue("ii", status, bool_value);
 
 	case OPTION_INT:
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_options(self->con, CS_GET, option,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_options(self->conn, CS_GET, option,
 				&int_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_STRING:
-	    Py_BEGIN_ALLOW_THREADS;
-	    status = ct_options(self->con, CS_GET, option,
+	    /* Py_BEGIN_ALLOW_THREADS; */
+	    status = ct_options(self->conn, CS_GET, option,
 				str_buff, sizeof(str_buff), &buff_len);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    if (buff_len > sizeof(str_buff))
 		buff_len = sizeof(str_buff);
 	    return Py_BuildValue("is#", status, str_buff, buff_len);
@@ -522,10 +555,10 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	if (!PyArg_ParseTuple(args, "ii", &action, &option))
 	    return NULL;
 
-	Py_BEGIN_ALLOW_THREADS;
-	status = ct_options(self->con, CS_CLEAR, option,
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_options(self->conn, CS_CLEAR, option,
 			    NULL, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	return PyInt_FromLong(status);
 
     default:
@@ -545,44 +578,44 @@ static struct PyMethodDef CS_CONNECTION_methods[] = {
     { NULL }			/* sentinel */
 };
 
-PyObject *con_alloc(CS_CONTEXTObj *ctx)
+PyObject *conn_alloc(CS_CONTEXTObj *ctx)
 {
     CS_CONNECTIONObj *self;
     CS_RETCODE status;
-    CS_CONNECTION *con;
+    CS_CONNECTION *conn;
 
     self = PyObject_NEW(CS_CONNECTIONObj, &CS_CONNECTIONType);
     if (self == NULL)
 	return NULL;
-    self->con = NULL;
+    self->conn = NULL;
     self->ctx = NULL;
     self->strip = 0;
-    self->debug = 0;
+    self->debug = ctx->debug;
 
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_con_alloc(ctx->ctx, &con);
-    Py_END_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_con_alloc(ctx->ctx, &conn);
+    /* Py_END_ALLOW_THREADS; */
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
     }
 
-    self->con = con;
+    self->conn = conn;
     self->ctx = ctx;
     Py_INCREF(self->ctx);
+    conn_add_object(self);
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
 static void CS_CONNECTION_dealloc(CS_CONNECTIONObj *self)
 {
-    if (self->con) {
+    if (self->conn) {
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
-	Py_BEGIN_ALLOW_THREADS;
-	ct_con_drop(self->con);
-	Py_END_ALLOW_THREADS;
+	ct_con_drop(self->conn);
     }
     Py_XDECREF(self->ctx);
+    conn_del_object(self);
     PyMem_DEL(self);
 }
 
