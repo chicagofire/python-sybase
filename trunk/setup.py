@@ -73,12 +73,15 @@ for dir in (syb_incdir, syb_libdir):
         sys.exit(1)
 
 extra_objects = None
-#try:
-#    if os.uname()[0] == 'SunOS':
-#        syb_libs.remove('comn')
-#        extra_objects = [os.path.join(syb_libdir, 'libcomn.a')]
-#except:
-#    pass
+runtime_library_dirs = None
+try:
+    if os.uname()[0] == 'SunOS':
+        syb_libs.append('sybdb')
+        syb_libs.remove('comn')
+        extra_objects = [os.path.join(syb_libdir, 'libcomn.a')]
+        runtime_library_dirs = [syb_libdir]
+except:
+    pass
 
 syb_macros = [('WANT_BULKCOPY', None)]
 for api in ('blk_describe', 'blk_rowxfer_mult', 'blk_textxfer',):
@@ -108,6 +111,7 @@ setup(name = "Sybase",
                     define_macros = syb_macros,
                     libraries = syb_libs,
                     library_dirs = [syb_libdir],
+                    runtime_library_dirs = runtime_library_dirs,
                     extra_objects = extra_objects
                     )
           ],
