@@ -8,9 +8,9 @@ function will create a \class{CS_CONTEXT} object.  When the
 \class{CS_CONTEXT} objects have the following interface:
 
 \begin{memberdesc}[CS_CONTEXT]{debug}
-This is an integer which is used to control the output of debug
-messages.  If set non-zero the object will write debug messages to
-\code{stderr}.  The default value is zero.
+An integer which controls printing of debug messages to the debug file
+established by the \function{set_debug()} function.  The default value
+is zero.
 \end{memberdesc}
 
 \begin{methoddesc}[CS_CONTEXT]{ct_callback}{action, type \optional{, cb_func \code{= None}}}
@@ -74,6 +74,21 @@ if ctx.ct_callback(CS_SET, CS_SERVERMSG_CB,
                    ctlib_server_msg_handler) != CS_SUCCEED:
     raise CSError(ctx, 'ct_callback')
 \end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONTEXT]{ct_loc_alloc}{}
+Allocates a new \class{CS_LOCALE} object which is used to control
+locale settings.  Calls the Sybase-CT \function{ct_loc_alloc()}
+function like this:
+
+\begin{verbatim}
+status = ct_loc_alloc(ctx, &locale);
+\end{verbatim}
+
+Returns a tuple containing the Sybase result code and a new instance
+of the \class{CS_LOCALE} class constructed from the \var{locale}
+returned by \function{ct_loc_alloc()}.  \code{None} is returned as the
+\class{CS_LOCALE} object when the result code is not \code{CS_SUCCEED}.
 \end{methoddesc}
 
 \begin{methoddesc}[CS_CONTEXT]{ct_con_alloc}{}

@@ -19,8 +19,9 @@ columns.  The default value is zero.
 \end{memberdesc}
 
 \begin{memberdesc}[CS_CONNECTION]{debug}
-An integer which controls printing of debug messages to \code{stderr}.
-The default value is inherited from the \code{CS_CONTEXT} object.
+An integer which controls printing of debug messages to the debug file
+established by the \function{set_debug()} function.  The default value
+is inherited from the \code{CS_CONTEXT} object.
 \end{memberdesc}
 
 \begin{methoddesc}[CS_CONNECTION]{ct_diag}{operation \optional{, \ldots}}
@@ -285,6 +286,8 @@ The recognised properties are:
 \code{CS_SEC_SERVERPRINCIPAL}  & \code{string} \\
 \code{CS_TRANSACTION_NAME}     & \code{string} \\
 
+\code{CS_LOC_PROP}             & \code{CS_LOCALE} \\
+
 \code{CS_EED_CMD}              & \code{CS_COMMAND} \\
 \end{longtable}
 
@@ -329,6 +332,9 @@ status = ct_options(conn, CS_SET, option, &int_value, CS_UNUSED, NULL);
 
 /* string option value */
 status = ct_options(conn, CS_SET, option, str_value, CS_NULLTERM, NULL);
+
+/* locale option value */
+status = ct_options(conn, CS_SET, option, locale, CS_UNUSED, NULL);
 \end{verbatim}
 
 When \var{action} is \code{CS_GET} the method returns a tuple

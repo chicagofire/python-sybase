@@ -129,6 +129,10 @@ static PyObject *sybasect_set_debug(PyObject *module, PyObject *args)
 	Py_XDECREF(res);
 	if (res == NULL)
 	    return NULL;
+	res = PyObject_CallMethod(obj, "flush", "");
+	Py_XDECREF(res);
+	if (res == NULL)
+	    return NULL;
     }
 
     res = debug_file;
@@ -1555,6 +1559,7 @@ void initsybasect(void)
 	|| dict_add_type(d, &CS_IODESCType)
 	|| dict_add_type(d, &CS_CLIENTMSGType)
 	|| dict_add_type(d, &CS_SERVERMSGType)
+	|| dict_add_type(d, &CS_LOCALEType)
 	|| dict_add_type(d, &NumericType)
 	|| dict_add_type(d, &MoneyType)
 	|| dict_add_type(d, &DateTimeType)

@@ -77,6 +77,19 @@ data values.
 
 \subsection{Functions}
 
+\begin{funcdesc}{set_debug}{file}
+Directs all debug text to the object passed in the \var{file}
+argument.  The \var{file} argument must be either \code{None} or an
+object which has \method{write(data)} and \method{flush()} methods.
+
+The function returns the previous debug file.  The default file is
+\code{None}.
+
+Setting a debug file does not enable debug messages.  To produce debug
+messages you need to set the \var{debug} member of a context,
+connection, command, etc.
+\end{funcdesc}
+
 \begin{funcdesc}{cs_ctx_alloc}{\optional{version \code{= CS_VERSION_100}}}
 Calls the Sybase-CT \function{cs_ctx_alloc()} function:
 
@@ -222,6 +235,7 @@ Return the result of applying the Sybase \code{CS_NUMBER} macro to the
 \end{funcdesc}
 
 \input{ctxobj}
+\input{localeobj}
 \input{connobj}
 \input{cmdobj}
 \input{msgsobj}

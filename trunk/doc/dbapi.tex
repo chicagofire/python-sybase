@@ -35,8 +35,13 @@ threads to share the module, connections and cursors.
 
 \begin{datadesc}{paramstyle}
 Specifies the DB-API parameter style.  This variable is set to the
-value \code{'qmark'} which indicates that the \module{Sybase} module
-uses question marks as parameter place holders.
+value \code{'named'} which indicates that the \module{Sybase} module
+uses named parameters.  For example:
+
+\begin{verbatim}
+c.execute("select * from titles where title like @arg",
+          {'@arg': 'The %'})
+\end{verbatim}
 \end{datadesc}
 
 \begin{excdesc}{Warning}
@@ -200,20 +205,22 @@ The \var{owner} argument must be an instance of the \class{Connection}
 class.
 \end{classdesc}
 
-\begin{classdesc}{Bulkcopy}{owner, table, direction}
-Return a new instance of the \class{Bulkcopy} class.
-
-The \var{owner} argument must be an instance of the \class{Connection}
-class.  A bulk copy context will be established for the table named in
-the \var{table} argument, the bulkcopy direction must be either
-\code{CS_BLK_IN} or \code{CS_BLK_OUT} as defined in the
-\module{Sybase} module.
-
-\class{Bulkcopy} objects are usually created via the
-\method{bulkcopy()} method of the \class{Connection} object.
-
-This is an extension of the DB-API 2.0 specification.
-\end{classdesc}
+% Will return in next release
+%
+%\begin{classdesc}{Bulkcopy}{owner, table, direction}
+%Return a new instance of the \class{Bulkcopy} class.
+%
+%The \var{owner} argument must be an instance of the \class{Connection}
+%class.  A bulk copy context will be established for the table named in
+%the \var{table} argument, the bulkcopy direction must be either
+%\code{CS_BLK_IN} or \code{CS_BLK_OUT} as defined in the
+%\module{Sybase} module.
+%
+%\class{Bulkcopy} objects are usually created via the
+%\method{bulkcopy()} method of the \class{Connection} object.
+%
+%This is an extension of the DB-API 2.0 specification.
+%\end{classdesc}
 
 \begin{classdesc}{Connection}{dsn, user, passwd \optional{, \ldots}}
 Return a new instance of the \class{Connection} class which implements
@@ -260,10 +267,10 @@ insert, open, fetch, select, and update. You must still explicitly
 close the transaction with a commit.
 \end{quote}
 
-\item{\var{bulkcopy \code{= 0}}}
-
-Must be non-zero if you are going to perform bulkcopy operations on
-the connection.
+%\item{\var{bulkcopy \code{= 0}}}
+%
+%Must be non-zero if you are going to perform bulkcopy operations on
+%the connection.
 
 \item{\var{delay_connect \code{= 0}}}
 
@@ -438,17 +445,17 @@ binary parameters to the command, you must format the parameters as
 part of the SQL string in the \var{sql} argument.
 \end{methoddesc}
 
-\begin{methoddesc}[Connection]{bulkcopy}{table, direction}
-This is an extension of the DB-API 2.0 specification.
-
-Returns a new \class{Bulkcopy} object using the connection.  The
-\var{table} argument identifies the table which you wish to perform
-bulkcopy operations upon.
-
-The \var{direction} argument controls the direction of the bulkcopy
-operation.  Specify \code{Sybase.CS_BLK_IN} to copy data in, or
-\code{Sybase.CS_BLK_OUT} to copy data out.
-\end{methoddesc}
+%\begin{methoddesc}[Connection]{bulkcopy}{table, direction}
+%This is an extension of the DB-API 2.0 specification.
+%
+%Returns a new \class{Bulkcopy} object using the connection.  The
+%\var{table} argument identifies the table which you wish to perform
+%bulkcopy operations upon.
+%
+%The \var{direction} argument controls the direction of the bulkcopy
+%operation.  Specify \code{Sybase.CS_BLK_IN} to copy data in, or
+%\code{Sybase.CS_BLK_OUT} to copy data out.
+%\end{methoddesc}
 
 \subsection{Cursor Objects}
 
@@ -485,8 +492,14 @@ The attribute is \code{-1} if no \method{execute()} or
 Implements the DB-API 2.0 cursor \method{callproc()} method.
 
 Calls the stored database procedure named in the \var{procname}
-argument. The optional \var{parameters} argument must be a sequence
-which contains one entry for each argument that the procedure expects.
+argument. The optional \var{parameters} argument can be a sequence or
+dictionary which contains one entry for each argument that the
+procedure expects.  For example:
+
+\begin{verbatim}
+c.callproc('sp_help', ['titles'])
+c.callproc('sp_help', {'@objname': 'titles'})
+\end{verbatim}
 
 The DB-API 2.0 specification says:
 
@@ -518,16 +531,16 @@ This method is called by the \method{__del__()} method.
 Implements the DB-API 2.0 cursor \method{execute()} method.
 
 Prepares a dynamic SQL command on the Sybase server and executes it.
-The optional \var{params} argument is a sequence of parameters which
-are bound as parameters to the dynamic SQL command.  Sybase uses
-question mark (\code{?}) place holders to specify which the parameters
-will be used by the SQL command.
+The optional \var{params} argument is a dictionary of parameters which
+are bound as parameters to the dynamic SQL command.  Sybase uses name
+place holders to specify which the parameters will be used by the SQL
+command.
 
 \begin{verbatim}
 import Sybase
 db = Sybase.connect('SYBASE', 'sa', '', 'pubs2')
 c = db.cursor()
-c.execute("select * from titles where price > ?", [15.00])
+c.execute("select * from titles where price > @price", {'@price': 15.00})
 c.fetchall()
 \end{verbatim}
 
@@ -609,26 +622,26 @@ Implements the DB-API 2.0 cursor \method{setoutputsize()} method.
 This method does nothing -- it is provided for DB-API compliance.
 \end{methoddesc}
 
-\subsection{Bulkcopy Objects}
-
-This is an extension of the DB-API 2.0 specification.
-
-This object provides an interface to the Sybase bulkcopy
-functionality.
-
-\begin{methoddesc}[Bulkcopy]{rowxfer}{\optional{data}}
-If the \class{Bulkcopy} object direction is \code{CS_BLK_IN} then the
-sequence passed as the \var{data} argument is sent as one row to the
-server.  If the direction is \code{CS_BLK_OUT} then one row will be
-returned from the server.
-\end{methoddesc}
-
-\begin{methoddesc}[Bulkcopy]{batch}{}
-Marks a complete bulkcopy batch.  The number of rows transferred in
-the batch is returned.
-\end{methoddesc}
-
-\begin{methoddesc}[Bulkcopy]{done}{}
-Marks a complete bulkcopy operation.  The number of rows transferred
-in the batch is returned.
-\end{methoddesc}
+%\subsection{Bulkcopy Objects}
+%
+%This is an extension of the DB-API 2.0 specification.
+%
+%This object provides an interface to the Sybase bulkcopy
+%functionality.
+%
+%\begin{methoddesc}[Bulkcopy]{rowxfer}{\optional{data}}
+%If the \class{Bulkcopy} object direction is \code{CS_BLK_IN} then the
+%sequence passed as the \var{data} argument is sent as one row to the
+%server.  If the direction is \code{CS_BLK_OUT} then one row will be
+%returned from the server.
+%\end{methoddesc}
+%
+%\begin{methoddesc}[Bulkcopy]{batch}{}
+%Marks a complete bulkcopy batch.  The number of rows transferred in
+%the batch is returned.
+%\end{methoddesc}
+%
+%\begin{methoddesc}[Bulkcopy]{done}{}
+%Marks a complete bulkcopy operation.  The number of rows transferred
+%in the batch is returned.
+%\end{methoddesc}
