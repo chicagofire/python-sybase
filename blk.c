@@ -435,7 +435,7 @@ static PyObject *CS_BLKDESC_blk_rowxfer(CS_BLKDESCObj *self, PyObject *args)
     return PyInt_FromLong(status);
 }
 
-#ifdef BLK_ROWXFER_MULT
+#ifdef HAVE_BLK_ROWXFER_MULT
 static char CS_BLKDESC_blk_rowxfer_mult__doc__[] = 
 "blk_rowxfer_mult([row_count]) -> status, row_count";
 
@@ -529,7 +529,7 @@ static struct PyMethodDef CS_BLKDESC_methods[] = {
     { "blk_init", (PyCFunction)CS_BLKDESC_blk_init, METH_VARARGS, CS_BLKDESC_blk_init__doc__ },
     { "blk_props", (PyCFunction)CS_BLKDESC_blk_props, METH_VARARGS, CS_BLKDESC_blk_props__doc__ },
     { "blk_rowxfer", (PyCFunction)CS_BLKDESC_blk_rowxfer, METH_VARARGS, CS_BLKDESC_blk_rowxfer__doc__ },
-#ifdef BLK_ROWXFER_MULT
+#ifdef HAVE_BLK_ROWXFER_MULT
     { "blk_rowxfer_mult", (PyCFunction)CS_BLKDESC_blk_rowxfer_mult, METH_VARARGS, CS_BLKDESC_blk_rowxfer_mult__doc__ },
 #endif
     { "blk_textxfer", (PyCFunction)CS_BLKDESC_blk_textxfer, METH_VARARGS, CS_BLKDESC_blk_textxfer__doc__ },
