@@ -246,7 +246,7 @@ class Cursor:
         self._sql = -1
         cmd.ct_command(CS_RPC_CMD, name)
         for param in params:
-            buf = Buffer(param)
+            buf = DataBuf(param)
             cmd.ct_param(buf)
         cmd.ct_send()
         self._state = CMD_PREPARED
@@ -388,7 +388,7 @@ class Cursor:
         dyn_name = self._dyn_name
         cmd.ct_dynamic(CS_EXECUTE, dyn_name)
         for fmt, param in map(None, self._fmts, params):
-            buf = Buffer(fmt)
+            buf = DataBuf(fmt)
             buf[0] = param
             cmd.ct_param(buf)
         cmd.ct_send()
@@ -446,7 +446,7 @@ class Bulkcopy:
         blk = self._blk
         bufs = []
         for col in range(len(data)):
-            buf = Buffer(data[col])
+            buf = DataBuf(data[col])
             bufs.append(buf)
             if blk.blk_bind(col + 1, buf) != CS_SUCCEED:
                 raise InternalError(_build_cs_except(self._con, 'blk_bind'))

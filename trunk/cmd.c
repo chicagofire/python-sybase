@@ -31,7 +31,7 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
 {
     CS_INT item;
     CS_DATAFMTObj *datafmt;
-    BufferObj *buffer;
+    DataBufObj *buffer;
     CS_RETCODE status;
 
     if (!PyArg_ParseTuple(args, "iO!", &item, &CS_DATAFMTType, &datafmt))
@@ -42,7 +42,7 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
 	return NULL;
     }
 
-    buffer = (BufferObj *)buffer_alloc((PyObject*)datafmt);
+    buffer = (DataBufObj *)buffer_alloc((PyObject*)datafmt);
     if (buffer == NULL)
 	return NULL;
 
@@ -318,8 +318,8 @@ static PyObject *CS_COMMAND_ct_cursor(CS_COMMANDObj *self, PyObject *args)
 }
 
 static char CS_COMMAND_ct_data_info__doc__[] = 
-"ct_data_info(CS_SET, int, iodesc) -> status\n"
-"ct_data_info(CS_GET, int) -> status, iodesc";
+"ct_data_info(CS_SET, num, iodesc) -> status\n"
+"ct_data_info(CS_GET, num) -> status, iodesc";
 
 static PyObject *CS_COMMAND_ct_data_info(CS_COMMANDObj *self, PyObject *args)
 {
@@ -529,11 +529,11 @@ static char CS_COMMAND_ct_get_data__doc__[] =
 
 static PyObject *CS_COMMAND_ct_get_data(CS_COMMANDObj *self, PyObject *args)
 {
-    BufferObj *buffer;
+    DataBufObj *buffer;
     int num;
     CS_RETCODE status;
 
-    if (!PyArg_ParseTuple(args, "iO!", &num, &BufferType, &buffer))
+    if (!PyArg_ParseTuple(args, "iO!", &num, &DataBufType, &buffer))
 	return NULL;
 
     if (self->cmd == NULL) {
@@ -570,8 +570,8 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 	return NULL;
     }
 
-    if (Buffer_Check(obj)) {
-	BufferObj *buffer = (BufferObj *)obj;
+    if (DataBuf_Check(obj)) {
+	DataBufObj *buffer = (DataBufObj *)obj;
 
 	SY_BEGIN_THREADS;
 	status = ct_param(self->cmd, &buffer->fmt,
@@ -592,7 +592,7 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 	    fprintf(stderr, "ct_param(fmt) -> %s\n",
 		    value_str(STATUS, status));
     } else {
-	PyErr_SetString(PyExc_TypeError, "expect CS_DATAFMT or Buffer");
+	PyErr_SetString(PyExc_TypeError, "expect CS_DATAFMT or DataBuf");
 	return NULL;
 	
     }
@@ -807,9 +807,9 @@ static char CS_COMMAND_ct_send_data__doc__[] =
 static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
 {
     CS_RETCODE status;
-    BufferObj *buffer;
+    DataBufObj *buffer;
 
-    if (!PyArg_ParseTuple(args, "O!", &BufferType, &buffer))
+    if (!PyArg_ParseTuple(args, "O!", &DataBufType, &buffer))
 	return NULL;
 
     if (self->cmd == NULL) {
@@ -831,10 +831,10 @@ static char CS_COMMAND_ct_setparam__doc__[] =
 
 static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
 {
-    BufferObj *buffer;
+    DataBufObj *buffer;
     CS_RETCODE status;
 
-    if (!PyArg_ParseTuple(args, "O!", &BufferType, &buffer))
+    if (!PyArg_ParseTuple(args, "O!", &DataBufType, &buffer))
 	return NULL;
 
     if (self->cmd == NULL) {
@@ -971,7 +971,7 @@ static char CS_COMMANDType__doc__[] =
 PyTypeObject CS_COMMANDType = {
     PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
-    "CS_COMMAND",		/*tp_name*/
+    "CommandType",		/*tp_name*/
     sizeof(CS_COMMANDObj),	/*tp_basicsize*/
     0,				/*tp_itemsize*/
     /* methods */
