@@ -30,22 +30,6 @@ static struct PyMethodDef Numeric_methods[] = {
     { NULL }			/* sentinel */
 };
 
-CS_CONTEXT *global_ctx()
-{
-    static CS_CONTEXT *ctx;
-
-    if (ctx == NULL)
-	cs_ctx_global(CS_VERSION_100, &ctx);
-    return ctx;
-}
-
-/* Does obj reference a Numeric object?
- */
-int Numeric_Check(PyObject *obj)
-{
-    return obj->ob_type == &NumericType;
-}
-
 int numeric_as_string(PyObject *obj, char *text)
 {
     CS_DATAFMT numeric_fmt;
@@ -652,13 +636,11 @@ void copy_reg_numeric(PyObject *dict)
 	goto error;
     if ((pickler = PyDict_GetItemString(dict, "pickle_numeric")) == NULL)
 	goto error;
-    Py_XINCREF(numeric_constructor);
     obj = PyObject_CallFunction(pickle_func, "OOO",
 				&NumericType, pickler, numeric_constructor);
 
 error:
     Py_XDECREF(obj);
-    Py_XDECREF(pickler);
     Py_XDECREF(pickle_func);
     Py_XDECREF(module);
 }
