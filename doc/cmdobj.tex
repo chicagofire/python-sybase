@@ -33,11 +33,16 @@ command is created.
 \begin{methoddesc}[CS_COMMAND]{ct_bind}{num, datafmt}
 Calls the Sybase \function{ct_bind()} function passing the \var{num}
 and \var{datafmt} arguments.  It returns a tuple containing the Sybase
-result code and a \class{DataBuf} object which is used to retrieve data
-from the column identified by \var{num}.
+result code and a \class{DataBuf} object which is used to retrieve
+data from the column identified by \var{num}.  The Sybase-CT
+\function{ct_bind()} function is called like this:
+
+\begin{verbatim}
+status = ct_bind(cmd, num, &datafmt, databuf->buff, databuf->copied, databuf->indicator);
+\end{verbatim}
 
 See the description of the \method{ct_describe()} method for an
-example.
+example of how to use this method in Python.
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_cancel}{type}
