@@ -77,6 +77,7 @@ def bind_columns(cmd):
         return status, None
     bufs = [None] * num_cols
     for i in range(num_cols):
+        fmt = CS_DATAFMT()
         fmt.datatype = CS_CHAR_TYPE
         fmt.maxlength = 255 
         fmt.count = 1
