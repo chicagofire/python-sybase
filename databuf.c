@@ -309,21 +309,13 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	break;
 
     case CS_MONEY_TYPE:
-	if (!Money_Check(v)) {
-	    PyErr_SetString(PyExc_TypeError, "money expected");
-	    return -1;
-	}
-	if (money_assign(v, CS_MONEY_TYPE, self->buff) != CS_SUCCEED)
+	if (!money_from_value((MoneyUnion*)self->buff, CS_MONEY_TYPE, v))
 	    return -1;
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
     case CS_MONEY4_TYPE:
-	if (!Money_Check(v)) {
-	    PyErr_SetString(PyExc_TypeError, "money expected");
-	    return -1;
-	}
-	if (money_assign(v, CS_MONEY4_TYPE, self->buff) != CS_SUCCEED)
+	if (!money_from_value((MoneyUnion*)self->buff, CS_MONEY4_TYPE, v))
 	    return -1;
 	self->copied[i] = self->fmt.maxlength;
 	break;

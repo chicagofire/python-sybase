@@ -177,7 +177,7 @@ typedef struct {
 extern PyTypeObject MoneyType;
 #define Money_Check(obj) (obj->ob_type == &MoneyType)
 MoneyObj *money_alloc(MoneyUnion *num, int type);
-int money_assign(PyObject *obj, int type, void *buff);
+int money_from_value(MoneyUnion *money, int type, PyObject *obj);
 int money_as_string(PyObject *obj, char *text);
 extern char MoneyType_new__doc__[];
 PyObject *MoneyType_new(PyObject *module, PyObject *args);

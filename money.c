@@ -28,34 +28,6 @@ static struct PyMethodDef Money_methods[] = {
     { NULL }			/* sentinel */
 };
 
-int money_assign(PyObject *obj, int type, void *buff)
-{
-    CS_DATAFMT src_fmt;
-    CS_DATAFMT dest_fmt;
-    CS_RETCODE conv_result;
-    CS_INT money_len;
-
-    if (((MoneyObj*)obj)->type == type) {
-	if (type == CS_MONEY_TYPE)
-	    *(CS_MONEY*)buff = ((MoneyObj*)obj)->v.money;
-	else
-	    *(CS_MONEY4*)buff = ((MoneyObj*)obj)->v.money4;
-	return CS_SUCCEED;
-    }
-    money_datafmt(&src_fmt, ((MoneyObj*)obj)->type);
-    money_datafmt(&dest_fmt, type);
-
-    PyErr_Clear();
-    conv_result = cs_convert(global_ctx(),
-			     &src_fmt, &((MoneyObj*)obj)->v,
-			     &dest_fmt, buff, &money_len);
-    if (PyErr_Occurred())
-	return CS_FAIL;
-    if (conv_result != CS_SUCCEED)
-	PyErr_SetString(PyExc_TypeError, "money conversion failed");
-    return conv_result;
-}
-
 int money_as_string(PyObject *obj, char *text)
 {
     CS_DATAFMT money_fmt;
@@ -86,13 +58,12 @@ MoneyObj *money_alloc(MoneyUnion *num, int type)
     return self;
 }
 
-MoneyObj *money_from_int(long num, int type)
+static int money_from_int(MoneyUnion *money, int type, long num)
 {
     CS_RETCODE conv_result;
     CS_DATAFMT int_fmt;
     CS_INT int_value;
     CS_DATAFMT money_fmt;
-    MoneyUnion money_value;
     CS_INT money_len;
 
     int_datafmt(&int_fmt);
@@ -101,30 +72,22 @@ MoneyObj *money_from_int(long num, int type)
 
     PyErr_Clear();
     conv_result = cs_convert(global_ctx(), &int_fmt, &int_value,
-			     &money_fmt, &money_value, &money_len);
+			     &money_fmt, money, &money_len);
     if (PyErr_Occurred())
-	return NULL;
+	return 0;
     if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money from int conversion failed");
-	return NULL;
+	return 0;
     }
-
-    return money_alloc(&money_value, type);
+    return 1;
 }
 
-MoneyObj *Money_FromInt(PyObject *obj, int type)
-{
-    return money_from_int(PyInt_AsLong(obj), type);
-}
-
-MoneyObj *Money_FromString(PyObject *obj, int type)
+static int money_from_string(MoneyUnion *money, int type, char *str)
 {
     CS_RETCODE conv_result;
     CS_DATAFMT char_fmt;
     CS_DATAFMT money_fmt;
-    MoneyUnion money_value;
     CS_INT money_len;
-    char *str = PyString_AsString(obj);
     
     money_datafmt(&money_fmt, type);
     char_datafmt(&char_fmt);
@@ -132,23 +95,21 @@ MoneyObj *Money_FromString(PyObject *obj, int type)
 
     PyErr_Clear();
     conv_result = cs_convert(global_ctx(), &char_fmt, str,
-			     &money_fmt, &money_value, &money_len);
+			     &money_fmt, money, &money_len);
     if (PyErr_Occurred())
-	return NULL;
+	return 0;
     if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError,
 			"money from string conversion failed");
-	return NULL;
+	return 0;
     }
-
-    return money_alloc(&money_value, type);
+    return 1;
 }
 
-MoneyObj *Money_FromLong(PyObject *obj, int type)
+static int money_from_long(MoneyUnion *money, int type, PyObject *obj)
 {
     CS_DATAFMT char_fmt;
     CS_DATAFMT money_fmt;
-    MoneyUnion money_value;
     CS_INT money_len;
     CS_RETCODE conv_result;
     PyObject *strobj = PyObject_Str(obj);
@@ -156,7 +117,7 @@ MoneyObj *Money_FromLong(PyObject *obj, int type)
     int num_digits;
 
     if (strobj == NULL)
-	return NULL;
+	return 0;
     str = PyString_AsString(strobj);
     num_digits = strlen(str);
     if (str[num_digits - 1] == 'L')
@@ -167,54 +128,52 @@ MoneyObj *Money_FromLong(PyObject *obj, int type)
 
     PyErr_Clear();
     conv_result = cs_convert(global_ctx(), &char_fmt, str,
-			     &money_fmt, &money_value, &money_len);
+			     &money_fmt, money, &money_len);
     Py_DECREF(strobj);
     if (PyErr_Occurred())
-	return NULL;
+	return 0;
     if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money from long conversion failed");
-	return NULL;
+	return 0;
     }
-
-    return money_alloc(&money_value, type);
+    return 1;
 }
 
-MoneyObj *Money_FromFloat(PyObject *obj, int type)
+static int money_from_float(MoneyUnion *money, int type, CS_FLOAT value)
 {
     CS_RETCODE conv_result;
     CS_DATAFMT float_fmt;
-    CS_FLOAT float_value;
     CS_DATAFMT money_fmt;
-    MoneyUnion money_value;
     CS_INT money_len;
 
     float_datafmt(&float_fmt);
     money_datafmt(&money_fmt, type);
-    float_value = PyFloat_AsDouble(obj);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &float_fmt, &float_value,
-			     &money_fmt, &money_value, &money_len);
+    conv_result = cs_convert(global_ctx(), &float_fmt, &value,
+			     &money_fmt, money, &money_len);
     if (PyErr_Occurred())
-	return NULL;
+	return 0;
     if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money from float conversion failed");
-	return NULL;
+	return 0;
     }
-    return money_alloc(&money_value, type);
+    return 1;
 }
 
-MoneyObj *Money_FromMoney(PyObject *obj, int type)
+static int money_from_money(MoneyUnion *money, int type, PyObject *obj)
 {
     CS_DATAFMT src_fmt;
     CS_DATAFMT dest_fmt;
     CS_RETCODE conv_result;
     CS_INT money_len;
-    MoneyUnion money_value;
 
     if (type == ((MoneyObj*)obj)->type) {
-	Py_INCREF(obj);
-	return (MoneyObj*)obj;
+	if (type == CS_MONEY_TYPE)
+	    money->money = ((MoneyObj*)obj)->v.money;
+	else
+	    money->money4 = ((MoneyObj*)obj)->v.money4;
+	return 1;
     }
 
     money_datafmt(&src_fmt, ((MoneyObj*)obj)->type);
@@ -223,14 +182,71 @@ MoneyObj *Money_FromMoney(PyObject *obj, int type)
     PyErr_Clear();
     conv_result = cs_convert(global_ctx(),
 			     &src_fmt, &((MoneyObj*)obj)->v,
-			     &dest_fmt, &money_value, &money_len);
+			     &dest_fmt, &money, &money_len);
     if (PyErr_Occurred())
-	return NULL;
+	return 0;
     if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money from money conversion failed");
-	return NULL;
+	return 0;
     }
-    return money_alloc(&money_value, type);
+    return 1;
+}
+
+int money_from_value(MoneyUnion *money, int type, PyObject *obj)
+{
+    if (PyInt_Check(obj))
+	return money_from_int(money, type, PyInt_AsLong(obj));
+    else if (PyLong_Check(obj))
+	return money_from_long(money, type, obj);
+    else if (PyFloat_Check(obj))
+	return money_from_float(money, type, PyFloat_AsDouble(obj));
+    else if (PyString_Check(obj))
+	return money_from_string(money, type, PyString_AsString(obj));
+    else if (Money_Check(obj))
+	return money_from_money(money, type, obj);
+    PyErr_SetString(PyExc_TypeError, "could not convert to Money");
+    return 0;
+}
+
+MoneyObj *Money_FromInt(PyObject *obj, int type)
+{
+    MoneyUnion money;
+
+    if (money_from_int(&money, PyInt_AsLong(obj), type))
+	return money_alloc(&money, type);
+    return NULL;
+}
+
+MoneyObj *Money_FromLong(PyObject *obj, int type)
+{
+    MoneyUnion money;
+
+    if (money_from_long(&money, type, obj))
+	return money_alloc(&money, type);
+    return NULL;
+}
+
+MoneyObj *Money_FromFloat(PyObject *obj, int type)
+{
+    MoneyUnion money;
+
+    if (money_from_float(&money, type, PyFloat_AsDouble(obj)))
+	return money_alloc(&money, type);
+    return NULL;
+}
+
+MoneyObj *Money_FromMoney(PyObject *obj, int type)
+{
+    MoneyUnion money;
+
+    if (type == ((MoneyObj*)obj)->type) {
+	Py_INCREF(obj);
+	return (MoneyObj*)obj;
+    }
+
+    if (money_from_money(&money, type, obj))
+	return money_alloc(&money, type);
+    return NULL;
 }
 
 static void Money_dealloc(MoneyObj *self)
@@ -375,16 +391,31 @@ static PyObject *Money_div(MoneyObj *v, MoneyObj *w)
 static MoneyObj *money_minusone(void)
 {
     static MoneyObj *minusone;
-    if (minusone == NULL)
-	minusone = money_from_int(-1, CS_MONEY_TYPE);
+
+    if (minusone == NULL) {
+	MoneyUnion money;
+
+	if (money_from_int(&money, CS_MONEY_TYPE, -1))
+	    minusone = money_alloc(&money, CS_MONEY_TYPE);
+	else
+	    return NULL;
+    }
     return minusone;
 }
 
 static MoneyObj *money_zero(void)
 {
     static MoneyObj *zero;
-    if (zero == NULL)
-	zero = money_from_int(0, CS_MONEY_TYPE);
+
+    if (zero == NULL) {
+	MoneyUnion money;
+
+	if (money_from_int(&money, CS_MONEY_TYPE, 0))
+	    zero = money_alloc(&money, CS_MONEY_TYPE);
+	else
+	    return NULL;
+    }
+
     return zero;
 }
 
@@ -588,8 +619,8 @@ char MoneyType_new__doc__[] =
 PyObject *MoneyType_new(PyObject *module, PyObject *args)
 {
     PyObject *obj;
-    MoneyObj *num = NULL;
     int type = CS_MONEY_TYPE;
+    MoneyUnion money;
 
     if (!PyArg_ParseTuple(args, "O|i", &obj, &type))
 	return NULL;
@@ -597,21 +628,10 @@ PyObject *MoneyType_new(PyObject *module, PyObject *args)
 	PyErr_SetString(PyExc_TypeError, "type must be either CS_MONEY_TYPE or CS_MONEY4_TYPE");
 	return NULL;
     }
-    if (PyInt_Check(obj))
-	num = Money_FromInt(obj, type);
-    else if (PyLong_Check(obj))
-	num = Money_FromLong(obj, type);
-    else if (PyFloat_Check(obj))
-	num = Money_FromFloat(obj, type);
-    else if (PyString_Check(obj))
-	num = Money_FromString(obj, type);
-    else if (Money_Check(obj))
-	num = Money_FromMoney(obj, type);
-    else {
-	PyErr_SetString(PyExc_TypeError, "could not convert to Money");
+    if (money_from_value(&money, type, obj))
+	return (PyObject*)money_alloc(&money, type);
+    else
 	return NULL;
-    }
-    return (PyObject*)num;
 }
 
 /* Used in unpickler
