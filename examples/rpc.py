@@ -57,7 +57,7 @@ def send_sql(cmd, sql):
         raise CTError(cmd.conn, 'ct_param failed')
     # Define the output parameter now.
     buf3 = Buffer(1)
-    buf3.name = "@num_books"
+    buf3.name = '@num_books'
     buf3.status = CS_RETURN
     if cmd.ct_param(buf3) != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_param failed')
@@ -155,7 +155,7 @@ status, cmd = conn.ct_cmd_alloc()
 if status != CS_SUCCEED:
     raise CTError(conn, 'ct_cmd_alloc failed')
 # Send the command to execute the rpc to the server 
-send_sql(cmd, "tempdb..test_proc")
+send_sql(cmd, 'tempdb..test_proc')
 # Process results from the server 
 handle_returns(cmd)
 # Drop the command structure 
@@ -165,4 +165,4 @@ if cmd.ct_cmd_drop() != CS_SUCCEED:
 status = conn.ct_close()
 # Drop the context and do general cleanup 
 cleanup_db(ctx, status)
-print "\n End of program run!"
+print '\n End of program run!'
