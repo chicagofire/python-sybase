@@ -1,3 +1,24 @@
+2003-02-24 15:26  djc
+
+	* sybasect.c: Fix compilation for non-FreeTDS users.  
+
+2003-02-23 17:10  djc
+
+	* doc/: Makefile, sybase.tex: Fixing documentation build for
+	Python-2.2 
+
+2003-02-23 17:05  djc
+
+	* doc/Makefile: Documentation tools in Python-2.2 
+
+2003-02-23 17:01  djc
+
+	* dist/release-0.36pre5: Fixed wording.  
+
+2003-02-23 16:54  djc
+
+	* ChangeLog, dist/release-0.36pre5: Prepare for release.  
+
 2003-02-23 16:38  djc
 
 	* conn.c: Forgot to self self->conn to NULL during ct_con_drop().  
