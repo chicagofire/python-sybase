@@ -251,7 +251,7 @@ class Cursor:
             # have killed the thread the lock was created in ---
             # oops.
             count, owner = self._owner._lock._release_save()
-            self._owner._lock._acquire_restore(count, threading.currentThread())
+            self._owner._lock._acquire_restore((count, threading.currentThread()))
             while self._lock_count:
                 self._unlock()
 
