@@ -1,3 +1,58 @@
+2003-01-23 21:11  djc
+
+	* Sybase.py, setup.py, sybasect.c, doc/sybase.tex: Bump release.  
+
+2003-01-23 21:08  djc
+
+	* dist/release-0.36pre3: Added announcement.  
+
+2002-12-24 14:23  djc
+
+	* databuf.c, datafmt.c: Yet another thing buggered up by FreeTDS. 
+	Force size of numeric columns to be sizeof(CS_NUMERIC) and ignore
+	what FreeTDS claims they should be.  
+
+2002-11-30 09:40  djc
+
+	* freetds.h: Getting ready for next release of FreeTDS.  
+
+2002-11-27 17:22  djc
+
+	* Sybase.py, databuf.c: Better way to handle CS_VARBINARY_TYPE.  
+
+2002-11-26 22:57  djc
+
+	* Sybase.py, setup.py, sybasect.c, doc/sybase.tex: Bump release to
+	0.36pre2 
+
+2002-11-26 22:53  djc
+
+	* Sybase.py, cmd.c, databuf.c: Bind VARBINARY columns to CHAR.  
+
+2002-11-23 00:06  djc
+
+	* Sybase.py, setup.py, sybasect.c, doc/sybase.tex: Bump release to
+	0.36pre1.  
+
+2002-11-23 00:02  djc
+
+	* setup.py: Reverse meaningless change.  
+
+2002-11-21 17:05  djc
+
+	* Sybase.py, databuf.c, datafmt.c, freetds.h, iodesc.c, msgs.c,
+	setup.py: Fixed string fields in Sybase CT library member
+	descriptions.  
+
+2002-11-20 12:13  djc
+
+	* Sybase.py, setup.py, sybasect.c, dist/release-0.35,
+	doc/sybase.tex: Renaming 0.35pre3 to 0.35.  
+
+2002-10-29 10:31  djc
+
+	* ChangeLog: Prepare for release.  
+
 2002-10-29 10:31  djc
 
 	* ChangeLog, MANIFEST.in, Sybase.py, setup.py,
