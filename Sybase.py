@@ -646,13 +646,9 @@ class Connection:
         self._dyn_num = self._dyn_num + 1
         return self._dyn_num
 
-    def bulkcopy(self, table, copy_out = 0):
+    def bulkcopy(self, table, direction):
         '''Create a new bulkcopy context
         '''
-        if copy_out:
-            direction = CS_BLK_OUT
-        else:
-            direction = CS_BLK_IN
         return Bulkcopy(self, table, direction)
 
     def execute(self, sql):
