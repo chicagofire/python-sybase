@@ -31,7 +31,7 @@ syb_libdir = os.path.join( sybase, 'lib' )
 # The version is set in Lib/numeric_version.py
 
 setup (name = "Sybase",
-       version = "0.26",
+       version = "0.30",
        maintainer = "Dave Cole",
        maintainer_email = " djc@object-craft.com.au",
        description = "Sybase Extension to Python",

@@ -148,11 +148,10 @@ static PyObject *CS_BLKDESC_blk_drop(CS_BLKDESCObj *self, PyObject *args)
     SY_END_THREADS;
     if (self->debug)
 	fprintf(stderr, "blk_drop() -> %s\n", value_str(STATUS, status));
-    if (PyErr_Occurred())
-        return NULL;
-
     if (status == CS_SUCCEED)
 	self->blk = NULL;
+    if (PyErr_Occurred())
+        return NULL;
 
     return PyInt_FromLong(status);
 }
@@ -366,8 +365,10 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 			value_str(BULKPROPS, property),
 			value_str(STATUS, status), text);
 	    }
-	    if (PyErr_Occurred())
+	    if (PyErr_Occurred()) {
+		Py_DECREF(obj);
 		return NULL;
+	    }
 
 	    return Py_BuildValue("iN", status, obj);
 

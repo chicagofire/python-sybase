@@ -66,11 +66,16 @@ MoneyObj *money_from_int(long num)
     int_datafmt(&int_fmt);
     money_datafmt(&money_fmt);
     int_value = num;
+
+    PyErr_Clear();
     if (cs_convert(global_ctx(), &int_fmt, &int_value,
 		   &money_fmt, &money_value, &money_len) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money from int conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return money_alloc(&money_value);
 }
 
@@ -89,11 +94,16 @@ MoneyObj *Money_FromString(PyObject *obj)
     
     char_datafmt(&char_fmt);
     money_datafmt(&money_fmt);
+
+    PyErr_Clear();
     if (cs_convert(global_ctx(), &char_fmt, str,
 		   &money_fmt, &money_value, &money_len) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money from string conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return money_alloc(&money_value);
 }
 
@@ -117,6 +127,8 @@ MoneyObj *Money_FromLong(PyObject *obj)
     char_datafmt(&char_fmt);
     char_fmt.maxlength = num_digits;
     money_datafmt(&money_fmt);
+
+    PyErr_Clear();
     conv_result = cs_convert(global_ctx(), &char_fmt, str,
 			     &money_fmt, &money_value, &money_len);
     Py_DECREF(strobj);
@@ -124,6 +136,9 @@ MoneyObj *Money_FromLong(PyObject *obj)
 	PyErr_SetString(PyExc_TypeError, "money from long conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return money_alloc(&money_value);
 }
 
@@ -138,11 +153,16 @@ MoneyObj *Money_FromFloat(PyObject *obj)
     float_datafmt(&float_fmt);
     money_datafmt(&money_fmt);
     float_value = PyFloat_AsDouble(obj);
+
+    PyErr_Clear();
     if (cs_convert(global_ctx(), &float_fmt, &float_value,
 		   &money_fmt, &money_value, &money_len) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money from float conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return money_alloc(&money_value);
 }
 
@@ -158,24 +178,19 @@ static void Money_dealloc(MoneyObj *self)
     PyMem_DEL(self);
 }
 
-static int Money_print(MoneyObj *self, FILE *fp, int flags)
-{
-    char text[MONEY_LEN];
-
-    money_as_string((PyObject*)self, text);
-    fputs(text, fp);
-    return 0;
-}
-
 static int Money_compare(MoneyObj *v, MoneyObj *w)
 {
     CS_INT result;
 
+    PyErr_Clear();
     if (cs_cmp(global_ctx(), CS_MONEY_TYPE,
 	       &v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "compare failed");
 	return 0;
     }
+    if (PyErr_Occurred())
+	return 0;
+
     return result;
 }
 
@@ -183,7 +198,11 @@ static PyObject *Money_repr(MoneyObj *self)
 {
     char text[MONEY_LEN];
 
+    PyErr_Clear();
     money_as_string((PyObject*)self, text);
+    if (PyErr_Occurred())
+	return NULL;
+
     return PyString_FromString(text);
 }
 
@@ -207,11 +226,15 @@ static PyObject *Money_add(MoneyObj *v, MoneyObj *w)
 {
     CS_MONEY result;
 
+    PyErr_Clear();
     if (cs_calc(global_ctx(), CS_ADD, CS_MONEY_TYPE,
 		&v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money add failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return (PyObject*)money_alloc(&result);
 }
 
@@ -219,11 +242,15 @@ static PyObject *Money_sub(MoneyObj *v, MoneyObj *w)
 {
     CS_MONEY result;
 
+    PyErr_Clear();
     if (cs_calc(global_ctx(), CS_SUB, CS_MONEY_TYPE,
 		&v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money sub failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return (PyObject*)money_alloc(&result);
 }
 
@@ -231,11 +258,15 @@ static PyObject *Money_mul(MoneyObj *v, MoneyObj *w)
 {
     CS_MONEY result;
 
+    PyErr_Clear();
     if (cs_calc(global_ctx(), CS_MULT, CS_MONEY_TYPE,
 		&v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money mul failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return (PyObject*)money_alloc(&result);
 }
 
@@ -243,11 +274,15 @@ static PyObject *Money_div(MoneyObj *v, MoneyObj *w)
 {
     CS_MONEY result;
 
+    PyErr_Clear();
     if (cs_calc(global_ctx(), CS_DIV, CS_MONEY_TYPE,
 		&v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money div failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return (PyObject*)money_alloc(&result);
 }
 
@@ -282,10 +317,11 @@ static PyObject *Money_abs(MoneyObj *v)
 {
     if (Money_compare(v, money_zero()) < 0)
 	return Money_mul(v, money_minusone());
-    else {
-	Py_INCREF(v);
-	return (PyObject*)v;
-    }
+    if (PyErr_Occurred())
+	return NULL;
+
+    Py_INCREF(v);
+    return (PyObject*)v;
 }
 
 static int Money_nonzero(MoneyObj *v)
@@ -319,11 +355,16 @@ static PyObject *Money_int(MoneyObj *v)
 
     money_datafmt(&money_fmt);
     int_datafmt(&int_fmt);
+
+    PyErr_Clear();
     if (cs_convert(global_ctx(), &money_fmt, &v->num,
 		   &int_fmt, &int_value, &int_len) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "int conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return PyInt_FromLong(int_value);
 }
 
@@ -332,7 +373,11 @@ static PyObject *Money_long(MoneyObj *v)
     char *end;
     char text[MONEY_LEN];
 
+    PyErr_Clear();
     money_as_string((PyObject*)v, text);
+    if (PyErr_Occurred())
+	return NULL;
+
     return PyLong_FromString(text, &end, 10);
 }
 
@@ -345,11 +390,16 @@ static PyObject *Money_float(MoneyObj *v)
 
     money_datafmt(&money_fmt);
     float_datafmt(&float_fmt);
+
+    PyErr_Clear();
     if (cs_convert(global_ctx(), &money_fmt, &v->num,
 		   &float_fmt, &float_value, &float_len) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "float conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return PyFloat_FromDouble(float_value);
 }
 
@@ -414,7 +464,7 @@ PyTypeObject MoneyType = {
     0,				/*tp_itemsize*/
     /* methods */
     (destructor)Money_dealloc,	/*tp_dealloc*/
-    (printfunc)Money_print,	/*tp_print*/
+    (printfunc)0,		/*tp_print*/
     (getattrfunc)Money_getattr, /*tp_getattr*/
     (setattrfunc)Money_setattr, /*tp_setattr*/
     (cmpfunc)Money_compare,	/*tp_compare*/
@@ -501,7 +551,12 @@ PyObject *pickle_money(PyObject *module, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "O!", &MoneyType, &obj))
 	goto error;
+
+    PyErr_Clear();
     money_as_string((PyObject*)obj, text);
+    if (PyErr_Occurred())
+	return NULL;
+
     if ((values = Py_BuildValue("(s)", text)) == NULL)
 	goto error;
     tuple = Py_BuildValue("(OO)", money_constructor, values);

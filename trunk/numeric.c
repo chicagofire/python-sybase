@@ -70,11 +70,16 @@ NumericObj *numeric_from_int(long num, int precision, int scale)
 	scale = 0;
     numeric_datafmt(&numeric_fmt, precision, scale);
     int_value = num;
+
+    PyErr_Clear();
     if (cs_convert(global_ctx(), &int_fmt, &int_value,
 		   &numeric_fmt, &numeric_value, &numeric_len) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric from int conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return numeric_alloc(&numeric_value);
 }
 
@@ -109,11 +114,16 @@ NumericObj *Numeric_FromString(PyObject *obj, int precision, int scale)
 	    scale = 0;
     }
     numeric_datafmt(&numeric_fmt, precision, scale);
+
+    PyErr_Clear();
     if (cs_convert(global_ctx(), &char_fmt, str,
 		   &numeric_fmt, &numeric_value, &numeric_len) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric from string conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return numeric_alloc(&numeric_value);
 }
 
@@ -143,6 +153,8 @@ NumericObj *Numeric_FromLong(PyObject *obj, int precision, int scale)
     if (scale < 0)
 	scale = 0;
     numeric_datafmt(&numeric_fmt, precision, scale);
+
+    PyErr_Clear();
     conv_result = cs_convert(global_ctx(), &char_fmt, str,
 			     &numeric_fmt, &numeric_value, &numeric_len);
     Py_DECREF(strobj);
@@ -150,6 +162,9 @@ NumericObj *Numeric_FromLong(PyObject *obj, int precision, int scale)
 	PyErr_SetString(PyExc_TypeError, "numeric from long conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return numeric_alloc(&numeric_value);
 }
 
@@ -168,11 +183,16 @@ NumericObj *Numeric_FromFloat(PyObject *obj, int precision, int scale)
 	scale = 12;
     numeric_datafmt(&numeric_fmt, precision, scale);
     float_value = PyFloat_AsDouble(obj);
+
+    PyErr_Clear();
     if (cs_convert(global_ctx(), &float_fmt, &float_value,
 		   &numeric_fmt, &numeric_value, &numeric_len) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric from float conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return numeric_alloc(&numeric_value);
 }
 
@@ -194,11 +214,16 @@ NumericObj *Numeric_FromNumeric(PyObject *obj, int precision, int scale)
     if (scale < 0)
 	scale = ((NumericObj*)obj)->num.scale;
     numeric_datafmt(&numeric_fmt, precision, scale);
+
+    PyErr_Clear();
     if (cs_convert(global_ctx(), &src_numeric_fmt, &((NumericObj*)obj)->num,
 		   &numeric_fmt, &numeric_value, &numeric_len) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return numeric_alloc(&numeric_value);
 }
 
@@ -208,24 +233,19 @@ static void Numeric_dealloc(NumericObj *self)
     PyMem_DEL(self);
 }
 
-static int Numeric_print(NumericObj *self, FILE *fp, int flags)
-{
-    char text[NUMERIC_LEN];
-
-    numeric_as_string((PyObject*)self, text);
-    fputs(text, fp);
-    return 0;
-}
-
 static int Numeric_compare(NumericObj *v, NumericObj *w)
 {
     CS_INT result;
 
+    PyErr_Clear();
     if (cs_cmp(global_ctx(), CS_NUMERIC_TYPE,
 	       &v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "compare failed");
 	return 0;
     }
+    if (PyErr_Occurred())
+	return 0;
+
     return result;
 }
 
@@ -233,7 +253,11 @@ static PyObject *Numeric_repr(NumericObj *self)
 {
     char text[NUMERIC_LEN];
 
+    PyErr_Clear();
     numeric_as_string((PyObject*)self, text);
+    if (PyErr_Occurred())
+	return NULL;
+
     return PyString_FromString(text);
 }
 
@@ -267,10 +291,12 @@ static long Numeric_hash(NumericObj *self)
      */
     numeric_datafmt(&numeric_fmt, CS_SRC_VALUE, CS_SRC_VALUE);
     int_datafmt(&int_fmt);
+
     conv_result = cs_convert(global_ctx(), &numeric_fmt, &self->num,
 			     &int_fmt, &int_value, &int_len);
     if (conv_result == CS_SUCCEED)
 	return (int_value == -1) ? -2 : int_value;
+    PyErr_Clear();
     /* XXX clear_cs_messages(); */
     /* Try as long
      */
@@ -292,11 +318,16 @@ static PyObject *Numeric_add(NumericObj *v, NumericObj *w)
     if (result.precision > CS_MAX_PREC)
 	result.precision = CS_MAX_PREC;
     result.scale = maxv(v->num.scale, w->num.scale);
+
+    PyErr_Clear();
     if (cs_calc(global_ctx(), CS_ADD, CS_NUMERIC_TYPE,
 		&v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric add failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return (PyObject*)numeric_alloc(&result);
 }
 
@@ -308,11 +339,16 @@ static PyObject *Numeric_sub(NumericObj *v, NumericObj *w)
     if (result.precision > CS_MAX_PREC)
 	result.precision = CS_MAX_PREC;
     result.scale = maxv(v->num.scale, w->num.scale);
+
+    PyErr_Clear();
     if (cs_calc(global_ctx(), CS_SUB, CS_NUMERIC_TYPE,
 		&v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric sub failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return (PyObject*)numeric_alloc(&result);
 }
 
@@ -326,11 +362,16 @@ static PyObject *Numeric_mul(NumericObj *v, NumericObj *w)
     result.scale = v->num.scale + w->num.scale;
     if (result.scale > CS_MAX_SCALE)
 	result.scale = CS_MAX_SCALE;
+
+    PyErr_Clear();
     if (cs_calc(global_ctx(), CS_MULT, CS_NUMERIC_TYPE,
 		&v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric mul failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return (PyObject*)numeric_alloc(&result);
 }
 
@@ -344,11 +385,16 @@ static PyObject *Numeric_div(NumericObj *v, NumericObj *w)
     result.scale = v->num.scale + w->num.scale;
     if (result.scale > CS_MAX_SCALE)
 	result.scale = CS_MAX_SCALE;
+
+    PyErr_Clear();
     if (cs_calc(global_ctx(), CS_DIV, CS_NUMERIC_TYPE,
 		&v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric div failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return (PyObject*)numeric_alloc(&result);
 }
 
@@ -383,10 +429,11 @@ static PyObject *Numeric_abs(NumericObj *v)
 {
     if (Numeric_compare(v, numeric_zero()) < 0)
 	return Numeric_mul(v, numeric_minusone());
-    else {
-	Py_INCREF(v);
-	return (PyObject*)v;
-    }
+    if (PyErr_Occurred())
+	return NULL;
+
+    Py_INCREF(v);
+    return (PyObject*)v;
 }
 
 static int Numeric_nonzero(NumericObj *v)
@@ -420,11 +467,16 @@ static PyObject *Numeric_int(NumericObj *v)
 
     numeric_datafmt(&numeric_fmt, CS_SRC_VALUE, CS_SRC_VALUE);
     int_datafmt(&int_fmt);
+
+    PyErr_Clear();
     if (cs_convert(global_ctx(), &numeric_fmt, &v->num,
 		   &int_fmt, &int_value, &int_len) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "int conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return PyInt_FromLong(int_value);
 }
 
@@ -433,7 +485,11 @@ static PyObject *Numeric_long(NumericObj *v)
     char *end;
     char text[NUMERIC_LEN];
 
+    PyErr_Clear();
     numeric_as_string((PyObject*)v, text);
+    if (PyErr_Occurred())
+	return NULL;
+
     return PyLong_FromString(text, &end, 10);
 }
 
@@ -446,11 +502,16 @@ static PyObject *Numeric_float(NumericObj *v)
 
     numeric_datafmt(&numeric_fmt, CS_SRC_VALUE, CS_SRC_VALUE);
     float_datafmt(&float_fmt);
+
+    PyErr_Clear();
     if (cs_convert(global_ctx(), &numeric_fmt, &v->num,
 		   &float_fmt, &float_value, &float_len) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "float conversion failed");
 	return NULL;
     }
+    if (PyErr_Occurred())
+	return NULL;
+
     return PyFloat_FromDouble(float_value);
 }
 
@@ -519,7 +580,7 @@ PyTypeObject NumericType = {
     0,				/*tp_itemsize*/
     /* methods */
     (destructor)Numeric_dealloc,/*tp_dealloc*/
-    (printfunc)Numeric_print,	/*tp_print*/
+    (printfunc)0,		/*tp_print*/
     (getattrfunc)Numeric_getattr, /*tp_getattr*/
     (setattrfunc)Numeric_setattr, /*tp_setattr*/
     (cmpfunc)Numeric_compare,	/*tp_compare*/
@@ -610,7 +671,12 @@ PyObject *pickle_numeric(PyObject *module, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "O!", &NumericType, &obj))
 	goto error;
+
+    PyErr_Clear();
     numeric_as_string((PyObject*)obj, text);
+    if (PyErr_Occurred())
+	return NULL;
+
     if ((values = Py_BuildValue("(sii)", text,
 				obj->num.precision, obj->num.scale)) == NULL)
 	goto error;
