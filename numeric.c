@@ -593,3 +593,67 @@ PyObject *NumericType_new(PyObject *module, PyObject *args)
     Py_DECREF(self);
     return NULL;
 }
+
+/* Used in unpickler
+ */
+static PyObject *numeric_constructor = NULL;
+
+/* Register the numeric type with the copy_reg module.  This allows
+ * Python to (un)pickle numeric objects.  The equivalent Python code
+ * is this:
+ *
+ * def pickle_numeric(n):
+ *     return numeric, (str(n), n.precision, n.scale)
+ * 
+ * copy_reg.pickle(type(numeric(1)), pickle_numeric, numeric)
+ */
+/* Numeric pickling function
+ */
+PyObject *pickle_numeric(PyObject *module, PyObject *args)
+{
+    NumericObj *obj = NULL;
+    PyObject *values = NULL,
+	*tuple = NULL;
+    char text[NUMERIC_LEN];
+
+    if (!PyArg_ParseTuple(args, "O!", &NumericType, &obj))
+	goto error;
+    numeric_as_string(obj, text);
+    if ((values = Py_BuildValue("(sii)", text,
+				obj->num.precision, obj->num.scale)) == NULL)
+	goto error;
+    tuple = Py_BuildValue("(OO)", numeric_constructor, values);
+
+error:
+    Py_XDECREF(values);
+    return tuple;
+}
+
+/* Register Numeric type pickler
+ */
+void copy_reg_numeric(PyObject *dict)
+{
+    PyObject *module = NULL,
+	*pickle_func = NULL,
+	*pickler = NULL,
+	*obj = NULL;
+
+    module = PyImport_ImportModule("copy_reg");
+    if (module == NULL)
+	goto error;
+    if ((pickle_func = PyObject_GetAttrString(module, "pickle")) == NULL)
+	goto error;
+    if ((numeric_constructor = PyDict_GetItemString(dict, "numeric")) == NULL)
+	goto error;
+    if ((pickler = PyDict_GetItemString(dict, "pickle_numeric")) == NULL)
+	goto error;
+    Py_XINCREF(numeric_constructor);
+    obj = PyObject_CallFunction(pickle_func, "OOO",
+				&NumericType, pickler, numeric_constructor);
+
+error:
+    Py_XDECREF(obj);
+    Py_XDECREF(pickler);
+    Py_XDECREF(pickle_func);
+    Py_XDECREF(module);
+}

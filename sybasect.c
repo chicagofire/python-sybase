@@ -81,7 +81,7 @@ static PyObject *sybasect_DataBuf(PyObject *module, PyObject *args)
     if (!PyArg_ParseTuple(args, "O", &obj))
 	return NULL;
 
-    return buffer_alloc(obj);
+    return databuf_alloc(obj);
 }
 
 static char sybasect_CS_LAYER__doc__[] =
@@ -1048,6 +1048,9 @@ void initsybasect(void)
 	|| dict_add_type(d, &NumericType)
 	|| dict_add_type(d, &DataBufType))
 	;
+
+    /* Register the numeric pickler */
+    copy_reg_numeric(d);
 
     /* Check for errors */
     if (PyErr_Occurred()) {
