@@ -303,7 +303,7 @@ class Cursor:
     def __del__(self):
         try:
             self.close()
-        except:
+        except ProgrammingError:
             pass
 
     def callproc(self, name, params = []):
@@ -332,7 +332,7 @@ class Cursor:
             raise ProgrammingError('cursor is closed')
         if self._state == CUR_IDLE:
             self._state = CUR_CLOSED
-        elif self._state in (CUR_FETCHING, CUR_END_RESULT, CUR_END_SET):
+        else:
             self._cancel_all()
             self._dealloc()
             self._cmd = None
@@ -343,15 +343,13 @@ class Cursor:
         '''
         if self._state == CUR_CLOSED:
             raise ProgrammingError('cursor is closed')
-        if self._state in (CUR_FETCHING, CUR_END_RESULT):
-            while self._state != CUR_IDLE:
-                self._cancel_all()
-        if self._state == CUR_IDLE:
-            if self._sql != sql:
-                self._dealloc()
-                self._prepare(sql)
-            self._send_params(params)
-            self._start_results()
+        if self._state != CUR_IDLE:
+            self._cancel_all()
+        if self._sql != sql:
+            self._dealloc()
+            self._prepare(sql)
+        self._send_params(params)
+        self._start_results()
 
     def executemany(self, sql, params_seq = []):
         '''DB-API Cursor.executemany()
