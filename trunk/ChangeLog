@@ -1,3 +1,29 @@
+2003-02-18 14:34  djc
+
+	* Sybase.py, setup.py, sybasect.c, doc/sybase.tex: Bump release to
+	0.36pre4 
+
+2003-02-17 12:15  djc
+
+	* Sybase.py, ctx.c, freetds.h: Compile with FreeTDS 0.61 as well as
+	0.60.  Added ctx.debug_msg().  Found and fixed locking bug.  
+
+2003-02-12 11:49  djc
+
+	* setup.py: AIX libraries from Dietmar Rothkamp.  
+
+2003-02-12 10:59  djc
+
+	* Sybase.py: Limit the size of text fields.  
+
+2003-01-23 21:18  djc
+
+	* dist/release-0.36pre3: Forgot one change.  
+
+2003-01-23 21:11  djc
+
+	* ChangeLog: Ready for release.  
+
 2003-01-23 21:11  djc
 
 	* Sybase.py, setup.py, sybasect.c, doc/sybase.tex: Bump release.  

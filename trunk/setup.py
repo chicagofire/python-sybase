@@ -95,6 +95,28 @@ except:
     pass
 
 syb_macros = [('WANT_BULKCOPY', None)]
+
+# distutils does not allow -D HAVE_FREETDS=60 so I have to find this
+# argument myself and remove it from sys.argv and set the macro via
+# the define_macros argument to the extension module.
+for i in range(1, len(sys.argv)):
+    # Find arguments like '-DHAVE_FREETDS=60' and variants
+    parts = string.split(sys.argv[i], 'HAVE_FREETDS')
+    if len(parts) == 1:
+        continue
+    prefix, suffix = parts[:2]
+    # Ignore -DHAVE_FREETDS which does not set a value (=blah)
+    if not suffix or suffix[0] != '=':
+        continue
+    # Remove this argument from sys.argv
+    del sys.argv[i]
+    # If -D was in previous argument then remove that as well
+    if not prefix and sys.argv[i - 1] == '-D':
+        del sys.argv[i - 1]
+    # Now set the TDS level the other other way.
+    syb_macros.append(('HAVE_FREETDS', suffix[1:]))
+    break
+
 for api in ('blk_alloc', 'blk_describe', 'blk_drop', 'blk_rowxfer_mult',
             'blk_textxfer',):
     if api_exists(api, os.path.join(syb_incdir, 'bkpublic.h')):
@@ -151,27 +173,27 @@ class my_sdist(sdist):
         self.announce("Pre-release checks pass!")
         sdist.run(self)
 
-setup(name = "sybase",
-      version = "0.36pre4",
-      maintainer = "Dave Cole",
-      maintainer_email = " djc@object-craft.com.au",
-      description = "Sybase Extension to Python",
-      url = "http://www.object-craft.com.au/projects/sybase/",
-      py_modules = ['Sybase'],
-      include_dirs = [syb_incdir],
-      ext_modules = [
+setup(name="sybase",
+      version="0.36pre4",
+      maintainer="Dave Cole",
+      maintainer_email="djc@object-craft.com.au",
+      description="Sybase Extension to Python",
+      url="http://www.object-craft.com.au/projects/sybase/",
+      py_modules=['Sybase'],
+      include_dirs=[syb_incdir],
+      ext_modules=[
           Extension('sybasect',
                     ['blk.c', 'databuf.c', 'cmd.c', 'conn.c', 'ctx.c',
                      'datafmt.c', 'iodesc.c', 'locale.c', 'msgs.c',
                      'numeric.c', 'money.c', 'datetime.c',
                      'sybasect.c'],
-                    define_macros = syb_macros,
-                    libraries = syb_libs,
-                    library_dirs = [syb_libdir],
-                    runtime_library_dirs = runtime_library_dirs,
-                    extra_objects = extra_objects
+                    define_macros=syb_macros,
+                    libraries=syb_libs,
+                    library_dirs=[syb_libdir],
+                    runtime_library_dirs=runtime_library_dirs,
+                    extra_objects=extra_objects
                     )
           ],
-      cmdclass = {'sdist': my_sdist},
+      cmdclass={'sdist': my_sdist},
       )
 
