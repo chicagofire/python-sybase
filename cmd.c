@@ -1071,13 +1071,13 @@ static void CS_COMMAND_dealloc(CS_COMMANDObj *self)
     PyMem_DEL(self);
 }
 
-#define OFF(x) offsetof(CS_COMMANDObj, x)
+#define OFFSET(x) offsetof(CS_COMMANDObj, x)
 
 static struct memberlist CS_COMMAND_memberlist[] = {
-    { "is_eed", T_INT, OFF(is_eed), RO },
-    { "conn", T_OBJECT, OFF(conn), RO },
-    { "strip", T_INT, OFF(strip) },
-    { "debug", T_INT, OFF(debug) },
+    { "is_eed", T_INT,    OFFSET(is_eed), RO },
+    { "conn",   T_OBJECT, OFFSET(conn),   RO },
+    { "strip",  T_INT,    OFFSET(strip) },
+    { "debug",  T_INT,    OFFSET(debug) },
     { NULL }			/* Sentinel */
 };
 
