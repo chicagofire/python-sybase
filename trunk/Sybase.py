@@ -303,7 +303,7 @@ class Cursor:
     def __del__(self):
         try:
             self.close()
-        except ProgrammingError:
+        except:
             pass
 
     def callproc(self, name, params = []):
