@@ -31,6 +31,8 @@ html:	$(DOCFILES)
 	  cat $$f | sed s/\.\.\\/icons/icons/g > $${f}2; \
 	  mv $${f}2 $$f; \
 	done
+	rm sybase/sybase2
+	rm sybase/icons/icons2
 
 world:	ps pdf html
 
