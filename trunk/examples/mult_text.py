@@ -92,7 +92,7 @@ def updatetextdata(textdata, iodesc, newdata):
     # to Client-Library.
     iodesc.total_txtlen = len(newdata)
     iodesc.log_on_update = CS_TRUE
-    if cmd.ct_data_info(CS_SET, CS_UNUSED, iodesc) != CS_SUCCEED:
+    if cmd.ct_data_info(CS_SET, iodesc) != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_data_info failed')
     # Send the text one byte at a time. This is not the best thing to
     # do for performance reasons, but does demonstrate the
