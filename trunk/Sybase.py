@@ -141,11 +141,11 @@ def _get_diag(func, type):
         err.append(dict)
     return err
 
-def _build_ct_except(con, msg):
+def _build_ct_except(conn, msg):
     err = [msg]
-    err.extend(_get_diag(con.ct_diag, CS_SERVERMSG_TYPE))
-    err.extend(_get_diag(con.ct_diag, CS_CLIENTMSG_TYPE))
-    con.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
+    err.extend(_get_diag(conn.ct_diag, CS_SERVERMSG_TYPE))
+    err.extend(_get_diag(conn.ct_diag, CS_CLIENTMSG_TYPE))
+    conn.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
     return err
 
 def _build_cs_except(ctx, msg):
@@ -169,11 +169,11 @@ def _extract_row(bufs, n):
     return tuple(row)
         
 class _Cmd:
-    def __init__(self, con):
+    def __init__(self, conn):
         self._cmd = None
-        status, cmd = con.ct_cmd_alloc()
+        status, cmd = conn.ct_cmd_alloc()
         if status != CS_SUCCEED:
-            raise InternalError(_build_ct_except(con, 'ct_cmd_alloc'))
+            raise InternalError(_build_ct_except(conn, 'ct_cmd_alloc'))
         self._cmd = cmd
 
     def ct_command(self, *args):
@@ -294,8 +294,8 @@ class Cursor:
         self.rowcount = -1              # DB-API
         self.arraysize = 1              # DB-API
         self._owner = owner
-        self._con = owner._con
-        self._cmd = _Cmd(self._con)
+        self._conn = owner._conn
+        self._cmd = _Cmd(self._conn)
         self._sql = None
         self._state = CUR_IDLE
         self._dyn_name = None
@@ -435,7 +435,7 @@ class Cursor:
     def _prepare(self, sql):
         '''Prepare the statement to be executed for this cursor.
         '''
-        con = self._con
+        conn = self._conn
         cmd = self._cmd
         self._dyn_name = 'dyn%s' % self._owner._next_dyn()
         self._sql = sql
@@ -448,7 +448,7 @@ class Cursor:
             if status != CS_SUCCEED:
                 break
         if status != CS_END_RESULTS:
-            raise InternalError(_build_ct_except(con, 'ct_results'))
+            raise InternalError(_build_ct_except(conn, 'ct_results'))
         # get input parameter description
         cmd.ct_dynamic(CS_DESCRIBE_INPUT, dyn_name)
         cmd.ct_send()
@@ -466,7 +466,7 @@ class Cursor:
                     fmts.append(fmt)
                 self._fmts = fmts
         if status != CS_END_RESULTS:
-            raise InternalError(_build_ct_except(con, 'ct_results'))
+            raise InternalError(_build_ct_except(conn, 'ct_results'))
 
     def _send_params(self, params):
         '''Execute prepared statement, send parameters and prepare
@@ -482,21 +482,21 @@ class Cursor:
         cmd.ct_send()
 
     def _fetch_rowcount(self):
-        con = self._con
+        conn = self._conn
         cmd = self._cmd
         status, result = cmd.ct_results()
         if status == CS_END_RESULTS:
             self._state = CUR_IDLE
             return
         elif status != CS_SUCCEED:
-            raise InternalError(_build_ct_except(con, 'ct_results'))
+            raise InternalError(_build_ct_except(conn, 'ct_results'))
         elif result in (CS_CMD_DONE, CS_CMD_SUCCEED):
             self.rowcount = cmd.ct_res_info(CS_ROW_COUNT)
         else:
-            raise InternalError(_build_ct_except(con, 'ct_results'))
+            raise InternalError(_build_ct_except(conn, 'ct_results'))
         
     def _start_results(self):
-        con = self._con
+        conn = self._conn
         cmd = self._cmd
         while 1:
             status, result = cmd.ct_results()
@@ -504,7 +504,7 @@ class Cursor:
                 self._state = CUR_IDLE
                 return
             elif status != CS_SUCCEED:
-                raise InternalError(_build_ct_except(con, 'ct_results'))
+                raise InternalError(_build_ct_except(conn, 'ct_results'))
             if result in (CS_COMPUTE_RESULT, CS_CURSOR_RESULT,
                           CS_PARAM_RESULT, CS_ROW_RESULT, CS_STATUS_RESULT):
                 bufs = self._bufs = cmd.row_bind()
@@ -519,7 +519,7 @@ class Cursor:
             elif result in (CS_CMD_DONE, CS_CMD_SUCCEED):
                 self.rowcount = cmd.ct_res_info(CS_ROW_COUNT)
             else:
-                raise InternalError(_build_ct_except(con, 'ct_results'))
+                raise InternalError(_build_ct_except(conn, 'ct_results'))
 
     def _cancel_current(self):
         cmd = self._cmd
@@ -541,22 +541,22 @@ class Cursor:
             if status != CS_SUCCEED:
                 break
         if status != CS_END_RESULTS:
-            raise InternalError(_build_ct_except(con, 'ct_results'))
+            raise InternalError(_build_ct_except(conn, 'ct_results'))
         self._dyn_name = None
 
 class Bulkcopy:
     def __init__(self, owner, table, direction):
         self._owner = owner
-        self._con = con = owner._con
+        self._conn = conn = owner._conn
         self._table = table
         self._direction = direction
-        status, blk = con.blk_alloc()
+        status, blk = conn.blk_alloc()
         if status != CS_SUCCEED:
-            raise InternalError(_build_ct_except(con, 'blk_alloc'))
+            raise InternalError(_build_ct_except(conn, 'blk_alloc'))
         self._blk = blk
         status = blk.blk_init(direction, table)
         if status != CS_SUCCEED:
-            raise InternalError(_build_ct_except(con, 'blk_init'))
+            raise InternalError(_build_ct_except(conn, 'blk_init'))
 
     def rowxfer(self, data):
         if type(data) not in (type([]), type(())):
@@ -567,22 +567,22 @@ class Bulkcopy:
             buf = DataBuf(data[col])
             bufs.append(buf)
             if blk.blk_bind(col + 1, buf) != CS_SUCCEED:
-                raise InternalError(_build_cs_except(self._con, 'blk_bind'))
+                raise InternalError(_build_cs_except(self._conn, 'blk_bind'))
         if blk.blk_rowxfer() != CS_SUCCEED:
-            raise InternalError(_build_cs_except(self._con, 'blk_rowxfer'))
+            raise InternalError(_build_cs_except(self._conn, 'blk_rowxfer'))
 
     def batch(self):
         blk = self._blk
         status, num_rows = blk.blk_done(CS_BLK_BATCH)
         if status != CS_SUCCEED:
-            raise InternalError(_build_cs_except(self._con, 'blk_done'))
+            raise InternalError(_build_cs_except(self._conn, 'blk_done'))
         return num_rows
 
     def done(self):
         blk = self._blk
         status, num_rows = blk.blk_done(CS_BLK_ALL)
         if status != CS_SUCCEED:
-            raise InternalError(_build_cs_except(self._con, 'blk_done'))
+            raise InternalError(_build_cs_except(self._conn, 'blk_done'))
         return num_rows
 
 class Connection:
@@ -590,51 +590,51 @@ class Connection:
                  strip = 0, auto_commit = 0, bulkcopy = 0, delay_connect = 0):
         '''DB-API Sybase.Connect()
         '''
-        self._con = self._cmd = None
+        self._conn = self._cmd = None
         self.dsn = dsn
         self.user = user
         self.passwd = passwd
         self.database = database
         self.auto_commit = auto_commit
-        status, con = _ctx.ct_con_alloc()
+        status, conn = _ctx.ct_con_alloc()
         if status != CS_SUCCEED:
             raise InternalError(_build_cs_except(_ctx, 'ct_con_alloc'))
-        self._con = con
-        con.strip = strip
-        if con.ct_diag(CS_INIT) != CS_SUCCEED:
-            raise OperationalError(_build_ct_except(con, 'ct_diag'))
-        if con.ct_con_props(CS_SET, CS_USERNAME, user) != CS_SUCCEED:
-            raise DatabaseError(_build_ct_except(con, 'ct_con_props CS_USERNAME'))
-        if con.ct_con_props(CS_SET, CS_PASSWORD, passwd) != CS_SUCCEED:
-            raise DatabaseError(_build_ct_except(con, 'ct_con_props CS_PASSWORD'))
-        if bulkcopy and con.ct_con_props(CS_SET, CS_BULK_LOGIN, 1) != CS_SUCCEED:
-            raise DatabaseError(_build_ct_except(con, 'ct_con_props CS_BULK_LOGIN'))
+        self._conn = conn
+        conn.strip = strip
+        if conn.ct_diag(CS_INIT) != CS_SUCCEED:
+            raise OperationalError(_build_ct_except(conn, 'ct_diag'))
+        if conn.ct_con_props(CS_SET, CS_USERNAME, user) != CS_SUCCEED:
+            raise DatabaseError(_build_ct_except(conn, 'ct_con_props CS_USERNAME'))
+        if conn.ct_con_props(CS_SET, CS_PASSWORD, passwd) != CS_SUCCEED:
+            raise DatabaseError(_build_ct_except(conn, 'ct_con_props CS_PASSWORD'))
+        if bulkcopy and conn.ct_con_props(CS_SET, CS_BULK_LOGIN, 1) != CS_SUCCEED:
+            raise DatabaseError(_build_ct_except(conn, 'ct_con_props CS_BULK_LOGIN'))
         if not delay_connect:
             self.connect()
 
     def connect(self):
-        con = self._con
-        if con.ct_connect(self.dsn) != CS_SUCCEED:
-            raise InternalError(_build_ct_except(con, 'ct_connect'))
-        if con.ct_options(CS_SET, CS_OPT_CHAINXACTS,
+        conn = self._conn
+        if conn.ct_connect(self.dsn) != CS_SUCCEED:
+            raise InternalError(_build_ct_except(conn, 'ct_connect'))
+        if conn.ct_options(CS_SET, CS_OPT_CHAINXACTS,
                           not self.auto_commit) != CS_SUCCEED:
-            raise DatabaseError(_build_ct_except(con, 'ct_options'))
-        con.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
+            raise DatabaseError(_build_ct_except(conn, 'ct_options'))
+        conn.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
         if self.database:
             self.execute('use %s' % self.database)
         self._dyn_num = 0
 
     def get_property(self, prop):
-        con = self._con
-        status, value = con.ct_con_props(CS_GET, prop)
+        conn = self._conn
+        status, value = conn.ct_con_props(CS_GET, prop)
         if status != CS_SUCCEED:
-            raise InternalError(_build_ct_except(con, 'ct_con_props'))
+            raise InternalError(_build_ct_except(conn, 'ct_con_props'))
         return value
 
     def set_property(self, prop, value):
-        con = self._con
-        if con.ct_con_props(CS_SET, prop, value) != CS_SUCCEED:
-            raise InternalError(_build_ct_except(con, 'ct_con_props'))
+        conn = self._conn
+        if conn.ct_con_props(CS_SET, prop, value) != CS_SUCCEED:
+            raise InternalError(_build_ct_except(conn, 'ct_con_props'))
 
     def __del__(self):
         try:
@@ -645,13 +645,13 @@ class Connection:
     def close(self):
         '''DBI-API Connection.close()
         '''
-        con = self._con
-        status, result = con.ct_con_props(CS_GET, CS_CON_STATUS)
+        conn = self._conn
+        status, result = conn.ct_con_props(CS_GET, CS_CON_STATUS)
         if status == CS_SUCCEED and not result & CS_CONSTAT_CONNECTED:
             raise ProgrammingError('Connection is already closed')
         if self._cmd:
             self._cmd = None
-        con.ct_close(CS_FORCE_CLOSE)
+        conn.ct_close(CS_FORCE_CLOSE)
 
     def begin(self, name = None):
         '''Not in DB-API, but useful for Sybase
@@ -694,31 +694,31 @@ class Connection:
     def execute(self, sql):
         '''Backwards compatibility
         '''
-        cmd = self._cmd = _Cmd(self._con)
+        cmd = self._cmd = _Cmd(self._conn)
         cmd.ct_command(CS_LANG_CMD, sql)
         cmd.ct_send()
         result_list = self._fetch_results()
-        self._con.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
+        self._conn.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
         self._cmd = None
         return result_list
 
     def _fetch_results(self):
         result_list = []
-        con = self._con
+        conn = self._conn
         cmd = self._cmd
         while 1:
             status, result = cmd.ct_results()
             if status == CS_END_RESULTS:
                 return result_list
             elif status != CS_SUCCEED:
-                raise InternalError(_build_ct_except(con, 'ct_results'))
+                raise InternalError(_build_ct_except(conn, 'ct_results'))
             if result in (CS_COMPUTE_RESULT, CS_CURSOR_RESULT,
                           CS_PARAM_RESULT, CS_ROW_RESULT, CS_STATUS_RESULT):
                 bufs = cmd.row_bind(16)
 		logical_result = self._fetch_logical_result(bufs)
                 result_list.append(logical_result)
             elif result not in (CS_CMD_DONE, CS_CMD_SUCCEED):
-                raise InternalError(_build_ct_except(con, 'ct_results'))
+                raise InternalError(_build_ct_except(conn, 'ct_results'))
 
     def _fetch_logical_result(self, bufs):
         cmd = self._cmd
