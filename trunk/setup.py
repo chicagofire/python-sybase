@@ -14,7 +14,7 @@ def api_exists(func, filename):
     try:
         text = open(filename).read()
     except:
-        return
+        return 0
     if re.search(r'CS_PUBLIC %s' % func, text):
         return 1
 
@@ -32,10 +32,10 @@ if os.name == 'posix':                  # unix
                 'the SYBASE environment variable.\n')
             sys.exit(1)
     # On Linux the Sybase tcl library is distributed as sybtcl
-    if os.access(os.path.join(sybase, 'lib', 'libsybtcl.a'), os.R_OK):
-        syb_libs = ['blk', 'ct', 'cs', 'sybtcl', 'comn', 'intl']
-    else:
-        syb_libs = ['blk', 'ct', 'cs', 'tcl', 'comn', 'intl']
+    syb_libs = []
+    for name in ['blk', 'ct', 'cs', 'sybtcl', 'tcl', 'comn', 'intl']:
+        if os.access(os.path.join(sybase, 'lib', 'lib%s.a' % name), os.R_OK):
+            syb_libs.append(name)
 
 elif os.name == 'nt':                   # win32
     # Not sure how the installation location is specified under NT
@@ -76,8 +76,14 @@ except:
     pass
 
 syb_macros = []
-for api in ('blk_rowxfer_mult',):
+for api in ('blk_describe', 'blk_rowxfer_mult', 'blk_textxfer',):
     if api_exists(api, os.path.join(syb_incdir, 'bkpublic.h')):
+        syb_macros.append(('HAVE_' + string.upper(api), None))
+for api in ('ct_cursor', 'ct_data_info', 'ct_send_data', 'ct_setparam', 'ct_diag',):
+    if api_exists(api, os.path.join(syb_incdir, 'ctpublic.h')):
+        syb_macros.append(('HAVE_' + string.upper(api), None))
+for api in ('cs_ctx_global', 'cs_diag',):
+    if api_exists(api, os.path.join(syb_incdir, 'cspublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
 
 setup(name = "Sybase",

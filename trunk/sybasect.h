@@ -28,7 +28,9 @@ PERFORMANCE OF THIS SOFTWARE.
 #include "Python.h"
 #include "structmember.h"
 
-#undef WANT_THREADS
+#ifdef HAVE_FREETDS
+#include "freetds.h"
+#endif
 
 #ifdef WANT_THREADS
 #define SY_BEGIN_THREADS Py_BEGIN_ALLOW_THREADS
@@ -37,8 +39,6 @@ PERFORMANCE OF THIS SOFTWARE.
 #define SY_BEGIN_THREADS {
 #define SY_END_THREADS }
 #endif
-
-#undef FIND_LEAKS
 
 #ifdef FIND_LEAKS
 void leak_reg(PyObject *obj);
@@ -238,10 +238,12 @@ PyObject *servermsg_alloc(void);
 
 int first_tuple_int(PyObject *args, int *int_arg);
 
-enum { CSVER, ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT,
-       BULK, BULKDIR, BULKPROPS, DYNAMIC, PROPS, DIRSERV, SECURITY, NETIO,
-       OPTION, DATEDAY, DATEFMT, DATAFMT, LEVEL, TYPE, STATUS, STATUSFMT,
-       CBTYPE, CONSTAT, CURSTAT, LOCVAL, DTINFO, CSDATES, };
+enum { VAL_ACTION, VAL_BULK, VAL_BULKDIR, VAL_BULKPROPS, VAL_CANCEL,
+       VAL_CBTYPE, VAL_CMD, VAL_CONSTAT, VAL_CSDATES, VAL_CSVER,
+       VAL_CURSOR, VAL_CURSOROPT, VAL_CURSTAT, VAL_DATAFMT, VAL_DATEDAY,
+       VAL_DATEFMT, VAL_DIRSERV, VAL_DTINFO, VAL_DYNAMIC, VAL_LEVEL,
+       VAL_LOCVAL, VAL_NETIO, VAL_OPTION, VAL_PROPS, VAL_RESINFO,
+       VAL_RESULT, VAL_SECURITY, VAL_STATUS, VAL_STATUSFMT, VAL_TYPE, };
 
 char *value_str(int type, int value);
 char *mask_str(int type, int value);

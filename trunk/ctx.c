@@ -17,7 +17,7 @@ INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
 EVENT SHALL OBJECT CRAFT BE LIABLE FOR ANY SPECIAL, INDIRECT OR
 CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
 USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+OTHER TORTUOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
@@ -276,7 +276,7 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_callback(CS_SET, %s) -> %s\n",
-		    value_str(CBTYPE, type), value_str(STATUS, status));
+		    value_str(VAL_CBTYPE, type), value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -329,7 +329,7 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_callback(CS_GET, %s) -> %s\n",
-		    value_str(CBTYPE, type), value_str(STATUS, status));
+		    value_str(VAL_CBTYPE, type), value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -420,8 +420,8 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    SY_END_THREADS;
 	    if (self->debug)
 		fprintf(stderr, "ct_config(CS_SET, %s, %d) -> %s\n",
-			value_str(PROPS, property), int_value,
-			value_str(STATUS, status));
+			value_str(VAL_PROPS, property), int_value,
+			value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -439,8 +439,8 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    SY_END_THREADS;
 	    if (self->debug)
 		fprintf(stderr, "ct_config(CS_SET, %s, '%s') -> %s\n",
-			value_str(PROPS, property), str_value,
-			value_str(STATUS, status));
+			value_str(VAL_PROPS, property), str_value,
+			value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -466,8 +466,8 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    SY_END_THREADS;
 	    if (self->debug)
 		fprintf(stderr, "ct_config(CS_GET, %s) -> %s, %d\n",
-			value_str(PROPS, property),
-			value_str(STATUS, status), int_value);
+			value_str(VAL_PROPS, property),
+			value_str(VAL_STATUS, status), int_value);
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -483,8 +483,8 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 		buff_len = sizeof(str_buff);
 	    if (self->debug)
 		fprintf(stderr, "ct_config(CS_GET, %s) -> %s, '%.*s'\n",
-			value_str(PROPS, property),
-			value_str(STATUS, status), (int)buff_len, str_buff);
+			value_str(VAL_PROPS, property),
+			value_str(VAL_STATUS, status), (int)buff_len, str_buff);
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -496,6 +496,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	}
 	break;
 
+#ifdef CS_CLEAR
     case CS_CLEAR:
 	/* ct_config(CS_CLEAR, property) -> status */
 	if (!PyArg_ParseTuple(args, "ii", &action, &property))
@@ -508,11 +509,13 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_config(CS_CLEAR, %s) -> %s\n",
-		    value_str(PROPS, property), value_str(STATUS, status));
+		    value_str(VAL_PROPS, property),
+		    value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
 	return PyInt_FromLong(status);
+#endif
 
     default:
 	PyErr_SetString(PyExc_TypeError, "unknown action");
@@ -575,7 +578,7 @@ static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
     SY_END_THREADS;
     if (self->debug)
 	fprintf(stderr, "ct_init(%s) -> %s\n",
-		value_str(CSVER, version), value_str(STATUS, status));
+		value_str(VAL_CSVER, version), value_str(VAL_STATUS, status));
     if (PyErr_Occurred())
 	return NULL;
 
@@ -604,13 +607,14 @@ static PyObject *CS_CONTEXT_ct_exit(CS_CONTEXTObj *self, PyObject *args)
     SY_END_THREADS;
     if (self->debug)
 	fprintf(stderr, "ct_exit(%s) -> %s\n",
-		value_str(OPTION, option), value_str(STATUS, status));
+		value_str(VAL_OPTION, option), value_str(VAL_STATUS, status));
     if (PyErr_Occurred())
 	return NULL;
 
     return PyInt_FromLong(status);
 }
 
+#ifdef HAVE_CS_DIAG
 static char CS_CONTEXT_cs_diag__doc__[] = 
 "cs_diag(CS_INIT) -> status\n"
 "cs_diag(CS_MSGLIMIT, type, num) -> status\n"
@@ -645,7 +649,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "cs_diag(CS_INIT) -> %s\n",
-		    value_str(STATUS, status));
+		    value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -662,7 +666,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "cs_diag(CS_MSGLIMIT, %s, %d) -> %s\n",
-		    value_str(TYPE, type), num, value_str(STATUS, status));
+		    value_str(VAL_TYPE, type), num, value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -679,7 +683,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "cs_diag(CS_CLEAR, %s) -> %s\n",
-		    value_str(TYPE, type), value_str(STATUS, status));
+		    value_str(VAL_TYPE, type), value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -704,7 +708,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "cs_diag(CS_GET, %s, %d) -> %s\n",
-		    value_str(TYPE, type), index, value_str(STATUS, status));
+		    value_str(VAL_TYPE, type), index, value_str(VAL_STATUS, status));
 	if (PyErr_Occurred()) {
 	    Py_DECREF(msg);
 	    return NULL;
@@ -728,7 +732,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "cs_diag(CS_STATUS, %s) -> %s, %d\n",
-		    value_str(TYPE, type), value_str(STATUS, status), num);
+		    value_str(VAL_TYPE, type), value_str(VAL_STATUS, status), num);
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -739,6 +743,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	return NULL;
     }
 }
+#endif
 
 static char CS_CONTEXT_cs_ctx_drop__doc__[] = 
 "cs_ctx_drop() -> status";
@@ -760,7 +765,7 @@ static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
     status = cs_ctx_drop(self->ctx);
     SY_END_THREADS;
     if (self->debug)
-	fprintf(stderr, "cs_ctx_drop() -> %s\n", value_str(STATUS, status));
+	fprintf(stderr, "cs_ctx_drop() -> %s\n", value_str(VAL_STATUS, status));
     if (status == CS_SUCCEED)
 	self->ctx = NULL;
     if (PyErr_Occurred())
@@ -779,7 +784,9 @@ static struct PyMethodDef CS_CONTEXT_methods[] = {
     { "ct_exit", (PyCFunction)CS_CONTEXT_ct_exit, METH_VARARGS, CS_CONTEXT_ct_exit__doc__ },
     { "ct_init", (PyCFunction)CS_CONTEXT_ct_init, METH_VARARGS, CS_CONTEXT_ct_init__doc__ },
     { "cs_ctx_drop", (PyCFunction)CS_CONTEXT_cs_ctx_drop, METH_VARARGS, CS_CONTEXT_cs_ctx_drop__doc__ },
+#ifdef HAVE_CS_DIAG
     { "cs_diag", (PyCFunction)CS_CONTEXT_cs_diag, METH_VARARGS, CS_CONTEXT_cs_diag__doc__ },
+#endif
     { NULL }			/* sentinel */
 };
 
@@ -805,7 +812,7 @@ PyObject *ctx_alloc(CS_INT version)
     status = cs_ctx_alloc(version, &ctx);
     SY_END_THREADS;
     if (self->debug)
-	fprintf(stderr, "cs_ctx_alloc() -> %s\n", value_str(STATUS, status));
+	fprintf(stderr, "cs_ctx_alloc() -> %s\n", value_str(VAL_STATUS, status));
     if (PyErr_Occurred()) {
 	Py_DECREF(self);
 	return NULL;
@@ -825,11 +832,17 @@ CS_CONTEXT *global_ctx()
 {
     static CS_CONTEXT *ctx;
 
-    if (ctx == NULL)
+    if (ctx == NULL) {
+#ifdef HAVE_CS_CTX_GLOBAL
 	cs_ctx_global(CS_VERSION_100, &ctx);
+#else
+	cs_ctx_alloc(CS_VERSION_100, &ctx);
+#endif
+    }
     return ctx;
 }
 
+#ifdef HAVE_CS_CTX_GLOBAL
 PyObject *ctx_global(CS_INT version)
 {
     CS_CONTEXTObj *self;
@@ -852,7 +865,7 @@ PyObject *ctx_global(CS_INT version)
     status = cs_ctx_global(version, &ctx);
     SY_END_THREADS;
     if (self->debug)
-	fprintf(stderr, "cs_ctx_global() -> %s\n", value_str(STATUS, status));
+	fprintf(stderr, "cs_ctx_global() -> %s\n", value_str(VAL_STATUS, status));
     if (PyErr_Occurred()) {
 	Py_DECREF(self);
 	return NULL;
@@ -867,6 +880,7 @@ PyObject *ctx_global(CS_INT version)
     ctx_add_object(self);
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
+#endif
 
 static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
 {
@@ -881,7 +895,7 @@ static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "cs_ctx_drop() -> %s\n",
-		    value_str(STATUS, status));
+		    value_str(VAL_STATUS, status));
     }
     Py_XDECREF(self->servermsg_cb);
     ctx_del_object(self);

@@ -17,7 +17,7 @@ INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
 EVENT SHALL OBJECT CRAFT BE LIABLE FOR ANY SPECIAL, INDIRECT OR
 CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
 USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+OTHER TORTUOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
@@ -43,7 +43,7 @@ PyObject *locale_alloc(CS_CONTEXTObj *ctx)
     status = cs_loc_alloc(ctx->ctx, &loc);
     SY_END_THREADS;
     if (self->debug)
-	fprintf(stderr, "cs_loc_alloc() -> %s\n", value_str(STATUS, status));
+	fprintf(stderr, "cs_loc_alloc() -> %s\n", value_str(VAL_STATUS, status));
     if (PyErr_Occurred()) {
 	Py_DECREF(self);
 	return NULL;
@@ -73,7 +73,7 @@ static void CS_LOCALE_dealloc(CS_LOCALEObj *self)
 	status = cs_loc_drop(self->ctx->ctx, self->locale);
 	if (self->debug)
 	    fprintf(stderr, "cs_loc_drop() -> %s\n",
-		    value_str(STATUS, status));
+		    value_str(VAL_STATUS, status));
     }
     Py_XDECREF(self->ctx);
     PyMem_DEL(self);
@@ -129,12 +129,13 @@ static PyObject *CS_LOCALE_cs_dt_info(CS_LOCALEObj *self, PyObject *args)
 	if (self->debug) {
 	    if (type == CS_DT_CONVFMT)
 		fprintf(stderr, "cs_dt_info(CS_SET, %s, %s) -> %s\n",
-			value_str(DTINFO, type), value_str(CSDATES, int_value),
-			value_str(STATUS, status));
+			value_str(VAL_DTINFO, type),
+			value_str(VAL_CSDATES, int_value),
+			value_str(VAL_STATUS, status));
 	    else
 		fprintf(stderr, "cs_dt_info(CS_SET, %s, %d) -> %s\n",
-			value_str(DTINFO, type), (int)int_value,
-			value_str(STATUS, status));
+			value_str(VAL_DTINFO, type), (int)int_value,
+			value_str(VAL_STATUS, status));
 	}
 
 	return PyInt_FromLong(status);
@@ -154,8 +155,8 @@ static PyObject *CS_LOCALE_cs_dt_info(CS_LOCALEObj *self, PyObject *args)
 	    SY_END_THREADS;
 	    if (self->debug)
 		fprintf(stderr, "cs_dt_info(CS_GET, %s) -> %s, %d\n",
-			value_str(DTINFO, type),
-			value_str(STATUS, status), (int)bool_value);
+			value_str(VAL_DTINFO, type),
+			value_str(VAL_STATUS, status), (int)bool_value);
 	    return Py_BuildValue("ii", status, bool_value);
 
 	case OPTION_INT:
@@ -167,13 +168,13 @@ static PyObject *CS_LOCALE_cs_dt_info(CS_LOCALEObj *self, PyObject *args)
 	    if (self->debug) {
 		if (type == CS_DT_CONVFMT)
 		    fprintf(stderr, "cs_dt_info(CS_GET, %s) -> %s, %s\n",
-			    value_str(DTINFO, type),
-			    value_str(STATUS, status),
-			    value_str(CSDATES, int_value));
+			    value_str(VAL_DTINFO, type),
+			    value_str(VAL_STATUS, status),
+			    value_str(VAL_CSDATES, int_value));
 		else
 		    fprintf(stderr, "cs_dt_info(CS_GET, %s) -> %s, %d\n",
-			    value_str(DTINFO, type),
-			    value_str(STATUS, status), (int)int_value);
+			    value_str(VAL_DTINFO, type),
+			    value_str(VAL_STATUS, status), (int)int_value);
 	    }
 	    return Py_BuildValue("ii", status, int_value);
 
@@ -187,8 +188,8 @@ static PyObject *CS_LOCALE_cs_dt_info(CS_LOCALEObj *self, PyObject *args)
 		buff_len = sizeof(str_buff);
 	    if (self->debug)
 		fprintf(stderr, "cs_dt_info(CS_GET, %s, %d) -> %s, '%.*s'\n",
-			value_str(DTINFO, type), (int)item,
-			value_str(STATUS, status), (int)buff_len, str_buff);
+			value_str(VAL_DTINFO, type), (int)item,
+			value_str(VAL_STATUS, status), (int)buff_len, str_buff);
 	    return Py_BuildValue("is#", status, str_buff, buff_len);
 
 	case OPTION_UNKNOWN:
@@ -225,7 +226,7 @@ static PyObject *CS_LOCALE_cs_loc_drop(CS_LOCALEObj *self, PyObject *args)
     status = cs_loc_drop(self->ctx->ctx, self->locale);
     SY_END_THREADS;
     if (self->debug)
-	fprintf(stderr, "cs_loc_drop() -> %s\n", value_str(STATUS, status));
+	fprintf(stderr, "cs_loc_drop() -> %s\n", value_str(VAL_STATUS, status));
 
     if (status == CS_SUCCEED)
 	self->locale = NULL;

@@ -16,7 +16,7 @@ INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
 EVENT SHALL OBJECT CRAFT BE LIABLE FOR ANY SPECIAL, INDIRECT OR
 CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
 USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+OTHER TORTUOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 **********************************************************************/
 
@@ -87,6 +87,7 @@ int datetime_as_string(PyObject *obj, char *text)
     type = ((DateTimeObj*)obj)->type;
     datetime_datafmt(&datetime_fmt, type);
     char_datafmt(&char_fmt);
+    char_fmt.maxlength = DATETIME_LEN;
 
     if (type == CS_DATETIME_TYPE)
 	data = &((DateTimeObj*)obj)->v.datetime;
@@ -152,11 +153,11 @@ static void DateTime_dealloc(DateTimeObj *self)
 
 static PyObject *DateTime_repr(DateTimeObj *self)
 {
-    char text[DATETIME_LEN];
+    char text[DATETIME_LEN + 2];
     CS_RETCODE conv_result;
 
     PyErr_Clear();
-    conv_result = datetime_as_string((PyObject*)self, text);
+    conv_result = datetime_as_string((PyObject*)self, text + 1);
     if (PyErr_Occurred())
 	return NULL;
     if (conv_result != CS_SUCCEED) {
@@ -164,6 +165,8 @@ static PyObject *DateTime_repr(DateTimeObj *self)
 	return NULL;
     }
 
+    text[0] = '\'';
+    strcat(text, "'");
     return PyString_FromString(text);
 }
 

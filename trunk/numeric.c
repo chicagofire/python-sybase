@@ -16,7 +16,7 @@ INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
 EVENT SHALL OBJECT CRAFT BE LIABLE FOR ANY SPECIAL, INDIRECT OR
 CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
 USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+OTHER TORTUOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 **********************************************************************/
 
@@ -292,6 +292,7 @@ static void Numeric_dealloc(NumericObj *self)
     PyMem_DEL(self);
 }
 
+#ifdef HAVE_CS_CMP
 static int Numeric_compare(NumericObj *v, NumericObj *w)
 {
     CS_INT result;
@@ -309,6 +310,7 @@ static int Numeric_compare(NumericObj *v, NumericObj *w)
 
     return result;
 }
+#endif
 
 static PyObject *Numeric_repr(NumericObj *self)
 {
@@ -373,6 +375,37 @@ static long Numeric_hash(NumericObj *self)
 	return hash;
     }
     return -1;
+}
+
+#ifdef HAVE_CS_CALC
+static NumericObj *numeric_minusone(void)
+{
+    static NumericObj *minusone;
+
+    if (minusone == NULL) {
+	CS_NUMERIC num;
+
+	if (numeric_from_int(&num, -1, -1, -1))
+	    minusone = numeric_alloc(&num);
+	else
+	    return NULL;
+    }
+    return minusone;
+}
+
+static NumericObj *numeric_zero(void)
+{
+    static NumericObj *zero;
+
+    if (zero == NULL) {
+	CS_NUMERIC num;
+
+	if (numeric_from_int(&num, -1, -1, 0))
+	    zero = numeric_alloc(&num);
+	else
+	    return NULL;
+    }
+    return zero;
 }
 
 /* Code to access Numeric objects as numbers */
@@ -472,36 +505,6 @@ static PyObject *Numeric_div(NumericObj *v, NumericObj *w)
     return (PyObject*)numeric_alloc(&result);
 }
 
-static NumericObj *numeric_minusone(void)
-{
-    static NumericObj *minusone;
-
-    if (minusone == NULL) {
-	CS_NUMERIC num;
-
-	if (numeric_from_int(&num, -1, -1, -1))
-	    minusone = numeric_alloc(&num);
-	else
-	    return NULL;
-    }
-    return minusone;
-}
-
-static NumericObj *numeric_zero(void)
-{
-    static NumericObj *zero;
-
-    if (zero == NULL) {
-	CS_NUMERIC num;
-
-	if (numeric_from_int(&num, -1, -1, 0))
-	    zero = numeric_alloc(&num);
-	else
-	    return NULL;
-    }
-    return zero;
-}
-
 static PyObject *Numeric_neg(NumericObj *v)
 {
     return Numeric_mul(v, numeric_minusone());
@@ -545,6 +548,7 @@ static int Numeric_coerce(PyObject **pv, PyObject **pw)
     }
     return 1;
 }
+#endif
 
 static PyObject *Numeric_int(NumericObj *v)
 {
@@ -613,24 +617,42 @@ static PyObject *Numeric_float(NumericObj *v)
 }
 
 static PyNumberMethods Numeric_as_number = {
+#ifdef HAVE_CS_CALC
     (binaryfunc)Numeric_add,	/*nb_add*/
     (binaryfunc)Numeric_sub,	/*nb_subtract*/
     (binaryfunc)Numeric_mul,	/*nb_multiply*/
     (binaryfunc)Numeric_div,	/*nb_divide*/
+#else
+    0,				/*nb_add*/
+    0,				/*nb_subtract*/
+    0,				/*nb_multiply*/
+    0,				/*nb_divide*/
+#endif
     (binaryfunc)0,		/*nb_remainder*/
     (binaryfunc)0,		/*nb_divmod*/
     (ternaryfunc)0,		/*nb_power*/
+#ifdef HAVE_CS_CALC
     (unaryfunc)Numeric_neg,	/*nb_negative*/
     (unaryfunc)Numeric_pos,	/*nb_positive*/
     (unaryfunc)Numeric_abs,	/*nb_absolute*/
     (inquiry)Numeric_nonzero,	/*nb_nonzero*/
+#else
+    0,				/*nb_negative*/
+    0,				/*nb_positive*/
+    0,				/*nb_absolute*/
+    0,				/*nb_nonzero*/
+#endif
     (unaryfunc)0,		/*nb_invert*/
     (binaryfunc)0,		/*nb_lshift*/
     (binaryfunc)0,		/*nb_rshift*/
     (binaryfunc)0,		/*nb_and*/
     (binaryfunc)0,		/*nb_xor*/
     (binaryfunc)0,		/*nb_or*/
+#ifdef HAVE_CS_CALC
     (coercion)Numeric_coerce,	/*nb_coerce*/
+#else
+    0,				/*nb_coerce*/
+#endif
     (unaryfunc)Numeric_int,	/*nb_int*/
     (unaryfunc)Numeric_long,	/*nb_long*/
     (unaryfunc)Numeric_float,	/*nb_float*/
@@ -680,7 +702,11 @@ PyTypeObject NumericType = {
     (printfunc)0,		/*tp_print*/
     (getattrfunc)Numeric_getattr, /*tp_getattr*/
     (setattrfunc)Numeric_setattr, /*tp_setattr*/
+#ifdef HAVE_CS_CMP
     (cmpfunc)Numeric_compare,	/*tp_compare*/
+#else
+    0,				/*tp_compare*/
+#endif
     (reprfunc)Numeric_repr,	/*tp_repr*/
     &Numeric_as_number,		/*tp_as_number*/
     0,				/*tp_as_sequence*/
