@@ -25,4 +25,4 @@
 
 - Bulkcopy copy out
 
-- DataBuf[n] = val should do conversions
+- DataBuf[n] = val should do more conversions
