@@ -350,7 +350,7 @@ PyTypeObject DateTimeType = {
 };
 
 char DateTimeType_new__doc__[] =
-"datetime(s [, type]) -> DateTime\n"
+"datetime(s [, type = CS_DATETIME_TYPE]) -> DateTime\n"
 "\n"
 "Create a datetime object.";
 
