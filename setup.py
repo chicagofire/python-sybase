@@ -75,7 +75,7 @@ try:
 except:
     pass
 
-syb_macros = []
+syb_macros = [('WANT_THREADS', None)]
 for api in ('blk_describe', 'blk_rowxfer_mult', 'blk_textxfer',):
     if api_exists(api, os.path.join(syb_incdir, 'bkpublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
@@ -87,7 +87,7 @@ for api in ('cs_ctx_global', 'cs_diag',):
         syb_macros.append(('HAVE_' + string.upper(api), None))
 
 setup(name = "Sybase",
-      version = "0.32",
+      version = "0.33pre1",
       maintainer = "Dave Cole",
       maintainer_email = " djc@object-craft.com.au",
       description = "Sybase Extension to Python",
