@@ -27,12 +27,17 @@ PyTypeObject DateTimeType;
 static int datetime_crack(DateTimeObj *self)
 {
     CS_RETCODE crack_result = CS_SUCCEED;
+    CS_CONTEXT *ctx;
+
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return CS_FAIL;
 
     if (self->type == CS_DATETIME_TYPE)
-	crack_result = cs_dt_crack(global_ctx(), self->type,
+	crack_result = cs_dt_crack(ctx, self->type,
 				   &self->v.datetime, &self->daterec);
     else
-	crack_result = cs_dt_crack(global_ctx(), self->type,
+	crack_result = cs_dt_crack(ctx, self->type,
 				   &self->v.datetime4, &self->daterec);
     self->cracked = 1;
     return crack_result;
@@ -49,6 +54,7 @@ int datetime_assign(PyObject *obj, int type, void *buff)
     void *src_buff;
     CS_RETCODE conv_result;
     CS_INT datetime_len;
+    CS_CONTEXT *ctx;
 
     if (((DateTimeObj*)obj)->type == type) {
 	if (type == CS_DATETIME_TYPE)
@@ -66,7 +72,12 @@ int datetime_assign(PyObject *obj, int type, void *buff)
 	src_buff = &((DateTimeObj*)obj)->v.datetime4;
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(),
+
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return CS_FAIL;
+
+    conv_result = cs_convert(ctx,
 			     &src_fmt, src_buff,
 			     &dest_fmt, buff, &datetime_len);
     if (PyErr_Occurred())
@@ -81,6 +92,7 @@ int datetime_as_string(PyObject *obj, char *text)
     CS_DATAFMT datetime_fmt;
     CS_DATAFMT char_fmt;
     CS_INT char_len;
+    CS_CONTEXT *ctx;
     int type;
     void *data;
 
@@ -93,7 +105,11 @@ int datetime_as_string(PyObject *obj, char *text)
 	data = &((DateTimeObj*)obj)->v.datetime;
     else
 	data = &((DateTimeObj*)obj)->v.datetime4;
-    return cs_convert(global_ctx(),
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return CS_FAIL;
+
+    return cs_convert(ctx,
 		      &datetime_fmt, data,
 		      &char_fmt, text, &char_len);
 }
@@ -123,6 +139,7 @@ PyObject *DateTime_FromString(PyObject *obj)
     CS_DATAFMT char_fmt;
     CS_DATETIME datetime;
     CS_INT datetime_len;
+    CS_CONTEXT *ctx;
     char *str = PyString_AsString(obj);
     CS_RETCODE conv_result;
 
@@ -131,7 +148,10 @@ PyObject *DateTime_FromString(PyObject *obj)
     char_fmt.maxlength = strlen(str);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(),
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    conv_result = cs_convert(ctx,
 			     &char_fmt, str,
 			     &datetime_fmt, &datetime, &datetime_len);
     if (PyErr_Occurred())
@@ -176,6 +196,7 @@ static PyObject *DateTime_int(DateTimeObj *v)
     CS_DATAFMT int_fmt;
     CS_INT int_value;
     CS_INT int_len;
+    CS_CONTEXT *ctx;
     void *value;
     CS_RETCODE conv_result;
 
@@ -188,7 +209,10 @@ static PyObject *DateTime_int(DateTimeObj *v)
 	value = &v->v.datetime4;
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &datetime_fmt, value,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    conv_result = cs_convert(ctx, &datetime_fmt, value,
 			     &int_fmt, &int_value, &int_len);
     if (PyErr_Occurred())
 	return NULL;
@@ -224,6 +248,7 @@ static PyObject *DateTime_float(DateTimeObj *v)
     CS_DATAFMT float_fmt;
     CS_FLOAT float_value;
     CS_INT float_len;
+    CS_CONTEXT *ctx;
     void *value;
     CS_RETCODE conv_result;
 
@@ -236,7 +261,10 @@ static PyObject *DateTime_float(DateTimeObj *v)
 	value = &v->v.datetime4;
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &datetime_fmt, value,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    conv_result = cs_convert(ctx, &datetime_fmt, value,
 			     &float_fmt, &float_value, &float_len);
     if (PyErr_Occurred())
 	return NULL;
@@ -363,6 +391,7 @@ PyObject *DateTimeType_new(PyObject *module, PyObject *args)
 {
     CS_DATAFMT datetime_fmt;
     CS_DATAFMT char_fmt;
+    CS_CONTEXT *ctx;
     int type = CS_DATETIME_TYPE;
     char *str;
     CS_DATETIME datetime;
@@ -377,7 +406,10 @@ PyObject *DateTimeType_new(PyObject *module, PyObject *args)
     char_fmt.maxlength = strlen(str);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(),
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    conv_result = cs_convert(ctx,
 			     &char_fmt, str,
 			     &datetime_fmt, &datetime, &datetime_len);
     if (PyErr_Occurred())
@@ -432,7 +464,7 @@ error:
 
 /* Register DateTime type pickler
  */
-void copy_reg_datetime(PyObject *dict)
+int copy_reg_datetime(PyObject *dict)
 {
     PyObject *module = NULL,
 	*pickle_func = NULL,
@@ -455,4 +487,6 @@ error:
     Py_XDECREF(obj);
     Py_XDECREF(pickle_func);
     Py_XDECREF(module);
+
+    return (obj == NULL) ? -1 : 0;
 }
