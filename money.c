@@ -16,7 +16,7 @@ INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
 EVENT SHALL OBJECT CRAFT BE LIABLE FOR ANY SPECIAL, INDIRECT OR
 CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
 USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+OTHER TORTUOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 **********************************************************************/
 
@@ -255,6 +255,7 @@ static void Money_dealloc(MoneyObj *self)
     PyMem_DEL(self);
 }
 
+#ifdef HAVE_CS_CMP
 static void money_promote(MoneyUnion *from, MoneyUnion *to)
 {
     CS_DATAFMT src_fmt;
@@ -300,6 +301,7 @@ static int Money_compare(MoneyObj *v, MoneyObj *w)
 
     return result;
 }
+#endif
 
 static PyObject *Money_repr(MoneyObj *self)
 {
@@ -334,6 +336,38 @@ static long Money_hash(MoneyObj *self)
     for (i = 0, ptr = (unsigned char*)&self->v; i < len; i++, ptr++)
 	hash = hash * 31 + *ptr;
     return (hash == -1) ? -2 : hash;
+}
+
+#ifdef HAVE_CS_CALC
+static MoneyObj *money_minusone(void)
+{
+    static MoneyObj *minusone;
+
+    if (minusone == NULL) {
+	MoneyUnion money;
+
+	if (money_from_int(&money, CS_MONEY_TYPE, -1))
+	    minusone = money_alloc(&money, CS_MONEY_TYPE);
+	else
+	    return NULL;
+    }
+    return minusone;
+}
+
+static MoneyObj *money_zero(void)
+{
+    static MoneyObj *zero;
+
+    if (zero == NULL) {
+	MoneyUnion money;
+
+	if (money_from_int(&money, CS_MONEY_TYPE, 0))
+	    zero = money_alloc(&money, CS_MONEY_TYPE);
+	else
+	    return NULL;
+    }
+
+    return zero;
 }
 
 static PyObject *Money_arithmetic(int op, MoneyObj *v, MoneyObj *w)
@@ -388,37 +422,6 @@ static PyObject *Money_div(MoneyObj *v, MoneyObj *w)
     return Money_arithmetic(CS_DIV, v, w);
 }
 
-static MoneyObj *money_minusone(void)
-{
-    static MoneyObj *minusone;
-
-    if (minusone == NULL) {
-	MoneyUnion money;
-
-	if (money_from_int(&money, CS_MONEY_TYPE, -1))
-	    minusone = money_alloc(&money, CS_MONEY_TYPE);
-	else
-	    return NULL;
-    }
-    return minusone;
-}
-
-static MoneyObj *money_zero(void)
-{
-    static MoneyObj *zero;
-
-    if (zero == NULL) {
-	MoneyUnion money;
-
-	if (money_from_int(&money, CS_MONEY_TYPE, 0))
-	    zero = money_alloc(&money, CS_MONEY_TYPE);
-	else
-	    return NULL;
-    }
-
-    return zero;
-}
-
 static PyObject *Money_neg(MoneyObj *v)
 {
     return Money_mul(v, money_minusone());
@@ -445,6 +448,7 @@ static int Money_nonzero(MoneyObj *v)
 {
     return Money_compare(v, money_zero()) != 0;
 }
+#endif
 
 static int Money_coerce(PyObject **pv, PyObject **pw)
 {
@@ -530,17 +534,31 @@ static PyObject *Money_float(MoneyObj *v)
 }
 
 static PyNumberMethods Money_as_number = {
+#ifdef HAVE_CS_CALC
     (binaryfunc)Money_add,	/*nb_add*/
     (binaryfunc)Money_sub,	/*nb_subtract*/
     (binaryfunc)Money_mul,	/*nb_multiply*/
     (binaryfunc)Money_div,	/*nb_divide*/
+#else
+    0,				/*nb_add*/
+    0,				/*nb_subtract*/
+    0,				/*nb_multiply*/
+    0,				/*nb_divide*/
+#endif
     (binaryfunc)0,		/*nb_remainder*/
     (binaryfunc)0,		/*nb_divmod*/
     (ternaryfunc)0,		/*nb_power*/
+#ifdef HAVE_CS_CALC
     (unaryfunc)Money_neg,	/*nb_negative*/
     (unaryfunc)Money_pos,	/*nb_positive*/
     (unaryfunc)Money_abs,	/*nb_absolute*/
     (inquiry)Money_nonzero,	/*nb_nonzero*/
+#else
+    0,				/*nb_negative*/
+    0,				/*nb_positive*/
+    0,				/*nb_absolute*/
+    0,				/*nb_nonzero*/
+#endif
     (unaryfunc)0,		/*nb_invert*/
     (binaryfunc)0,		/*nb_lshift*/
     (binaryfunc)0,		/*nb_rshift*/
@@ -596,7 +614,11 @@ PyTypeObject MoneyType = {
     (printfunc)0,		/*tp_print*/
     (getattrfunc)Money_getattr, /*tp_getattr*/
     (setattrfunc)Money_setattr, /*tp_setattr*/
+#ifdef HAVE_CS_CMP
     (cmpfunc)Money_compare,	/*tp_compare*/
+#else
+    0,				/*tp_compare*/
+#endif
     (reprfunc)Money_repr,	/*tp_repr*/
     &Money_as_number,		/*tp_as_number*/
     0,				/*tp_as_sequence*/

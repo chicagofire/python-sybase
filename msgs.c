@@ -17,7 +17,7 @@ INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
 EVENT SHALL OBJECT CRAFT BE LIABLE FOR ANY SPECIAL, INDIRECT OR
 CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
 USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+OTHER TORTUOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
@@ -58,8 +58,10 @@ static struct memberlist CS_CLIENTMSG_memberlist[] = {
     { "msgstring", T_STRING, CLIENT_OFF(msgstring), RO }, /* faked */
     { "osnumber",  T_INT,    CLIENT_OFF(osnumber), RO },
     { "osstring",  T_STRING, CLIENT_OFF(osstring), RO }, /* faked */
+#ifndef HAVE_FREETDS
     { "status",    T_INT,    CLIENT_OFF(status), RO },
     { "sqlstate",  T_STRING, CLIENT_OFF(sqlstate), RO }, /* faked */
+#endif
     { NULL }			/* Sentinel */
 };
 
@@ -71,9 +73,11 @@ static PyObject *CS_CLIENTMSG_getattr(CS_CLIENTMSGObj *self, char *name)
     if (strcmp(name, "osstring") == 0)
 	return PyString_FromStringAndSize(self->msg.osstring,
 					  self->msg.osstringlen);
+#ifndef HAVE_FREETDS
     if (strcmp(name, "sqlstate") == 0)
 	return PyString_FromStringAndSize(self->msg.sqlstate,
 					  self->msg.sqlstatelen);
+#endif
     return PyMember_Get((char *)&self->msg, CS_CLIENTMSG_memberlist, name);
 }
 
@@ -144,24 +148,30 @@ static struct memberlist CS_SERVERMSG_memberlist[] = {
     { "proc",      T_STRING, SERV_OFF(proc), RO }, /* faked */
     { "line",      T_INT,    SERV_OFF(line), RO },
     { "status",    T_INT,    SERV_OFF(status), RO },
+#ifndef HAVE_FREETDS
     { "sqlstate",  T_STRING, SERV_OFF(sqlstate), RO }, /* faked */
+#endif
     { NULL }			/* Sentinel */
 };
 
 static PyObject *CS_SERVERMSG_getattr(CS_SERVERMSGObj *self, char *name)
 {
+#ifndef HAVE_FREETDS
     if (strcmp(name, "text") == 0)
 	return PyString_FromStringAndSize(self->msg.text,
 					  self->msg.textlen);
+#endif
     if (strcmp(name, "svrname") == 0)
 	return PyString_FromStringAndSize(self->msg.svrname,
 					  self->msg.svrnlen);
     if (strcmp(name, "proc") == 0)
 	return PyString_FromStringAndSize(self->msg.proc,
 					  self->msg.proclen);
+#ifndef HAVE_FREETDS
     if (strcmp(name, "sqlstate") == 0)
 	return PyString_FromStringAndSize(self->msg.sqlstate,
 					  self->msg.sqlstatelen);
+#endif
     return PyMember_Get((char *)&self->msg, CS_SERVERMSG_memberlist, name);
 }
 
