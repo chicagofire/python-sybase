@@ -417,13 +417,13 @@ static int property_type(int property)
     case CS_PACKETSIZE:
     case CS_SEC_CREDTIMEOUT:
     case CS_SEC_SESSTIMEOUT:
+    case CS_TDS_VERSION:
 	return OPTION_INT;
     case CS_APPNAME:
     case CS_HOSTNAME:
     case CS_PASSWORD:
     case CS_SERVERNAME:
     case CS_USERNAME:
-    case CS_TDS_VERSION:
     case CS_DS_DITBASE:
 #ifdef CS_DS_PASSWORD
     case CS_DS_PASSWORD:
@@ -594,7 +594,7 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    return Py_BuildValue("is#", status, str_buff, buff_len);
+	    return Py_BuildValue("is", status, str_buff);
 
 	case OPTION_CMD:
 	    PyErr_SetString(PyExc_TypeError, "EED not supported yet");
