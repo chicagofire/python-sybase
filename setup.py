@@ -41,6 +41,8 @@ if os.name == 'posix':                  # unix
     syb_libs = []
     if os.uname()[0] == 'Linux':
         lib_names = ['blk', 'ct', 'cs', 'sybtcl', 'insck', 'comn', 'intl']
+    elif os.uname()[0] == 'AIX':
+        lib_names = ['blk', 'ct', 'cs', 'comn', 'tcl', 'intl', 'insck']
     else:
         lib_names = ['blk', 'ct', 'cs', 'tcl', 'comn', 'intl']
     for name in lib_names:
