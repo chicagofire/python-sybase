@@ -211,20 +211,20 @@ if _ctx.ct_init() != CS_SUCCEED:
 if _ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
     raise Error(_cs_errors(_ctx, 'ct_config'))
 
-CUR_IDLE = 0                            # prepared command
-CUR_FETCHING = 1                        # fetching rows
-CUR_END_RESULT = 2                      # fetching rows
-CUR_CLOSED = 3                          # cursor closed
+_CUR_IDLE = 0                           # prepared command
+_CUR_FETCHING = 1                       # fetching rows
+_CUR_END_RESULT = 2                     # fetching rows
+_CUR_CLOSED = 3                         # cursor closed
 
-# state      event      action                 next       
-# -----------------------------------------------------------------------
-# idle       execute    prepare,params,results fetching
-#                                              end_result
-# fetching   fetchone   fetch                  fetching 
-#                                              end_result
-# end_result nextset    results                fetching
-#                                              idle
-#            fetchone                          end_result
+# state      event    action                 next       
+# ---------------------------------------------------------------------
+# idle       execute  prepare,params,results fetching
+#                                            end_result
+# fetching   fetchone fetch                  fetching 
+#                                            end_result
+# end_result nextset  results                fetching
+#                                            idle
+#            fetchone                        end_result
 class Cursor:
     def __init__(self, owner):
         '''Implements DB-API Cursor object
@@ -234,7 +234,7 @@ class Cursor:
         self.arraysize = 1              # DB-API
         self._owner = owner
         self._lock = owner._lock
-        self._state = CUR_IDLE
+        self._state = _CUR_IDLE
         self._lock.acquire()
         try:
             status, self._cmd = owner._conn.ct_cmd_alloc()
@@ -244,7 +244,7 @@ class Cursor:
             self._lock.release()
 
     def __del__(self):
-        if self._state not in (CUR_IDLE, CUR_CLOSED):
+        if self._state not in (_CUR_IDLE, _CUR_CLOSED):
             self._owner._conn.ct_cancel(CS_CANCEL_ALL)
             try:
                 # By the time we get called the threading module might
@@ -255,10 +255,10 @@ class Cursor:
                 pass
 
     def _raise_error(self, exc, text):
-        if self._state not in (CUR_IDLE, CUR_CLOSED):
+        if self._state not in (_CUR_IDLE, _CUR_CLOSED):
             text = _ct_errors(self._owner._conn, text)
             if self._owner._conn.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
-                self._state = CUR_IDLE
+                self._state = _CUR_IDLE
                 self._lock.release()
         raise exc(text)
 
@@ -267,11 +267,11 @@ class Cursor:
         '''
         self._lock.acquire()
         try:
-            if self._state == CUR_CLOSED:
+            if self._state == _CUR_CLOSED:
                 self._raise_error(ProgrammingError, 'cursor is closed')
-            while self._state != CUR_IDLE:
+            while self._state != _CUR_IDLE:
                 self.nextset()
-            if self._state == CUR_IDLE:
+            if self._state == _CUR_IDLE:
                 # At the start of a command acquire an extra lock -
                 # when the cursor is idle again the extra lock will be
                 # released.
@@ -287,7 +287,7 @@ class Cursor:
                 status = self._cmd.ct_send()
                 if status != CS_SUCCEED:
                     self._raise_error(Error, 'ct_send')
-                self._state = CUR_FETCHING
+                self._state = _CUR_FETCHING
                 self._start_results()
         finally:
             self._lock.release()
@@ -297,14 +297,14 @@ class Cursor:
         '''
         self._lock.acquire()
         try:
-            if self._state == CUR_CLOSED:
+            if self._state == _CUR_CLOSED:
                 self._raise_error(Error, 'cursor is closed')
-            if self._state != CUR_IDLE:
+            if self._state != _CUR_IDLE:
                 status = self._cmd.ct_cancel(CS_CANCEL_ALL)
                 if status == CS_SUCCEED:
                     self._lock.release()
             self._cmd = None
-            self._state = CUR_CLOSED
+            self._state = _CUR_CLOSED
         finally:
             self._lock.release()
 
@@ -313,9 +313,9 @@ class Cursor:
         '''
         self._lock.acquire()
         try:
-            if self._state == CUR_CLOSED:
+            if self._state == _CUR_CLOSED:
                 self._raise_error(Error, 'cursor is closed')
-            while self._state != CUR_IDLE:
+            while self._state != _CUR_IDLE:
                 self.nextset()
             # At the start of a command acquire an extra lock - when
             # the cursor is idle again the extra lock will be
@@ -334,7 +334,7 @@ class Cursor:
         try:
             for params in params_seq:
                 self.execute(sql, params)
-                if self._state != CUR_IDLE:
+                if self._state != _CUR_IDLE:
                     self._raise_error(ProgrammingError, 'fetchable results on cursor')
         finally:
             self._lock.release()
@@ -344,22 +344,22 @@ class Cursor:
         '''
         self._lock.acquire()
         try:
-            if self._state == CUR_CLOSED:
+            if self._state == _CUR_CLOSED:
                 self._raise_error(ProgrammingError, 'cursor is closed')
-            if self._state == CUR_FETCHING:
+            if self._state == _CUR_FETCHING:
                 try:
                     row = _fetch_rows(self._cmd, self._bufs)
                 except Error:
                     status = self._cmd.ct_cancel(CS_CANCEL_ALL)
                     if status == CS_SUCCEED:
-                        self._state = CUR_IDLE
+                        self._state = _CUR_IDLE
                         self._lock.release()
                     raise
                 if row:
                     return row
                 if row is None:
                     self._fetch_rowcount()
-            self._state = CUR_END_RESULT
+            self._state = _CUR_END_RESULT
         finally:
             self._lock.release()
 
@@ -400,16 +400,16 @@ class Cursor:
         '''
         self._lock.acquire()
         try:
-            if self._state == CUR_CLOSED:
+            if self._state == _CUR_CLOSED:
                 self._raise_error(ProgrammingError, 'cursor is closed')
-            if self._state == CUR_IDLE:
+            if self._state == _CUR_IDLE:
                 return
-            if self._state == CUR_FETCHING:
+            if self._state == _CUR_FETCHING:
                 status = self._cmd.ct_cancel(CS_CANCEL_CURRENT)
                 if status != CS_SUCCEED:
                     self._raise_error(Error, 'ct_cancel')
             self._start_results()
-            return self._state != CUR_IDLE or None
+            return self._state != _CUR_IDLE or None
         finally:
             self._lock.release()
 
@@ -426,7 +426,7 @@ class Cursor:
     def _fetch_rowcount(self):
         status, result = self._cmd.ct_results()
         if status == CS_END_RESULTS:
-            self._state = CUR_IDLE
+            self._state = _CUR_IDLE
             self._lock.release()
             return
         elif status != CS_SUCCEED:
@@ -442,7 +442,7 @@ class Cursor:
         while 1:
             status, result = self._cmd.ct_results()
             if status == CS_END_RESULTS:
-                self._state = CUR_IDLE
+                self._state = _CUR_IDLE
                 self._lock.release()
                 return
             elif status != CS_SUCCEED:
@@ -456,7 +456,7 @@ class Cursor:
                                  buf.maxlength, buf.precision, buf.scale,
                                  buf.status & CS_CANBENULL))
                 self.description = desc
-                self._state = CUR_FETCHING
+                self._state = _CUR_FETCHING
                 return
             elif result in (CS_CMD_DONE, CS_CMD_SUCCEED):
                 status, self.rowcount = self._cmd.ct_res_info(CS_ROW_COUNT)
