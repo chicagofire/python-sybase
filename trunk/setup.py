@@ -19,8 +19,9 @@ else:
     import sys
     sys.stderr.write(
         'Sorry, I do not know how to build on this platform.\n'
-        'Please edit setup.py and add platform specific settings.  If you'
-        'figure out how to get it working for your platform, please send'
+        '\n'
+        'Please edit setup.py and add platform specific settings.  If you\n'
+        'figure out how to get it working for your platform, please send\n'
         'mail to djc@object-craft.com.au so you can help other people.\n')
     sys.exit(1)
 
