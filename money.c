@@ -587,38 +587,31 @@ char MoneyType_new__doc__[] =
  */
 PyObject *MoneyType_new(PyObject *module, PyObject *args)
 {
-    MoneyObj *self;
     PyObject *obj;
+    MoneyObj *num = NULL;
     int type = CS_MONEY_TYPE;
 
-    self = PyObject_NEW(MoneyObj, &MoneyType);
-    if (self == NULL)
+    if (!PyArg_ParseTuple(args, "O|i", &obj, &type))
 	return NULL;
-
-    SY_LEAK_REG(self);
-    if (PyArg_ParseTuple(args, "O|i", &obj, &type)) {
-	MoneyObj *num = NULL;
-
-	if (PyInt_Check(obj))
-	    num = Money_FromInt(obj, type);
-	else if (PyLong_Check(obj))
-	    num = Money_FromLong(obj, type);
-	else if (PyFloat_Check(obj))
-	    num = Money_FromFloat(obj, type);
-	else if (PyString_Check(obj))
-	    num = Money_FromString(obj, type);
-	else if (Money_Check(obj))
-	    num = Money_FromMoney(obj, type);
-	else {
-	    PyErr_SetString(PyExc_TypeError, "could not convert to Money");
-	    return NULL;
-	}
-	if (num)
-	    return (PyObject*)num;
+    if (type != CS_MONEY_TYPE && type != CS_MONEY4_TYPE) {
+	PyErr_SetString(PyExc_TypeError, "type must be either CS_MONEY_TYPE or CS_MONEY4_TYPE");
+	return NULL;
     }
-
-    Py_DECREF(self);
-    return NULL;
+    if (PyInt_Check(obj))
+	num = Money_FromInt(obj, type);
+    else if (PyLong_Check(obj))
+	num = Money_FromLong(obj, type);
+    else if (PyFloat_Check(obj))
+	num = Money_FromFloat(obj, type);
+    else if (PyString_Check(obj))
+	num = Money_FromString(obj, type);
+    else if (Money_Check(obj))
+	num = Money_FromMoney(obj, type);
+    else {
+	PyErr_SetString(PyExc_TypeError, "could not convert to Money");
+	return NULL;
+    }
+    return (PyObject*)num;
 }
 
 /* Used in unpickler
