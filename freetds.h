@@ -10,7 +10,7 @@
  */
 #if HAVE_FREETDS < 60
 #undef HAVE_FREETDS
-#define HAVE_FREETDS 61
+#define HAVE_FREETDS 62
 #endif
 
 #define CS_USERNAME CS_USERNAME
