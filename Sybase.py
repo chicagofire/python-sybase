@@ -400,12 +400,19 @@ class _FetchNowParams(_FetchNow):
                 break
             elif status in (CS_ROW_FAIL, CS_FAIL, CS_CANCELED):
                 self._raise_error(Error, 'ct_fetch')
+            pos = -1
             for buf in bufs:
                 if buf.status & CS_RETURN:
                     if type(self._params) is type({}):
                         self._params[buf.name] = _column_value(buf[0])
                     else:
-                        self._params.append(_column_value(buf[0]))
+                        while 1:
+                            pos += 1
+                            param = self._params[pos]
+                            if (type(param) is DataBufType
+                                and param.status & CS_RETURN):
+                                break
+                        self._params[pos] = _column_value(buf[0])
 
 
 _LAZY_IDLE = 0                          # prepared command
