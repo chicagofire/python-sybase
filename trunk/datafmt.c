@@ -129,3 +129,8 @@ PyTypeObject CS_DATAFMTType = {
     0L, 0L, 0L, 0L,
     CS_DATAFMTType__doc__	/* Documentation string */
 };
+
+int CS_DATAFMT_Check(PyObject *obj)
+{
+    return obj->ob_type == &CS_DATAFMTType;
+}

@@ -97,6 +97,9 @@ enum { ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT, DYNAMIC,
 
 char *value_str(int type, int value);
 
+int Numeric_Check(PyObject *obj);
+int CS_DATAFMT_Check(PyObject *obj);
+
 PyObject *ctx_alloc();
 PyObject *ctx_global();
 PyObject *con_alloc(CS_CONTEXTObj *ctx);
@@ -105,6 +108,5 @@ PyObject *cmd_eed(CS_CONNECTIONObj *con, CS_COMMAND *eed);
 PyObject *clientmsg_alloc();
 PyObject *servermsg_alloc();
 PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip);
-PyObject *buffer_alloc(CS_DATAFMTObj *fmt);
-int Numeric_Check(PyObject *obj);
+PyObject *buffer_alloc(PyObject *obj);
 PyObject *NumericType_new(PyObject *module, PyObject *args);
