@@ -49,18 +49,62 @@ the \var{table} argument, the bulkcopy direction must be either
 This is an extension of the DB-API 2.0 specification.
 \end{classdesc}
 
-\begin{classdesc}{Connection}{dsn, user, passwd \optional{, database \code{= None}} \optional{, strip \code{= 0}}}
+\begin{classdesc}{Connection}{dsn, user, passwd \optional{, database \code{= None}} \optional{, strip \code{= 0}} \optional{, auto_commit \code{ = 0}} \optional{, bulkcopy \code{ = 0}} \optional{, delay_connect \code{ = 0}}}
 Return a new instance of the \class{Connection} class which implements
 the DB-API 2.0 connection functionality.
 
 The \var{dsn} argument identifies the Sybase server, \var{user} and
-\var{passwd} are the Sybase username and password respectively.  If
-supplied, \var{database} specifies the database to use.  If the
-optional \var{strip} argument is non-zero then all \code{char} columns
-will be right stripped of whitespace.
+\var{passwd} are the Sybase username and password respectively.  The
+optional arguments and their effect are:
+
+\begin{description}
+\item{\var{database}}
+
+Specifies the database to use - has the same effect as the following
+SQL.
+
+\begin{verbatim}
+use database
+\end{verbatim}
+
+\item{\var{strip}}
+
+If non-zero then all \code{char} columns will be right stripped of
+whitespace.
+
+\item{\var{auto_commit}}
+
+Controls Sybase chained transaction mode.  When non-zero, chained
+transaction mode is turned off.  From the Sybase SQL manual:
+
+\begin{quote}
+If you set chained transaction mode, Adaptive Server implicitly
+invokes a begin transaction before the following statements: delete,
+insert, open, fetch, select, and update. You must still explicitly
+close the transaction with a commit.
+\end{quote}
+
+\item{\var{bulkcopy}}
+
+Must be non-zero if you are going to perform bulkcopy operations on
+the connection.
+
+\item{\var{delay_connect}}
+
+If non-zero the returned \class{Connection} object will be initialised
+but not connected.  This allows you to set additional options on the
+connection before completing the connection to the server.  Call the
+\method{connect()} method to complete the connection.
+
+\begin{verbatim}
+db = Sybase.connect('SYBASE', 'sa', '', delay_connect = 1)
+db.set_property(Sybase.CS_HOSTNAME, 'secret')
+db.connect()
+\end{verbatim}
+\end{description}
 \end{classdesc}
 
-\begin{funcdesc}{connect}{dsn, user, passwd \optional{, database \code{= None}} \optional{, strip \code{ = 0}}}
+\begin{funcdesc}{connect}{dsn, user, passwd \optional{, database \code{= None}} \optional{, strip \code{ = 0}} \optional{, auto_commit \code{ = 0}} \optional{, bulkcopy \code{ = 0}} \optional{, delay_connect \code{ = 0}}}
 Implements the DB-API 2.0 \function{connect()} function.
 
 Creates a new \class{Connection} object passing the function arguments
