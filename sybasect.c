@@ -267,9 +267,6 @@ static PyObject *sybasect_sizeof_type(PyObject *module, PyObject *args)
     case CS_LONG_TYPE:
 	size = sizeof(CS_LONG);
 	break;
-    case CS_VOID_TYPE:
-	size = sizeof(CS_VOID);
-	break;
     case CS_USHORT_TYPE:
 	size = sizeof(CS_USHORT);
 	break;
