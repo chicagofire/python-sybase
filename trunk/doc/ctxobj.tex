@@ -13,6 +13,73 @@ established by the \function{set_debug()} function.  The default value
 is zero.
 \end{memberdesc}
 
+\begin{methoddesc}[CS_CONTEXT]{cs_config}{action, property \optional{, value}}
+Configures, retrieves and clears properties of the \texttt{comn}
+library for the context.
+
+When \var{action} is \code{CS_SET} a compatible \var{value} argument
+must be supplied and the method returns the Sybase result code.  The
+Sybase-CT \function{cs_config()} function is called like this:
+
+\begin{verbatim}
+/* bool property value */
+status = cs_config(ctx, CS_SET, property, &bool_value, CS_UNUSED, NULL);
+
+/* int property value */
+status = cs_config(ctx, CS_SET, property, &int_value, CS_UNUSED, NULL);
+
+/* string property value */
+status = cs_config(ctx, CS_SET, property, str_value, CS_NULLTERM, NULL);
+
+/* locale property value */
+status = cs_config(ctx, CS_SET, property, locale, CS_UNUSED, NULL);
+
+/* callback property value */
+status = cs_config(ctx, CS_SET, property, cslib_cb, CS_UNUSED, NULL);
+\end{verbatim}
+
+When \var{action} is \code{CS_GET} the method returns a tuple
+containing the Sybase result code and the property value.  The
+Sybase-CT \function{cs_callback()} function is called like this:
+
+\begin{verbatim}
+/* bool property value */
+status = cs_config(ctx, CS_GET, property, &bool_value, CS_UNUSED, NULL);
+
+/* int property value */
+status = cs_config(ctx, CS_GET, property, &int_value, CS_UNUSED, NULL);
+
+/* string property value */
+status = cs_config(ctx, CS_GET, property, str_buff, sizeof(str_buff), &buff_len);
+\end{verbatim}
+
+When \var{action} is \code{CS_CLEAR} the method clears the property
+and returns the Sybase result code.  The Sybase-CT
+\function{cs_callback()} function is called like this:
+
+\begin{verbatim}
+status = cs_config(ctx, CS_CLEAR, property, NULL, CS_UNUSED, NULL);
+\end{verbatim}
+
+The recognised properties are:
+
+\begin{longtable}{l|l}
+\var{property} & type \\
+\hline
+\code{CS_EXTERNAL_CONFIG} & \code{bool} \\
+\code{CS_EXTRA_INF}       & \code{bool} \\
+\code{CS_NOAPI_CHK}       & \code{bool} \\
+\code{CS_VERSION}         & \code{int} \\
+\code{CS_APPNAME}         & \code{string} \\
+\code{CS_CONFIG_FILE}     & \code{string} \\
+\code{CS_LOC_PROP}        & \code{locale} \\
+\code{CS_MESSAGE_CB}      & \code{function} \\
+\end{longtable}
+
+For an explanation of the property values and get/set/clear semantics
+please refer to the Sybase documentation.
+\end{methoddesc}
+
 \begin{methoddesc}[CS_CONTEXT]{ct_callback}{action, type \optional{, cb_func \code{= None}}}
 Installs, removes, or queries current Sybase callback function.  This
 is only available when the \module{sybasect} module has been compiled

@@ -77,6 +77,13 @@ data values.
 
 \subsection{Functions}
 
+\begin{funcdesc}{set_global_ctx}{ctx}
+The \module{sybasect} module uses a \code{CS_CONTEXT} structure
+internally for conversions and calculations.  You must allocate a
+context via \function{cs_ctx_alloc()} and establish the internal
+context using this function.
+\end{funcdesc}
+
 \begin{funcdesc}{set_debug}{file}
 Directs all debug text to the object passed in the \var{file}
 argument.  The \var{file} argument must be either \code{None} or an
