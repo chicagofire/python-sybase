@@ -295,7 +295,7 @@ static PyObject *CS_CONNECTION_ct_cmd_alloc(CS_CONNECTIONObj *self, PyObject *ar
 }
 
 static char CS_CONNECTION_blk_alloc__doc__[] = 
-"";
+"blk_alloc([version = BLK_VERSION_100) -> status, blk";
 
 static PyObject *CS_CONNECTION_blk_alloc(CS_CONNECTIONObj *self, PyObject *args)
 {
