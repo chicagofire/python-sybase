@@ -1,3 +1,5 @@
+# Used by all of the example programs.
+#
 import string
 from sybasect import *
 

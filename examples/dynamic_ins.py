@@ -1,6 +1,24 @@
 #!/usr/bin/python
 #
-# From orig/dynamic_ins.c - sybase example program
+# From dynamic_ins.c - sybase example program
+#
+# Description:
+#    This program uses Dynamic SQL to insert values into a table x
+#    number of times. The insert statement, which contains
+#    placeholders with identifiers, is sent to the server to be
+#    partially compiled and stored. Therefore, every time you call the
+#    insert routine, you are in effect only passing new values for the
+#    insert (parameters to the temporary stored procs).
+#
+# Script file:
+#    dynamic_ins.sql is included at the end of this file.
+#
+# References:
+#    Open Client-Library/C Reference Manual. Refer to the sections on
+#    Dynamic SQL and ct_dynamic.
+#
+# Note:
+#    Dynamic SQL is mainly intended for precompiler support.
 #
 import sys
 from sybasect import *

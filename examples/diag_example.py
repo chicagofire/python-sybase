@@ -1,6 +1,22 @@
 #!/usr/bin/python
 #
-# From orig/diag_example.c - sybase example program
+# From diag_example.c - sybase example program
+#
+# Description:
+#    This program accepts a SQL statement from the user and uses
+#    ct_diag to report error messages.  The routine 'call_diag' is
+#    called every time you make a call that could generate a error.
+#
+# Tests to try: 
+# (1) To test server messages, issue an invalid SQL statement such as
+#     select * from a non-existent table
+# (2) To test client-library messages, set the datatype for the bind
+#     to a datatype different from the expected results. (Change
+#     datafmt.datatype).
+#
+# References:
+#    Open Client-Library/C Reference Manual. Refer to the sections
+#    on Inline error handling and ct_diag.
 #
 import sys
 from sybasect import *

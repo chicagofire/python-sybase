@@ -1,6 +1,25 @@
 #!/usr/bin/python
 #
-# From orig/bulkcopy.c - sybase example program
+# From bulkcopy.c - sybase example program
+#
+# Description:
+#    This program uses bulk library calls to bulk copy data into a
+#    copy of the publishers table row by row.  We will treat all data
+#    as character strings, except for the first field to demonstrate
+#    bulk binding with other data types. You don't need to specify SQL
+#    datatypes because the host data is in character
+#    format. Irrespective of their type in the server, the server will
+#    perform the necessary conversions. However, if data is stored in
+#    the native form (binary , you need to define your host variables
+#    accordingly.
+#
+# Script file:
+#    Run bulkcopy.sql (following this program) before executing this
+#    program.
+#
+# References:
+#    Open Client/Open Server Common Libraries reference manual for
+#    bulk library routines.
 #
 import sys
 import string

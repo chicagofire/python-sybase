@@ -1,6 +1,24 @@
 #!/usr/bin/python
 #
-# From orig/array_bind.c - sybase example program
+# From array_bind.c - sybase example program
+#
+# Description:
+#    This program uses bulk library calls to bulk copy variable and
+#    fixed length data using array binding.  Array binding variable
+#    length data is different from handling fixed length data. Please
+#    read the sections in the 'References' below for a detailed
+#    explanation.  Array binding helps improve performance.
+#
+# Script file:
+#    Execute script array_bind.sql prior to executing the program.
+# 
+# Note:
+#    This program requires bulk-library 11.x and up, as it uses a new
+#    api call 'blk_rowxfer_mult' available only in this release.
+#
+# References:
+#    Open Client/Open Server Common Libraries reference manual.  Refer
+#    to the sections on 'blk_rowxfer_mult' and 'Array Binding'.
 #
 import sys
 import string

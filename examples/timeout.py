@@ -1,6 +1,28 @@
 #!/usr/bin/python
 #
-# From orig/timeout.c - sybase example program
+# From timeout.c - sybase example program
+#
+# Description:
+#    This program handles timeout errors. It shows how a command that
+#    has timed out can be cancelled and then returns results from the
+#    next command on the same connection. It also shows how one
+#    connection can be marked dead as a result of a timeout and still
+#    return results from another connection.
+#
+# Usage:
+#    Follow the instructions in the timeout.readme file to create a
+#    timeout error.  Run this program in another window - a timeout
+#    error will occur on the first command on the first connection.
+#    You will be prompted to cancel only the current command that
+#    caused a timeout and continue processing the following commands
+#    on this connection as well as the next, or to wait for another
+#    timeout period and see if the transaction goes through to
+#    completion this time.
+#
+# References:
+#    Open Client Client-Library/C Reference manual: refer to pages for
+#    ct_config, ct_cancel and the section on 'Connection Status' under
+#    Properties.
 #
 import sys
 from sybasect import *

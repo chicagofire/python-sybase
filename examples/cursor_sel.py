@@ -1,6 +1,17 @@
 #!/usr/bin/python
 #
-# From orig/cursor_sel.c - sybase example program
+# From cursor_sel.c - sybase example program
+#
+# Description:
+#    This program uses a cursor to retrieve data from a table.  It
+#    also accepts an input parameter for the "where" clause.
+# 
+# Inputs:
+#    Value for the input parameter (state column from the publishers
+#    table).
+#
+# References:
+#    Open Client Reference Manual pages for ct_cursor and ct_param.
 #
 import sys
 from sybasect import *

@@ -1,7 +1,25 @@
 #!/usr/bin/python
 #
-# From orig/cursor_upd.c - sybase example program
+# From cursor_upd.c - sybase example program
 #
+# Description:
+#    This program uses a cursor to retrieve data from the publishers
+#    table in the pubs2 database. It retrieves data row by row and
+#    prompts the user to input new values for the column 'state' in
+#    the publishers table.
+#
+# Inputs:
+#    value for the input parameter ('state' column from the
+#    'publishers' table ) for the UPDATE.
+#
+# Script File:
+#    This program uses a copy of the publishers table (called
+#    publishers2). Please run the script cursor_upd.sql before running
+#    this program.
+#
+# References:
+#    Open Client Reference Manual pages for ct_cursor and ct_param.
+
 import sys
 from sybasect import *
 from example import *

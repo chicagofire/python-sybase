@@ -1,6 +1,20 @@
 #!/usr/bin/python
 #
-# From orig/mult_text.c - sybase example program
+# From mult_text.c - sybase example program
+#
+# Description:
+#    This program demonstrates the use of ct-library text/image
+#    handling calls to update multiple columns and rows of data.  It
+#    inserts data into an existing table and updates both text
+#    columns. It then displays the text data from the table.
+#
+# References:
+#    Open Client Client-Library/C Reference manual. Refer to notes on
+#    Text and Image, ct_get_data, ct_data_info, ct_command and the
+#    CS_IODESC structure.
+# 
+# Script file:
+#    mult_text.sql
 #
 import sys
 import string
