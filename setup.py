@@ -110,6 +110,7 @@ class PreReleaseCheck:
         self.distribution = distribution
         self.check_rev('doc/sybase.tex', r'^\\release{(.*)}')
         self.check_rev('Sybase.py', r'__version__ = \'(.*)\'')
+        self.check_rev('sybasect.c', r'rev = PyString_FromString\("(.*)"\)')
 
     def _extract_rev(self, filename, pattern):
         regexp = re.compile(pattern)
@@ -149,7 +150,7 @@ class my_sdist(sdist):
         sdist.run(self)
 
 setup(name = "sybase",
-      version = "0.35pre3",
+      version = "0.35",
       maintainer = "Dave Cole",
       maintainer_email = " djc@object-craft.com.au",
       description = "Sybase Extension to Python",
