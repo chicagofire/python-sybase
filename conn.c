@@ -75,6 +75,11 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
     if (!first_tuple_int(args, &operation))
 	return NULL;
 
+    if (self->conn == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONNECTION has been dropped");
+	return NULL;
+    }
+
     switch (operation) {
     case CS_INIT:
 	/* ct_diag(CS_INIT) -> status */
@@ -209,6 +214,11 @@ static PyObject *CS_CONNECTION_ct_connect(CS_CONNECTIONObj *self, PyObject *args
     if (!PyArg_ParseTuple(args, "|s", &dsn))
 	return NULL;
 
+    if (self->conn == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONNECTION has been dropped");
+	return NULL;
+    }
+
     if (dsn == NULL) {
 	status = ct_connect(self->conn, NULL, 0);
 	if (self->debug)
@@ -231,6 +241,11 @@ static PyObject *CS_CONNECTION_ct_cmd_alloc(CS_CONNECTIONObj *self, PyObject *ar
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
 
+    if (self->conn == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONNECTION has been dropped");
+	return NULL;
+    }
+
     return cmd_alloc(self);
 }
 
@@ -243,6 +258,11 @@ static PyObject *CS_CONNECTION_blk_alloc(CS_CONNECTIONObj *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "|i", &version))
 	return NULL;
+
+    if (self->conn == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONNECTION has been dropped");
+	return NULL;
+    }
 
     return bulk_alloc(self, version);
 }
@@ -258,12 +278,40 @@ static PyObject *CS_CONNECTION_ct_close(CS_CONNECTIONObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "|i", &option))
 	return NULL;
     
+    if (self->conn == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONNECTION has been dropped");
+	return NULL;
+    }
+
     SY_BEGIN_THREADS;
     status = ct_close(self->conn, option);
     SY_END_THREADS;
     if (self->debug)
 	fprintf(stderr, "ct_close(%s) -> %s\n",
 		value_str(OPTION, option), value_str(STATUS, status));
+    return PyInt_FromLong(status);
+}
+
+static char CS_CONNECTION_ct_con_drop__doc__[] = 
+"ct_con_drop() - > status";
+
+static PyObject *CS_CONNECTION_ct_con_drop(CS_CONNECTIONObj *self, PyObject *args)
+{
+    CS_RETCODE status;
+
+    if (!PyArg_ParseTuple(args, ""))
+	return NULL;
+    
+    if (self->conn == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONNECTION has been dropped");
+	return NULL;
+    }
+
+    SY_BEGIN_THREADS;
+    status = ct_con_drop(self->conn);
+    SY_END_THREADS;
+    if (self->debug)
+	fprintf(stderr, "ct_con_drop() -> %s\n", value_str(STATUS, status));
     return PyInt_FromLong(status);
 }
 
@@ -359,6 +407,11 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 
     if (!first_tuple_int(args, &action))
 	return NULL;
+
+    if (self->conn == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONNECTION has been dropped");
+	return NULL;
+    }
 
     switch (action) {
     case CS_SET:
@@ -551,6 +604,11 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
     if (!first_tuple_int(args, &action))
 	return NULL;
 
+    if (self->conn == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONNECTION has been dropped");
+	return NULL;
+    }
+
     switch (action) {
     case CS_SET:
 	/* ct_options(CS_SET, option, value) -> status */
@@ -684,6 +742,7 @@ static struct PyMethodDef CS_CONNECTION_methods[] = {
     { "ct_cmd_alloc", (PyCFunction)CS_CONNECTION_ct_cmd_alloc, METH_VARARGS, CS_CONNECTION_ct_cmd_alloc__doc__ },
     { "blk_alloc", (PyCFunction)CS_CONNECTION_blk_alloc, METH_VARARGS, CS_CONNECTION_blk_alloc__doc__ },
     { "ct_close", (PyCFunction)CS_CONNECTION_ct_close, METH_VARARGS, CS_CONNECTION_ct_close__doc__ },
+    { "ct_con_drop", (PyCFunction)CS_CONNECTION_ct_con_drop, METH_VARARGS, CS_CONNECTION_ct_con_drop__doc__ },
     { "ct_con_props", (PyCFunction)CS_CONNECTION_ct_con_props, METH_VARARGS, CS_CONNECTION_ct_con_props__doc__ },
     { "ct_options", (PyCFunction)CS_CONNECTION_ct_options, METH_VARARGS, CS_CONNECTION_ct_options__doc__ },
     { NULL }			/* sentinel */
@@ -772,7 +831,7 @@ static char CS_CONNECTIONType__doc__[] =
 PyTypeObject CS_CONNECTIONType = {
     PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
-    "CS_CONNECTION",		/*tp_name*/
+    "ConnectionType",		/*tp_name*/
     sizeof(CS_CONNECTIONObj),	/*tp_basicsize*/
     0,				/*tp_itemsize*/
     /* methods */
