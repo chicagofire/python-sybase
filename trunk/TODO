@@ -32,7 +32,7 @@
 
 - BLOB columns
 
-- CS_MONEY4!!!
+- CS_MONEY4: compare, coerce
 
 - Document numeric, money, datetime
 
