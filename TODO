@@ -3,14 +3,6 @@
 - Enforce single result set over each connection by attaching all
   cursors to parent connection with a weakref.
 
-- Change exception handling in Sybase.py
-
-  * use message codes in ct_diag/cs_diag to determine type of
-    exception to raise
-
-  * see if callbacks might not be a better way to go - try in mssql
-    module first
-
 - Connection.rollback() cannot be called while a cursor is in flight...
 
 - Cursor.callproc() does not return parameters - write alternative?
