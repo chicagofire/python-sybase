@@ -158,6 +158,8 @@ def _row_bind(cmd, count = 1):
         fmt.count = count
         if fmt.datatype == CS_VARBINARY_TYPE:
             fmt.datatype = CS_BINARY_TYPE
+        if fmt.maxlngth > 65536:
+            fmx.maxlength = 65536
         status, buf = cmd.ct_bind(i + 1, fmt)
         if status != CS_SUCCEED:
             raise Error('ct_bind')
