@@ -23,6 +23,8 @@ PERFORMANCE OF THIS SOFTWARE.
 ******************************************************************/
 
 #include "_sybase.h"
+#include "time.h"
+#include "mxDateTime.h"
 
 static struct PyMethodDef Buffer_methods[] = {
     { NULL }			/* sentinel */
@@ -82,7 +84,7 @@ PyObject *buffer_alloc(PyObject *obj)
 	else if (PyFloat_Check(obj))
 	    float_datafmt(&self->fmt);
 	else if (Numeric_Check(obj))
-	    numeric_datafmt(&self->fmt);
+	    numeric_datafmt(&self->fmt, CS_SRC_VALUE, CS_SRC_VALUE);
 	else if (PyString_Check(obj)) {
 	    char_datafmt(&self->fmt);
 	    self->fmt.maxlength = PyString_Size(obj) + 1;
@@ -132,9 +134,24 @@ static PyObject *Buffer_repeat(BufferObj *self, int n)
     return NULL;
 }
 
+static PyObject *mx_datetime(CS_DATEREC *date_rec)
+{
+    if (mxDateTime.DateTime_FromDateAndTime == NULL) {
+	if (mxDateTime_ImportModuleAndAPI() != 0)
+	    return NULL;
+    }
+    return mxDateTime.DateTime_FromDateAndTime(date_rec->dateyear,
+					       date_rec->datemonth + 1,
+					       date_rec->datedmonth,
+					       date_rec->datehour,
+					       date_rec->dateminute,
+					       (double)date_rec->datesecond + (double)date_rec->datemsecond / 1000.0);
+}
+
 static PyObject *Buffer_item(BufferObj *self, int i)
 {
     void *item;
+    CS_DATEREC date_rec;
 
     if (i < 0 || i >= self->fmt.count)
 	PyErr_SetString(PyExc_IndexError, "buffer index out of range");
@@ -147,6 +164,16 @@ static PyObject *Buffer_item(BufferObj *self, int i)
     }
 
     switch (self->fmt.datatype) {
+    case CS_LONGCHAR_TYPE:
+    case CS_VARCHAR_TYPE:
+    case CS_TEXT_TYPE:
+    case CS_IMAGE_TYPE:
+    case CS_LONGBINARY_TYPE:
+    case CS_VARBINARY_TYPE:
+    case CS_BINARY_TYPE:
+	PyErr_SetString(PyExc_TypeError, "unsupported data format");
+	return NULL;
+
     case CS_CHAR_TYPE:
 	if (self->strip) {
 	    int end;
@@ -158,17 +185,35 @@ static PyObject *Buffer_item(BufferObj *self, int i)
 	} else
 	    return PyString_FromStringAndSize(item, self->copied[i]);
 
+    case CS_BIT_TYPE:
+	return PyInt_FromLong(*(CS_BIT*)item);
+
+    case CS_TINYINT_TYPE:
+	return PyInt_FromLong(*(CS_TINYINT*)item);
+
+    case CS_SMALLINT_TYPE:
+	return PyInt_FromLong(*(CS_SMALLINT*)item);
+
     case CS_INT_TYPE:
 	return PyInt_FromLong(*(CS_INT*)item);
+
+    case CS_MONEY_TYPE:
+    case CS_MONEY4_TYPE:
+	PyErr_SetString(PyExc_TypeError, "unsupported data format");
+	return NULL;
+
+    case CS_REAL_TYPE:
+	return PyFloat_FromDouble(*(CS_REAL*)item);
 
     case CS_FLOAT_TYPE:
 	return PyFloat_FromDouble(*(CS_FLOAT*)item);
 
+    case CS_DATETIME4_TYPE:
     case CS_DATETIME_TYPE:
-	return Py_BuildValue("ii",
-			     ((CS_DATETIME*)item)->dtdays,
-			     ((CS_DATETIME*)item)->dttime);
+	cs_dt_crack(global_ctx(), self->fmt.datatype, item, &date_rec);
+	return mx_datetime(&date_rec);
 
+    case CS_DECIMAL_TYPE:
     case CS_NUMERIC_TYPE:
 	return (PyObject*)numeric_alloc(item);
 
@@ -207,6 +252,16 @@ static int Buffer_ass_item(BufferObj *self, int i, PyObject *v)
     item = self->buff + self->fmt.maxlength * i;
     
     switch (self->fmt.datatype) {
+    case CS_LONGCHAR_TYPE:
+    case CS_VARCHAR_TYPE:
+    case CS_TEXT_TYPE:
+    case CS_IMAGE_TYPE:
+    case CS_LONGBINARY_TYPE:
+    case CS_VARBINARY_TYPE:
+    case CS_BINARY_TYPE:
+	PyErr_SetString(PyExc_TypeError, "unsupported data format");
+	return -1;
+
     case CS_CHAR_TYPE:
 	if (!PyString_Check(v)) {
 	    obj = PyObject_Str(v);
@@ -215,14 +270,42 @@ static int Buffer_ass_item(BufferObj *self, int i, PyObject *v)
 	    v = obj;
 	}
 	size = PyString_Size(v);
-	if (size + 1 > self->fmt.maxlength) {
+	if (size > self->fmt.maxlength) {
 	    PyErr_SetString(PyExc_TypeError, "string too long for buffer");
 	    Py_XDECREF(obj);
 	    return -1;
 	}
 	memmove(item, PyString_AsString(v), size);
-	((char*)item)[size] = '\0';
+	if (size < self->fmt.maxlength)
+	    ((char*)item)[size] = '\0';
 	self->copied[i] = size;
+	break;
+
+    case CS_BIT_TYPE:
+	if (!PyInt_Check(v)) {
+	    PyErr_SetString(PyExc_TypeError, "integer expected");
+	    return -1;
+	}
+	*(CS_BIT*)item = PyInt_AsLong(v);
+	self->copied[i] = self->fmt.maxlength;
+	break;
+
+    case CS_TINYINT_TYPE:
+	if (!PyInt_Check(v)) {
+	    PyErr_SetString(PyExc_TypeError, "integer expected");
+	    return -1;
+	}
+	*(CS_TINYINT*)item = PyInt_AsLong(v);
+	self->copied[i] = self->fmt.maxlength;
+	break;
+
+    case CS_SMALLINT_TYPE:
+	if (!PyInt_Check(v)) {
+	    PyErr_SetString(PyExc_TypeError, "integer expected");
+	    return -1;
+	}
+	*(CS_SMALLINT*)item = PyInt_AsLong(v);
+	self->copied[i] = self->fmt.maxlength;
 	break;
 
     case CS_INT_TYPE:
@@ -234,6 +317,11 @@ static int Buffer_ass_item(BufferObj *self, int i, PyObject *v)
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
+    case CS_MONEY_TYPE:
+    case CS_MONEY4_TYPE:
+	PyErr_SetString(PyExc_TypeError, "unsupported data format");
+	return -1;
+
     case CS_FLOAT_TYPE:
 	if (!PyFloat_Check(v)) {
 	    PyErr_SetString(PyExc_TypeError, "float expected");
@@ -243,16 +331,21 @@ static int Buffer_ass_item(BufferObj *self, int i, PyObject *v)
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
-    case CS_DATETIME_TYPE:
-	if (!PyArg_ParseTuple(v, "ii",
-			      &((CS_DATETIME*)item)->dtdays,
-			      &((CS_DATETIME*)item)->dttime)) {
-	    PyErr_SetString(PyExc_TypeError, "(int,int) expected");
+    case CS_REAL_TYPE:
+	if (!PyFloat_Check(v)) {
+	    PyErr_SetString(PyExc_TypeError, "float expected");
 	    return -1;
 	}
+	*(CS_REAL*)item = PyFloat_AsDouble(v);
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
+    case CS_DATETIME4_TYPE:
+    case CS_DATETIME_TYPE:
+	PyErr_SetString(PyExc_TypeError, "datetime not handled yet");
+	return -1;
+
+    case CS_DECIMAL_TYPE:
     case CS_NUMERIC_TYPE:
 	if (!Numeric_Check(v)) {
 	    PyErr_SetString(PyExc_TypeError, "numeric expected");

@@ -24,15 +24,13 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
 
-#define NUMERIC_LEN (CS_MAX_PREC + 1)
-
 staticforward PyTypeObject NumericType;
 
 static struct PyMethodDef Numeric_methods[] = {
     { NULL }			/* sentinel */
 };
 
-static CS_CONTEXT *global_ctx()
+CS_CONTEXT *global_ctx()
 {
     static CS_CONTEXT *ctx;
 
@@ -46,46 +44,6 @@ static CS_CONTEXT *global_ctx()
 int Numeric_Check(PyObject *obj)
 {
     return obj->ob_type == &NumericType;
-}
-
-void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale)
-{
-    fmt->datatype = CS_NUMERIC_TYPE;
-    fmt->maxlength = sizeof(CS_NUMERIC);
-    fmt->locale = NULL;
-    fmt->format = CS_FMT_NULLTERM;
-    fmt->precision = (precision < 0) ? CS_SRC_VALUE : precision;
-    fmt->scale = (scale < 0) ? CS_SRC_VALUE : scale;
-}
-
-void char_datafmt(CS_DATAFMT *fmt)
-{
-    fmt->datatype = CS_CHAR_TYPE;
-    fmt->maxlength = NUMERIC_LEN;
-    fmt->locale = NULL;
-    fmt->format = CS_FMT_NULLTERM;
-    fmt->scale = 0;
-    fmt->precision = 0;
-}
-
-void int_datafmt(CS_DATAFMT *fmt)
-{
-    fmt->datatype = CS_INT_TYPE;
-    fmt->maxlength = sizeof(CS_INT);
-    fmt->locale = NULL;
-    fmt->format = CS_FMT_UNUSED;
-    fmt->scale = 0;
-    fmt->precision = 0;
-}
-
-void float_datafmt(CS_DATAFMT *fmt)
-{
-    fmt->datatype = CS_FLOAT_TYPE;
-    fmt->maxlength = sizeof(CS_FLOAT);
-    fmt->locale = NULL;
-    fmt->format = CS_FMT_UNUSED;
-    fmt->scale = 0;
-    fmt->precision = 0;
 }
 
 int numeric_as_string(NumericObj *obj, char *text)
