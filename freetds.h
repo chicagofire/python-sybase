@@ -5,6 +5,14 @@
  LICENCE - see LICENCE file distributed with this software for details.
 
 ******************************************************************/
+
+/* Only support back levels to 0.60
+ */
+#if HAVE_FREETDS < 60
+#undef HAVE_FREETDS
+#define HAVE_FREETDS 61
+#endif
+
 #define CS_USERNAME CS_USERNAME
 #define CS_PASSWORD CS_PASSWORD
 #define CS_APPNAME CS_APPNAME
@@ -67,6 +75,7 @@
 #endif
 #define CS_MAX_SCALE 77
 
+#if HAVE_FREETDS < 61
 typedef unsigned char CS_BIT;
 typedef unsigned short CS_USHORT;
 typedef unsigned char CS_BINARY;
@@ -76,6 +85,7 @@ typedef unsigned char CS_LONGBINARY;
 typedef unsigned char CS_TEXT;
 typedef unsigned char CS_IMAGE;
 typedef CS_NUMERIC CS_DECIMAL;
+#endif
 
 /* Emulate Sybase inline error handling
  */

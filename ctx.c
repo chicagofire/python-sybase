@@ -1341,6 +1341,23 @@ static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
     return PyInt_FromLong(status);
 }
 
+static char CS_CONTEXT_debug_msg__doc__[] = 
+"debug_msg(msg)";
+
+static PyObject *CS_CONTEXT_debug_msg(CS_CONTEXTObj *self, PyObject *args)
+{
+    char *msg;
+
+    if (!PyArg_ParseTuple(args, "s", &msg))
+	return NULL;
+
+    if (self->debug)
+	debug_msg("%s", msg);
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 static struct PyMethodDef CS_CONTEXT_methods[] = {
     { "cs_config", (PyCFunction)CS_CONTEXT_cs_config, METH_VARARGS, CS_CONTEXT_cs_config__doc__ },
     { "cs_loc_alloc", (PyCFunction)CS_CONTEXT_cs_loc_alloc, METH_VARARGS, CS_CONTEXT_cs_loc_alloc__doc__ },
@@ -1351,6 +1368,7 @@ static struct PyMethodDef CS_CONTEXT_methods[] = {
     { "ct_init", (PyCFunction)CS_CONTEXT_ct_init, METH_VARARGS, CS_CONTEXT_ct_init__doc__ },
     { "cs_ctx_drop", (PyCFunction)CS_CONTEXT_cs_ctx_drop, METH_VARARGS, CS_CONTEXT_cs_ctx_drop__doc__ },
     { "cs_diag", (PyCFunction)CS_CONTEXT_cs_diag, METH_VARARGS, CS_CONTEXT_cs_diag__doc__ },
+    { "debug_msg", (PyCFunction)CS_CONTEXT_debug_msg, METH_VARARGS, CS_CONTEXT_debug_msg__doc__ },
     { NULL }			/* sentinel */
 };
 
