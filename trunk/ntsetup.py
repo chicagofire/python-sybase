@@ -11,6 +11,8 @@ syb_incdir = os.path.join( sybase, 'include' )
 syb_libdir = os.path.join( sybase, 'lib' )
 syb_libs = [ 'libblk', 'libct', 'libcs' ]
 
+mxdatetime_incdir = 'i:\\DateTime\\mxDateTime'
+
 # The version is set in Lib/numeric_version.py
 
 setup (name = "Sybase",
@@ -20,7 +22,7 @@ setup (name = "Sybase",
        description = "Sybase Extension to Python",
        url = "http://www.object-craft.com.au/projects/sybase/",
        py_modules = ['Sybase'],
-       include_dirs = [syb_incdir],
+       include_dirs = [syb_incdir, mxdatetime_incdir],
        ext_modules = [
            Extension('sybasect',
                      ['blk.c', 'buffer.c', 'cmd.c', 'conn.c', 'ctx.c',
