@@ -447,6 +447,361 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
     }
 }
 
+static CS_RETCODE cslib_cb(CS_CONTEXT *cs_ctx, CS_CLIENTMSG *cs_msg)
+{
+    CS_CONTEXTObj *ctx;
+    PyObject *args = NULL, *result = NULL;
+    CS_CLIENTMSGObj *client_msg = NULL;
+    CS_RETCODE retcode = CS_SUCCEED;
+
+    ctx = (CS_CONTEXTObj *)ctx_find_object(cs_ctx);
+    if (ctx == NULL || ctx->cslib_cb == NULL)
+	return CS_SUCCEED;
+
+    /* Grab the GIL before doing any Python things
+     */
+    ctx_acquire_gil(ctx);
+
+    if (ctx->debug)
+	debug_msg("cslib_cb\n");
+
+    client_msg = (CS_CLIENTMSGObj *)clientmsg_alloc();
+    if (client_msg == NULL)
+	goto error;
+    memmove(&client_msg->msg, cs_msg, sizeof(*cs_msg));
+
+    args = Py_BuildValue("(OO)", ctx, client_msg);
+    if (args == NULL)
+	goto error;
+
+    result = PyEval_CallObject(ctx->cslib_cb, args);
+    if (result != NULL && PyInt_Check(result))
+	retcode = PyInt_AsLong(result);
+
+error:
+    Py_XDECREF(client_msg);
+    Py_XDECREF(args);
+    Py_XDECREF(result);
+
+    ctx_release_gil(ctx);
+    return retcode;
+}
+
+static int cs_property_type(int property)
+{
+    switch (property) {
+#ifdef CS_EXTERNAL_CONFIG
+    case CS_EXTERNAL_CONFIG:
+#endif
+#ifdef CS_EXTRA_INF
+    case CS_EXTRA_INF:
+#endif
+#ifdef CS_NOAPI_CHK
+    case CS_NOAPI_CHK:
+#endif
+	return OPTION_BOOL;
+#ifdef CS_VERSION
+    case CS_VERSION:
+	return OPTION_INT;
+#endif
+#ifdef CS_APPNAME
+    case CS_APPNAME:
+#endif
+#ifdef CS_CONFIG_FILE
+    case CS_CONFIG_FILE:
+#endif
+	return OPTION_STRING;
+#ifdef CS_LOC_PROP
+    case CS_LOC_PROP:
+	return OPTION_LOCALE;
+#endif
+#ifdef CS_MESSAGE_CB
+    case CS_MESSAGE_CB:
+	return OPTION_CALLBACK;
+#endif
+    default:
+	return OPTION_UNKNOWN;
+    }
+}
+
+static char CS_CONTEXT_cs_config__doc__[] = 
+"cs_config(CS_SET, property, value) -> status\n"
+"cs_config(CS_GET, property) -> status, value\n"
+"cs_config(CS_CLEAR, property) -> status\n";
+
+static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
+{
+    int action, property;
+    PyObject *obj = NULL;
+    PyObject *func;
+    CS_RETCODE status;
+    CS_BOOL bool_value;
+    int int_value;
+    char *str_value;
+    char str_buff[10240];
+    CS_INT buff_len;
+    void *cb_func;
+
+    if (!first_tuple_int(args, &action))
+	return NULL;
+
+    if (self->ctx == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
+	return NULL;
+    }
+
+    switch (action) {
+    case CS_SET:
+	/* cs_config(CS_SET, property, value) -> status */
+	if (!PyArg_ParseTuple(args, "iiO", &action, &property, &obj))
+	    return NULL;
+
+	switch (cs_property_type(property)) {
+	case OPTION_BOOL:
+	    bool_value = PyInt_AsLong(obj);
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    PyErr_Clear();
+
+	    SY_CTX_BEGIN_THREADS(self);
+	    status = cs_config(self->ctx, CS_SET, property,
+			       &bool_value, CS_UNUSED, NULL);
+	    SY_CTX_END_THREADS(self);
+
+	    if (self->debug)
+		debug_msg("cs_config(ctx%d, CS_SET, %s, %d, CS_UNUSED, NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), (int)bool_value,
+			  value_str(VAL_STATUS, status));
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    return PyInt_FromLong(status);
+
+	case OPTION_INT:
+	    int_value = PyInt_AsLong(obj);
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    PyErr_Clear();
+
+	    SY_CTX_BEGIN_THREADS(self);
+	    status = cs_config(self->ctx, CS_SET, property,
+			       &int_value, CS_UNUSED, NULL);
+	    SY_CTX_END_THREADS(self);
+
+	    if (self->debug)
+		debug_msg("cs_config(ctx%d, CS_SET, %s, %d, CS_UNUSED, NULL)"
+			  " -> %s\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), int_value,
+			  value_str(VAL_STATUS, status));
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    return PyInt_FromLong(status);
+
+	case OPTION_STRING:
+	    str_value = PyString_AsString(obj);
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    PyErr_Clear();
+
+	    SY_CTX_BEGIN_THREADS(self);
+	    status = cs_config(self->ctx, CS_SET, property,
+			       str_value, CS_NULLTERM, NULL);
+	    SY_CTX_END_THREADS(self);
+
+	    if (self->debug)
+		debug_msg("cs_config(ctx%d, CS_SET, %s, \"%s\", CS_NULLTERM,"
+			  " NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), str_value,
+			  value_str(VAL_STATUS, status));
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    return PyInt_FromLong(status);
+
+	case OPTION_LOCALE:
+	    if (!CS_LOCALE_Check(obj)) {
+		PyErr_SetString(PyExc_TypeError, "CS_LOCALE is required");
+		return NULL;
+	    }
+
+	    PyErr_Clear();
+
+	    SY_CTX_BEGIN_THREADS(self);
+	    status = cs_config(self->ctx, CS_SET, property,
+			       ((CS_LOCALEObj*)obj)->locale, CS_UNUSED, NULL);
+	    SY_CTX_END_THREADS(self);
+
+	    if (self->debug)
+		debug_msg("cs_config(ctx%d, CS_SET, %s, locale%d,"
+			  " CS_UNUSED, NULL) -> %s\n",
+			  self->serial, value_str(VAL_PROPS, property),
+			  ((CS_LOCALEObj*)obj)->serial,
+			  value_str(VAL_STATUS, status));
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    return PyInt_FromLong(status);
+
+	case OPTION_CALLBACK:
+	    func = Py_None;
+	    if (!PyArg_ParseTuple(args, "ii|O", &action, &property, &func))
+		return NULL;
+
+	    if (func == Py_None) {
+		Py_XDECREF(self->cslib_cb);
+		self->cslib_cb = NULL;
+		cb_func = NULL;
+	    } else {
+		if (!PyCallable_Check(func)) {
+		    PyErr_SetString(PyExc_TypeError,
+				    "parameter must be callable");
+		    return NULL;
+		}
+		Py_XDECREF(self->cslib_cb);
+		Py_XINCREF(func);
+		self->cslib_cb = func;
+	    }
+
+	    PyErr_Clear();
+
+	    SY_CTX_BEGIN_THREADS(self);
+	    status = cs_config(self->ctx, CS_SET, property,
+			       cslib_cb, CS_UNUSED, NULL);
+	    SY_CTX_END_THREADS(self);
+
+	    if (self->debug)
+		debug_msg("cs_config(ctx%d, CS_SET, %s, cslib_cb,"
+			  " CS_UNUSED, NULL) -> %s\n",
+			  self->serial, value_str(VAL_PROPS, property),
+			  value_str(VAL_STATUS, status));
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    return PyInt_FromLong(status);
+
+	default:
+	    PyErr_SetString(PyExc_TypeError, "unknown property value");
+	    return NULL;
+	}
+	break;
+
+    case CS_GET:
+	/* cs_config(CS_GET, property) -> status, value */
+	if (!PyArg_ParseTuple(args, "ii", &action, &property))
+	    return NULL;
+
+	switch (cs_property_type(property)) {
+	case OPTION_BOOL:
+	    PyErr_Clear();
+
+	    SY_CTX_BEGIN_THREADS(self);
+	    status = cs_config(self->ctx, CS_GET, property,
+			       &bool_value, CS_UNUSED, NULL);
+	    SY_CTX_END_THREADS(self);
+
+	    if (self->debug)
+		debug_msg("cs_config(ctx%d, CS_GET, %s, &value, CS_UNUSED,"
+			  " NULL) -> %s, %d\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property),
+			  value_str(VAL_STATUS, status), bool_value);
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    return Py_BuildValue("ii", status, bool_value);
+
+	case OPTION_INT:
+	    PyErr_Clear();
+
+	    SY_CTX_BEGIN_THREADS(self);
+	    status = cs_config(self->ctx, CS_GET, property,
+			       &int_value, CS_UNUSED, NULL);
+	    SY_CTX_END_THREADS(self);
+
+	    if (self->debug)
+		debug_msg("cs_config(ctx%d, CS_GET, %s, &value, CS_UNUSED,"
+			  " NULL) -> %s, %d\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property),
+			  value_str(VAL_STATUS, status), int_value);
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    return Py_BuildValue("ii", status, int_value);
+
+	case OPTION_STRING:
+	    PyErr_Clear();
+
+	    SY_CTX_BEGIN_THREADS(self);
+	    status = cs_config(self->ctx, CS_GET, property,
+			       str_buff, sizeof(str_buff), &buff_len);
+	    SY_CTX_END_THREADS(self);
+
+	    if (buff_len > sizeof(str_buff))
+		buff_len = sizeof(str_buff);
+	    if (self->debug)
+		debug_msg("cs_config(ctx%d, CS_GET, %s, buff, %d, &outlen)"
+			  " -> %s, \"%.*s\"\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), sizeof(str_buff),
+			  value_str(VAL_STATUS, status), (int)buff_len, str_buff);
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    return Py_BuildValue("is", status, str_buff);
+
+	case OPTION_LOCALE:
+	    PyErr_SetString(PyExc_TypeError, "LOCALE not supported yet");
+	    return NULL;
+
+	case OPTION_CALLBACK:
+	    PyErr_SetString(PyExc_TypeError, "LOCALE not supported yet");
+	    return NULL;
+
+	default:
+	    PyErr_SetString(PyExc_TypeError, "unknown property value");
+	    return NULL;
+	}
+	break;
+
+#ifdef CS_CLEAR
+    case CS_CLEAR:
+	/* cs_config(CS_CLEAR, property) -> status */
+	if (!PyArg_ParseTuple(args, "ii", &action, &property))
+	    return NULL;
+
+	PyErr_Clear();
+
+	SY_CTX_BEGIN_THREADS(self);
+	status = cs_config(self->ctx, CS_CLEAR, property,
+			   NULL, CS_UNUSED, NULL);
+	SY_CTX_END_THREADS(self);
+
+	if (self->debug)
+	    debug_msg("cs_config(ctx%d, CS_CLEAR, %s, NULL, CS_UNUSED, NULL)"
+		      " -> %s\n",
+		      self->serial,
+		      value_str(VAL_PROPS, property),
+		      value_str(VAL_STATUS, status));
+	if (PyErr_Occurred())
+	    return NULL;
+
+	return PyInt_FromLong(status);
+#endif
+
+    default:
+	PyErr_SetString(PyExc_TypeError, "unknown action");
+	return NULL;
+    }
+}
+
 static int ct_property_type(int property)
 {
     switch (property) {
@@ -960,6 +1315,7 @@ static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
 }
 
 static struct PyMethodDef CS_CONTEXT_methods[] = {
+    { "cs_config", (PyCFunction)CS_CONTEXT_cs_config, METH_VARARGS, CS_CONTEXT_cs_config__doc__ },
     { "cs_loc_alloc", (PyCFunction)CS_CONTEXT_cs_loc_alloc, METH_VARARGS, CS_CONTEXT_cs_loc_alloc__doc__ },
     { "ct_callback", (PyCFunction)CS_CONTEXT_ct_callback, METH_VARARGS, CS_CONTEXT_ct_callback__doc__ },
     { "ct_con_alloc", (PyCFunction)CS_CONTEXT_ct_con_alloc, METH_VARARGS, CS_CONTEXT_ct_con_alloc__doc__ },
@@ -990,6 +1346,7 @@ PyObject *ctx_alloc(CS_INT version)
 
     SY_LEAK_REG(self);
     self->ctx = NULL;
+    self->cslib_cb = NULL;
     self->servermsg_cb = NULL;
     self->clientmsg_cb = NULL;
     self->debug = 0;
@@ -1061,6 +1418,7 @@ PyObject *ctx_global(CS_INT version)
 
     SY_LEAK_REG(self);
     self->ctx = NULL;
+    self->cslib_cb = NULL;
     self->servermsg_cb = NULL;
     self->clientmsg_cb = NULL;
     self->debug = 0;

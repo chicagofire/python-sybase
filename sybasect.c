@@ -685,6 +685,9 @@ static value_desc sybase_args[] = {
 #ifdef CS_EXTRA_INF
     SYVAL(VAL_PROPS, CS_EXTRA_INF),
 #endif
+#ifdef CS_EXTRA_INF
+    SYVAL(VAL_PROPS, CS_EXTRA_INF),
+#endif
 #ifdef CS_TRANSACTION_NAME
     SYVAL(VAL_PROPS, CS_TRANSACTION_NAME),
 #endif
@@ -696,6 +699,9 @@ static value_desc sybase_args[] = {
 #endif
 #ifdef CS_LOC_PROP
     SYVAL(VAL_PROPS, CS_LOC_PROP),
+#endif
+#ifdef CS_MESSAGE_CB
+    SYVAL(VAL_PROPS, CS_MESSAGE_CB),
 #endif
 #ifdef CS_EED_CMD
     SYVAL(VAL_PROPS, CS_EED_CMD),
