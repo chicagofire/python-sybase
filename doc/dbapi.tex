@@ -452,9 +452,17 @@ Calls the stored database procedure named in the \var{procname}
 argument. The optional \var{parameters} argument must be a sequence
 which contains one entry for each argument that the procedure expects.
 
-The result of the call is returned as a modified copy of the input
+The DB-API 2.0 specification says:
+
+\begin{quote}
+The result of the call is returned as modified copy of the input
 sequence.  Input parameters are left untouched, output and
 input/output parameters replaced with possibly new values.
+\end{quote}
+
+This method is is not DB-API compliant in because there does not seem
+to be a way to query Sybase to determine which parameters are output
+parameters.  This method returns \code{None}.
 
 The procedure may also provide a result set as output. This can be
 retrieved via the \method{fetchone()}, \method{fetchmany()}, and
