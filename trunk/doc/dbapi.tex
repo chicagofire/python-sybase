@@ -150,6 +150,45 @@ to all Sybase type codes which describe date/time columns
 (\code{decimal}, \code{numeric}).
 \end{datadesc}
 
+\begin{funcdesc}{Date}{year, month, day}
+DB-API 2.0 function which returns a Sybase \code{datetime} value for
+the supplied arguments.
+\end{funcdesc}
+
+\begin{funcdesc}{Time}{hour, minute, second}
+Sybase does not have a native type for representing times -- this
+DB-API 2.0 function is not implemented.
+\end{funcdesc}
+
+\begin{funcdesc}{Timestamp}{year, month, day, hour, minute, second}
+DB-API 2.0 function which returns a Sybase \code{datetime} value for
+the supplied arguments.
+\end{funcdesc}
+
+\begin{funcdesc}{DateFromTicks}{ticks}
+DB-API 2.0 function which returns a Sybase \code{datetime} value from
+the given ticks value (number of seconds since the epoch; see the
+documentation of the standard Python \module{time} module for
+details).
+\end{funcdesc}
+
+\begin{funcdesc}{TimeFromTicks}{ticks}
+Sybase does not have a native type for representing times -- this
+DB-API 2.0 function is not implemented.
+\end{funcdesc}
+
+\begin{funcdesc}{TimestampFromTicks}{ticks}
+DB-API 2.0 function which returns a Sybase \code{datetime} value from
+the given ticks value (number of seconds since the epoch; see the
+documentation of the standard Python \module{time} module for
+details).
+\end{funcdesc}
+
+\begin{funcdesc}{Binary}{str}
+DB-API 2.0 function which constructs an object capable of holding a
+binary (long) string value.
+\end{funcdesc}
+
 \begin{classdesc}{Cursor}{owner}
 Return a new instance of the \class{Cursor} class which implements the
 DB-API 2.0 cursor functionality.
