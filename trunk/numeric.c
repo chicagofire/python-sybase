@@ -284,7 +284,7 @@ static long Numeric_hash(NumericObj *self)
 }
 
 /* Code to access Numeric objects as numbers */
-static PyObject * Numeric_add(NumericObj *v, NumericObj *w)
+static PyObject *Numeric_add(NumericObj *v, NumericObj *w)
 {
     CS_NUMERIC result;
 
