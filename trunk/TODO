@@ -16,27 +16,13 @@
 
 - Connection.rollback() cannot be called while a cursor is in flight...
 
-- Cursor.callproc() does not return parameters.
-
-- Type Objects and Constructors
-
-      Date(year,month,day)
-      Time(hour,minute,second)
-      Timestamp(year,month,day,hour,minute,second)
-      DateFromTicks(ticks)
-      TimeFromTicks(ticks)
-      TimestampFromTicks(ticks)
-      Binary(string)
+- Cursor.callproc() does not return parameters - write alternative?
 
 - Expose value_str() to Python.
 
 - BLOB columns
 
-- CS_MONEY4: compare, coerce
-
 - Document numeric, money, datetime
-
-- Check Py_BuildValue("is#", status, str_buff, buff_len) for props GET.
 
 - PyUnit
 
