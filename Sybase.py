@@ -122,7 +122,7 @@ def TimestampFromTicks(ticks):
     return apply(Timestamp, time.localtime(ticks)[:6])
 
 def Binary(str):
-    pass
+    return str
 
 # Query diagnostic information from Sybase API
 
