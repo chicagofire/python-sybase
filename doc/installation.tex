@@ -51,34 +51,24 @@ python setup.py build_ext -D WANT_THREADS
 python setup.py install
 \end{verbatim}
 
-There is some initial work to support FreeTDS.  One of the problems
-with FreeTDS is that it does not support inline error handling.  The
-callback error handling works well if you do not compile for threads
-support, but causes problems when compiled for threading.
-
-The problem occurs when the extension module releases the global
-interpreter lock when calling the Sybase CT library.  A Python
-callback causes the interpreter to be reentered by the callback which
-leads to bad things when the following warning from the Python include
-file \texttt{ceval.h} is violated:
-
-\begin{quote}
-\begin{verbatim}
-  WARNING: NEVER NEST CALLS TO Py_BEGIN_ALLOW_THREADS AND
-  Py_END_ALLOW_THREADS!!!
-\end{verbatim}
-\end{quote}
-
-At the moment the module will compile for FreeTDS (at least it does
-on my machine) and some things do work.  All you have to do is
-compile like this:
+This is the first release which supports FreeTDS.  To compile for
+FreeTDS you should use the following commands:
 
 \begin{verbatim}
 python setup.py build_ext -D HAVE_FREETDS -U WANT_BULKCOPY
 python setup.py install
 \end{verbatim}
 
-There is no error handling and reporting for FreeTDS yet.
+To build with FreeTDS and threads use the following commands:
+
+\begin{verbatim}
+python setup.py build_ext -D WANT_THREADS -D HAVE_FREETDS -U WANT_BULKCOPY
+python setup.py install
+\end{verbatim}
+
+You will probably experience some segfaults with FreeTDS using the
+\class{Cursor} \method{callproc()} method and when using named
+arguments.
 
 If you have problems with the installation step, edit the
 \texttt{setup.py} file to specify where Sybase is installed and the
