@@ -92,7 +92,7 @@ static char CS_CLIENTMSGType__doc__[] =
 "";
 
 PyTypeObject CS_CLIENTMSGType = {
-    PyObject_HEAD_INIT(&PyType_Type)
+    PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
     "CS_CLIENTMSG",		/*tp_name*/
     sizeof(CS_CLIENTMSGObj),	/*tp_basicsize*/
@@ -182,7 +182,7 @@ static char CS_SERVERMSGType__doc__[] =
 "";
 
 PyTypeObject CS_SERVERMSGType = {
-    PyObject_HEAD_INIT(&PyType_Type)
+    PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
     "CS_SERVERMSG",		/*tp_name*/
     sizeof(CS_SERVERMSGObj),	/*tp_basicsize*/

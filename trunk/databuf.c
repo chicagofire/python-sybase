@@ -286,7 +286,7 @@ static int Buffer_ass_item(BufferObj *self, int i, PyObject *v)
 	    PyErr_SetString(PyExc_TypeError, "integer expected");
 	    return -1;
 	}
-	*(CS_BIT*)item = PyInt_AsLong(v);
+	*(CS_BIT*)item = (CS_BIT)PyInt_AsLong(v);
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
@@ -295,7 +295,7 @@ static int Buffer_ass_item(BufferObj *self, int i, PyObject *v)
 	    PyErr_SetString(PyExc_TypeError, "integer expected");
 	    return -1;
 	}
-	*(CS_TINYINT*)item = PyInt_AsLong(v);
+	*(CS_TINYINT*)item = (CS_TINYINT)PyInt_AsLong(v);
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
@@ -304,7 +304,7 @@ static int Buffer_ass_item(BufferObj *self, int i, PyObject *v)
 	    PyErr_SetString(PyExc_TypeError, "integer expected");
 	    return -1;
 	}
-	*(CS_SMALLINT*)item = PyInt_AsLong(v);
+	*(CS_SMALLINT*)item = (CS_SMALLINT)PyInt_AsLong(v);
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
@@ -336,7 +336,7 @@ static int Buffer_ass_item(BufferObj *self, int i, PyObject *v)
 	    PyErr_SetString(PyExc_TypeError, "float expected");
 	    return -1;
 	}
-	*(CS_REAL*)item = PyFloat_AsDouble(v);
+	*(CS_REAL*)item = (CS_REAL)PyFloat_AsDouble(v);
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
@@ -427,7 +427,7 @@ static char BufferType__doc__[] =
 "";
 
 PyTypeObject BufferType = {
-    PyObject_HEAD_INIT(&PyType_Type)
+    PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
     "Buffer",			/*tp_name*/
     sizeof(BufferObj),		/*tp_basicsize*/

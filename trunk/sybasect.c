@@ -203,7 +203,9 @@ static value_desc sybase_args[] = {
     SYVAL(BULKPROPS, BLK_NOAPI_CHK),
     SYVAL(BULKPROPS, BLK_SLICENUM),
     SYVAL(BULKPROPS, BLK_IDSTARTNUM),
+#ifdef HAS_ARRAY_INSERT
     SYVAL(BULKPROPS, ARRAY_INSERT),
+#endif
 
     SYVAL(DYNAMIC, CS_PREPARE),
     SYVAL(DYNAMIC, CS_EXECUTE),
@@ -427,12 +429,11 @@ static value_desc sybase_args[] = {
     SYVAL(OPTION, CS_FORCE_CLOSE),
     SYVAL(OPTION, CS_INPUTVALUE),
     SYVAL(OPTION, CS_UNUSED),
-    { }
+    {0,0,0}
 };
 
 char *value_str(int type, int value)
 {
-    int i;
     value_desc *desc;
     char *name = NULL;
     static char num_str[16];
@@ -449,10 +450,22 @@ char *value_str(int type, int value)
     return num_str;
 }
 
-void initsybasect()
+void initsybasect(void)
 {
     PyObject *m, *d;
     value_desc *desc;
+
+    /* Initialize the type of the new type objects here; doing it here
+     * is required for portability to Windows without requiring C++. */
+    CS_BLKDESCType.ob_type = &PyType_Type;
+    CS_COMMANDType.ob_type = &PyType_Type;
+    CS_CONNECTIONType.ob_type = &PyType_Type;
+    CS_CONTEXTType.ob_type = &PyType_Type;
+    CS_DATAFMTType.ob_type = &PyType_Type;
+    CS_CLIENTMSGType.ob_type = &PyType_Type;
+    CS_SERVERMSGType.ob_type = &PyType_Type;
+    NumericType.ob_type = &PyType_Type;
+    BufferType.ob_type = &PyType_Type;
 
     /* Create the module and add the functions */
     m = Py_InitModule4(module, sybasect_methods,

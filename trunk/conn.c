@@ -77,11 +77,11 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	    return NULL;
 	if (type == CS_CLIENTMSG_TYPE) {
 	    if ((msg = clientmsg_alloc()) == NULL)
-		return;
+		return NULL;
 	    buffer = &((CS_CLIENTMSGObj*)msg)->msg;
 	} else if (type == CS_SERVERMSG_TYPE) {
 	    if ((msg = servermsg_alloc()) == NULL)
-		return;
+		return NULL;
 	    buffer = &((CS_SERVERMSGObj*)msg)->msg;
 	} else {
 	    PyErr_SetString(PyExc_TypeError, "unsupported message type");
@@ -350,6 +350,10 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	case OPTION_UNKNOWN:
 	    PyErr_SetString(PyExc_TypeError, "unknown property value");
 	    return NULL;
+
+	default:
+	    PyErr_SetString(PyExc_TypeError, "unhandled property value");
+	    return NULL;
 	}
 	break;
 
@@ -506,6 +510,10 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	case OPTION_UNKNOWN:
 	    PyErr_SetString(PyExc_TypeError, "unknown option value");
 	    return NULL;
+
+	default:
+	    PyErr_SetString(PyExc_TypeError, "unhandled option value");
+	    return NULL;
 	}
 	break;
 
@@ -611,7 +619,7 @@ static char CS_CONNECTIONType__doc__[] =
 "Wrap the Sybase CS_CONNECTION structure and associated functionality.";
 
 PyTypeObject CS_CONNECTIONType = {
-    PyObject_HEAD_INIT(&PyType_Type)
+    PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
     "CS_CONNECTION",		/*tp_name*/
     sizeof(CS_CONNECTIONObj),	/*tp_basicsize*/

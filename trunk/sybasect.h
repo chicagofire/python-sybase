@@ -28,6 +28,13 @@ PERFORMANCE OF THIS SOFTWARE.
 #include "Python.h"
 #include "structmember.h"
 
+/* 
+Need to turn this on for sybase v>12. Don't know to detected this
+from the sybase includes.
+
+#define HAS_ARRAY_INSERT
+*/
+
 enum { OPTION_BOOL, OPTION_INT, OPTION_STRING, OPTION_CMD,
        OPTION_NUMERIC, OPTION_UNKNOWN };
 
@@ -99,6 +106,7 @@ extern PyTypeObject CS_DATAFMTType;
 extern PyTypeObject CS_CLIENTMSGType;
 extern PyTypeObject CS_SERVERMSGType;
 extern PyTypeObject BufferType;
+extern PyTypeObject NumericType;
 
 int first_tuple_int(PyObject *args, int *int_arg);
 
@@ -118,7 +126,7 @@ void char_datafmt(CS_DATAFMT *fmt);
 void int_datafmt(CS_DATAFMT *fmt);
 void float_datafmt(CS_DATAFMT *fmt);
 
-CS_CONTEXT *global_ctx();
+CS_CONTEXT *global_ctx(void);
 
 PyObject *ctx_alloc(CS_INT version);
 PyObject *ctx_global(CS_INT version);
@@ -126,8 +134,8 @@ PyObject *con_alloc(CS_CONTEXTObj *ctx);
 PyObject *bulk_alloc(CS_CONNECTIONObj *con);
 PyObject *cmd_alloc(CS_CONNECTIONObj *con);
 PyObject *cmd_eed(CS_CONNECTIONObj *con, CS_COMMAND *eed);
-PyObject *clientmsg_alloc();
-PyObject *servermsg_alloc();
+PyObject *clientmsg_alloc(void);
+PyObject *servermsg_alloc(void);
 PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip);
 PyObject *buffer_alloc(PyObject *obj);
 NumericObj *numeric_alloc(CS_NUMERIC *num);

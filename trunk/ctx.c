@@ -43,7 +43,7 @@ static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
     return PyInt_FromLong(status);
 }
 
-static int property_type(property)
+static int property_type( int property )
 {
     switch (property) {
     case CS_LOGIN_TIMEOUT:
@@ -71,7 +71,6 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
     int action, property;
     PyObject *obj = NULL;
     CS_RETCODE status;
-    int prop_type;
     int int_value;
     char *str_value;
     char str_buff[10240];
@@ -178,9 +177,8 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 {
     int operation, type, index, num;
     CS_VOID *buffer;
-    PyObject *cmd, *msg;
+    PyObject *msg;
     CS_RETCODE status;
-    CS_COMMAND *eed;
 
     if (!first_tuple_int(args, &operation))
 	return NULL;
@@ -219,11 +217,11 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	    return NULL;
 	if (type == CS_CLIENTMSG_TYPE) {
 	    if ((msg = clientmsg_alloc()) == NULL)
-		return;
+		return NULL;
 	    buffer = &((CS_CLIENTMSGObj*)msg)->msg;
 	} else if (type == CS_SERVERMSG_TYPE) {
 	    if ((msg = servermsg_alloc()) == NULL)
-		return;
+		return NULL;
 	    buffer = &((CS_SERVERMSGObj*)msg)->msg;
 	} else {
 	    PyErr_SetString(PyExc_TypeError, "unsupported message type");
@@ -337,7 +335,7 @@ static char CS_CONTEXTType__doc__[] =
 "Wrap the Sybase CS_CONTEXT structure and associated functionality.";
 
 PyTypeObject CS_CONTEXTType = {
-    PyObject_HEAD_INIT(&PyType_Type)
+    PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
     "CS_CONTEXT",		/*tp_name*/
     sizeof(CS_CONTEXTObj),	/*tp_basicsize*/
