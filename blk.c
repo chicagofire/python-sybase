@@ -51,15 +51,16 @@ static PyObject *CS_BLKDESC_blk_bind(CS_BLKDESCObj *self, PyObject *args)
     SY_END_THREADS;
     SY_LOCK_RELEASE(self->conn);
 
-    if (self->debug)
-	debug_msg("blk_bind(blk%d, %d,"
-		  " &databuf%d->fmt, databuf%d->buff, databuf%d->copied,"
-		  " databuf%d->indicator)"
-		  " -> %s\n",
-		  self->serial, colnum,
-		  databuf->serial, databuf->serial, databuf->serial,
+    if (self->debug) {
+	debug_msg("blk_bind(blk%d, %d, &databuf%d->fmt=",
+		  self->serial, colnum, databuf->serial);
+	datafmt_debug(&databuf->fmt);
+	debug_msg(", databuf%d->buff, databuf%d->copied,"
+		  " databuf%d->indicator) -> %s\n",
+		  databuf->serial, databuf->serial,
 		  databuf->serial,
 		  value_str(VAL_STATUS, status));
+    }
     if (PyErr_Occurred())
         return NULL;
 
@@ -117,8 +118,11 @@ static PyObject *CS_BLKDESC_blk_describe(CS_BLKDESCObj *self, PyObject *args)
 	return NULL;
     }
 
-    if (self->debug)
-	debug_msg(", datafmt%d\n", ((CS_DATAFMTObj*)fmt)->serial);
+    if (self->debug) {
+	debug_msg(", datafmt%d=", ((CS_DATAFMTObj*)fmt)->serial);
+	datafmt_debug(&datafmt);
+	debug_msg("\n");
+    }
 
     return Py_BuildValue("iN", status, fmt);
 }

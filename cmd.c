@@ -56,13 +56,15 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
     SY_END_THREADS;
     SY_LOCK_RELEASE(self->conn);
 
-    if (self->debug)
-	debug_msg("ct_bind(cmd%d, %d, &datafmt%d->fmt,"
-		  " databuf%d->buff, databuf%d->copied, databuf%d->indicator)"
+    if (self->debug) {
+	debug_msg("ct_bind(cmd%d, %d, &datafmt%d->fmt=",
+		  self->serial, (int)item, datafmt->serial);
+	datafmt_debug(&databuf->fmt);
+	debug_msg(", databuf%d->buff, databuf%d->copied, databuf%d->indicator)"
 		  " -> %s",
-		  self->serial, (int)item, datafmt->serial,
 		  databuf->serial, databuf->serial, databuf->serial,
 		  value_str(VAL_STATUS, status));
+    }
     if (PyErr_Occurred()) {
 	if (self->debug)
 	    debug_msg("\n");
@@ -595,8 +597,11 @@ static PyObject *CS_COMMAND_ct_describe(CS_COMMANDObj *self, PyObject *args)
 	return NULL;
     }
 
-    if (self->debug)
-	debug_msg(", datafmt%d\n", ((CS_DATAFMTObj*)fmt)->serial);
+    if (self->debug) {
+	debug_msg(", datafmt%d=", ((CS_DATAFMTObj*)fmt)->serial);
+	datafmt_debug(&datafmt);
+	debug_msg("\n");
+    }
     return Py_BuildValue("iN", status, fmt);
 }
 
@@ -830,12 +835,15 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 	SY_END_THREADS;
 	SY_LOCK_RELEASE(self->conn);
 
-	if (self->debug)
-	    debug_msg("ct_param(cmd%d, &databuf%d->fmt, databuf%d->buff,"
-		      " %d, %d) -> %s\n",
-		      self->serial, databuf->serial, databuf->serial,
+	if (self->debug) {
+	    debug_msg("ct_param(cmd%d, &databuf%d->fmt=",
+		      self->serial, databuf->serial);
+	    datafmt_debug(&databuf->fmt);
+	    debug_msg(", databuf%d->buff, %d, %d) -> %s\n",
+		      databuf->serial,
 		      (int)databuf->copied[0], databuf->indicator[0],
 		      value_str(VAL_STATUS, status));
+	}
 	if (PyErr_Occurred())
 	    return NULL;
     } else if (CS_DATAFMT_Check(obj)) {
@@ -850,10 +858,12 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 	SY_END_THREADS;
 	SY_LOCK_RELEASE(self->conn);
 
-	if (self->debug)
-	    debug_msg("ct_param(cmd%s, &fmt, NULL, CS_UNUSED, CS_UNUSED)"
-		      " -> %s\n",
-		      self->serial, value_str(VAL_STATUS, status));
+	if (self->debug) {
+	    debug_msg("ct_param(cmd%s, &fmt=", self->serial);
+	    datafmt_debug(&datafmt->fmt);
+	    debug_msg(", NULL, CS_UNUSED, CS_UNUSED) -> %s\n",
+		      value_str(VAL_STATUS, status));
+	}
 	if (PyErr_Occurred())
 	    return NULL;
     } else {
@@ -1219,12 +1229,15 @@ static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
     SY_END_THREADS;
     SY_LOCK_RELEASE(self->conn);
 
-    if (self->debug)
-	debug_msg("ct_setparam(cmd%d, &databuf%d->fmt, databuf%d->buff,"
+    if (self->debug) {
+	debug_msg("ct_setparam(cmd%d, &databuf%d->fmt=",
+		  self->serial, databuf->serial);
+	datafmt_debug(&databuf->fmt);
+	debug_msg(", databuf%d->buff,"
 		  " &databuf%d->copied[0], &databuf%d->indicator[0]) -> %s\n",
-		  self->serial, databuf->serial, databuf->serial,
-		  databuf->serial, databuf->serial,
+		  databuf->serial, databuf->serial, databuf->serial,
 		  value_str(VAL_STATUS, status));
+    }
     if (PyErr_Occurred())
 	return NULL;
 

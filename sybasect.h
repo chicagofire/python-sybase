@@ -160,6 +160,7 @@ void float_datafmt(CS_DATAFMT *fmt);
 extern char datafmt_new__doc__[];
 PyObject *datafmt_new(PyObject *module, PyObject *args);
 PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip);
+void datafmt_debug(CS_DATAFMT *fmt);
 
 typedef struct {
     PyObject_HEAD
