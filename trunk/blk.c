@@ -644,9 +644,9 @@ PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version)
 #ifdef HAVE_BLK_ALLOC
     /* PyErr_Clear(); */
 
-    SY_CONN_BEGIN_THREADS(self->conn);
+    SY_CONN_BEGIN_THREADS(conn);
     status = blk_alloc(conn->conn, version, &blk);
-    SY_CONN_END_THREADS(self->conn);
+    SY_CONN_END_THREADS(conn);
 
     if (self->debug)
 	debug_msg("blk_alloc(conn%d, %s, &blk%d) -> %s",
