@@ -68,6 +68,13 @@ typedef struct CS_CONNECTIONObj {
 
 typedef struct {
     PyObject_HEAD
+    CS_CONTEXTObj *ctx;
+    CS_LOCALE *locale;
+    int debug;
+} CS_LOCALEObj;
+
+typedef struct {
+    PyObject_HEAD
     CS_CONNECTIONObj *conn;
     CS_BLKDESC *blk;
     CS_INT direction;
@@ -124,6 +131,7 @@ extern PyTypeObject CS_BLKDESCType;
 extern PyTypeObject CS_COMMANDType;
 extern PyTypeObject CS_DATAFMTType;
 extern PyTypeObject CS_IODESCType;
+extern PyTypeObject CS_LOCALEType;
 extern PyTypeObject CS_CLIENTMSGType;
 extern PyTypeObject CS_SERVERMSGType;
 extern PyTypeObject BufferType;
@@ -134,7 +142,7 @@ int first_tuple_int(PyObject *args, int *int_arg);
 enum { CSVER, ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT,
        BULK, BULKDIR, BULKPROPS, DYNAMIC, PROPS, DIRSERV, SECURITY, NETIO,
        OPTION, DATEDAY, DATEFMT, DATAFMT, LEVEL, TYPE, STATUS, STATUSFMT,
-       CBTYPE, };
+       CBTYPE, CSDATES, LOCALE, DTINFO, };
 
 char *value_str(int type, int value);
 
@@ -155,20 +163,29 @@ CS_CONTEXT *global_ctx(void);
 PyObject *ctx_find_object(CS_CONTEXT *cs_ctx);
 PyObject *ctx_alloc(CS_INT version);
 PyObject *ctx_global(CS_INT version);
+
 PyObject *conn_alloc(CS_CONTEXTObj *ctx);
 PyObject *conn_find_object(CS_CONNECTION *conn);
+
 PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version);
+
 PyObject *cmd_alloc(CS_CONNECTIONObj *conn);
 PyObject *cmd_eed(CS_CONNECTIONObj *conn, CS_COMMAND *eed);
+
 PyObject *clientmsg_alloc(void);
 PyObject *servermsg_alloc(void);
+
 extern char datafmt_new__doc__[];
 PyObject *datafmt_new(PyObject *module, PyObject *args);
 PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip);
+
 extern char iodesc_new__doc__[];
 PyObject *iodesc_new(PyObject *module, PyObject *args);
 PyObject *iodesc_alloc(CS_IODESC *iodesc);
 PyObject *buffer_alloc(PyObject *obj);
+
+PyObject *locale_alloc(CS_CONTEXTObj *ctx);
+
 NumericObj *numeric_alloc(CS_NUMERIC *num);
 int numeric_as_string(PyObject *obj, char *text);
 extern char numeric_new__doc__[];

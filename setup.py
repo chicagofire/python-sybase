@@ -26,7 +26,7 @@ setup (name = "Sybase",
        ext_modules = [
            Extension('sybasect',
                      ['blk.c', 'buffer.c', 'cmd.c', 'conn.c', 'ctx.c',
-                      'datafmt.c', 'iodesc.c', 'msgs.c',
+                      'datafmt.c', 'iodesc.c', 'locale.c', 'msgs.c',
                       'numeric.c', 'sybasect.c'],
                      libraries = syb_libs,
                      library_dirs = [syb_libdir]
