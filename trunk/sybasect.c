@@ -1155,6 +1155,9 @@ static value_desc sybase_args[] = {
     SYVAL(DATAFMT, CS_FMT_SAFESTR),
 #endif
 
+#ifdef CS_FORCE_EXIT
+    SYVAL(OPTION, CS_FORCE_EXIT),
+#endif
 #ifdef CS_FORCE_CLOSE
     SYVAL(OPTION, CS_FORCE_CLOSE),
 #endif
