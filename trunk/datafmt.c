@@ -24,11 +24,14 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
-void money_datafmt(CS_DATAFMT *fmt)
+void money_datafmt(CS_DATAFMT *fmt, int type)
 {
     memset(fmt, 0, sizeof(*fmt));
     fmt->datatype = CS_MONEY_TYPE;
-    fmt->maxlength = sizeof(CS_MONEY);
+    if (type == CS_MONEY_TYPE)
+	fmt->maxlength = sizeof(CS_MONEY);
+    else
+	fmt->maxlength = sizeof(CS_MONEY4);
     fmt->locale = NULL;
     fmt->format = CS_FMT_UNUSED;
     fmt->precision = 0;

@@ -115,7 +115,7 @@ typedef struct {
 extern PyTypeObject CS_DATAFMTType;
 #define CS_DATAFMT_Check(obj) (obj->ob_type == &CS_DATAFMTType)
 void datetime_datafmt(CS_DATAFMT *fmt, int type);
-void money_datafmt(CS_DATAFMT *fmt);
+void money_datafmt(CS_DATAFMT *fmt, int type);
 void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale);
 void char_datafmt(CS_DATAFMT *fmt);
 void int_datafmt(CS_DATAFMT *fmt);
@@ -163,14 +163,21 @@ void copy_reg_numeric(PyObject *dict);
 extern char pickle_numeric__doc__[];
 PyObject *pickle_numeric(PyObject *module, PyObject *args);
 
+typedef union {
+    CS_MONEY money;
+    CS_MONEY4 money4;
+} MoneyUnion;
+
 typedef struct {
     PyObject_HEAD
-    CS_MONEY num;
+    int type;
+    MoneyUnion v;
 } MoneyObj;
 
 extern PyTypeObject MoneyType;
 #define Money_Check(obj) (obj->ob_type == &MoneyType)
-MoneyObj *money_alloc(CS_MONEY *num);
+MoneyObj *money_alloc(MoneyUnion *num, int type);
+int money_assign(PyObject *obj, int type, void *buff);
 int money_as_string(PyObject *obj, char *text);
 extern char MoneyType_new__doc__[];
 PyObject *MoneyType_new(PyObject *module, PyObject *args);

@@ -87,6 +87,8 @@ PyObject *databuf_alloc(PyObject *obj)
 	    numeric_datafmt(&self->fmt, CS_SRC_VALUE, CS_SRC_VALUE);
 	else if (DateTime_Check(obj))
 	    datetime_datafmt(&self->fmt, ((DateTimeObj*)obj)->type);
+	else if (Money_Check(obj))
+	    money_datafmt(&self->fmt, ((MoneyObj*)obj)->type);
 	else if (PyString_Check(obj)) {
 	    char_datafmt(&self->fmt);
 	    self->fmt.maxlength = PyString_Size(obj) + 1;
@@ -187,7 +189,10 @@ static PyObject *DataBuf_item(DataBufObj *self, int i)
 	return PyInt_FromLong(*(CS_INT*)item);
 
     case CS_MONEY_TYPE:
-	return (PyObject*)money_alloc(item);
+	return (PyObject*)money_alloc(item, CS_MONEY_TYPE);
+
+    case CS_MONEY4_TYPE:
+	return (PyObject*)money_alloc(item, CS_MONEY4_TYPE);
 
     case CS_REAL_TYPE:
 	return PyFloat_FromDouble(*(CS_REAL*)item);
@@ -310,7 +315,18 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	    PyErr_SetString(PyExc_TypeError, "money expected");
 	    return -1;
 	}
-	*(CS_MONEY*)item = ((MoneyObj*)v)->num;
+	if (money_assign(v, CS_MONEY_TYPE, self->buff) != CS_SUCCEED)
+	    return -1;
+	self->copied[i] = self->fmt.maxlength;
+	break;
+
+    case CS_MONEY4_TYPE:
+	if (!Money_Check(v)) {
+	    PyErr_SetString(PyExc_TypeError, "money expected");
+	    return -1;
+	}
+	if (money_assign(v, CS_MONEY4_TYPE, self->buff) != CS_SUCCEED)
+	    return -1;
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
