@@ -68,6 +68,16 @@ typedef unsigned char CS_TEXT;
 typedef unsigned char CS_IMAGE;
 typedef CS_NUMERIC CS_DECIMAL;
 
+/* Emulate Sybase inline error handling
+ */
+#define CS_CLEAR 35
+#define CS_INIT 36
+#define CS_STATUS 37
+#define CS_MSGLIMIT 38
+#define CS_CLIENTMSG_TYPE 4700
+#define CS_SERVERMSG_TYPE 4701
+#define CS_ALLMSG_TYPE 4702
+
 /* FreeTDS does not define these in their include files for some reason...
  */
 CS_RETCODE blk_bind(CS_BLKDESC *blkdesc, CS_INT colnum, CS_DATAFMT *datafmt, CS_VOID *buffer, CS_INT *datalen, CS_SMALLINT *indicator);
