@@ -57,6 +57,12 @@ typedef struct CS_CONTEXTObj {
     struct CS_CONTEXTObj *next;
 } CS_CONTEXTObj;
 
+extern PyTypeObject CS_CONTEXTType;
+CS_CONTEXT *global_ctx(void);
+PyObject *ctx_find_object(CS_CONTEXT *cs_ctx);
+PyObject *ctx_alloc(CS_INT version);
+PyObject *ctx_global(CS_INT version);
+
 typedef struct CS_CONNECTIONObj {
     PyObject_HEAD
     CS_CONTEXTObj *ctx;
@@ -66,6 +72,10 @@ typedef struct CS_CONNECTIONObj {
     struct CS_CONNECTIONObj *next;
 } CS_CONNECTIONObj;
 
+extern PyTypeObject CS_CONNECTIONType;
+PyObject *conn_alloc(CS_CONTEXTObj *ctx);
+PyObject *conn_find_object(CS_CONNECTION *conn);
+
 typedef struct {
     PyObject_HEAD
     CS_CONNECTIONObj *conn;
@@ -73,6 +83,9 @@ typedef struct {
     CS_INT direction;
     int debug;
 } CS_BLKDESCObj;
+
+extern PyTypeObject CS_BLKDESCType;
+PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version);
 
 typedef struct {
     PyObject_HEAD
@@ -83,16 +96,36 @@ typedef struct {
     int debug;
 } CS_COMMANDObj;
 
+extern PyTypeObject CS_COMMANDType;
+PyObject *cmd_alloc(CS_CONNECTIONObj *conn);
+PyObject *cmd_eed(CS_CONNECTIONObj *conn, CS_COMMAND *eed);
+
 typedef struct {
     PyObject_HEAD
     CS_DATAFMT fmt;
     int strip;
 } CS_DATAFMTObj;
 
+extern PyTypeObject CS_DATAFMTType;
+void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale);
+void char_datafmt(CS_DATAFMT *fmt);
+void int_datafmt(CS_DATAFMT *fmt);
+void float_datafmt(CS_DATAFMT *fmt);
+extern char datafmt_new__doc__[];
+PyObject *datafmt_new(PyObject *module, PyObject *args);
+PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip);
+int CS_DATAFMT_Check(PyObject *obj);
+
 typedef struct {
     PyObject_HEAD
     CS_IODESC iodesc;
 } CS_IODESCObj;
+
+extern PyTypeObject CS_IODESCType;
+extern char iodesc_new__doc__[];
+PyObject *iodesc_new(PyObject *module, PyObject *args);
+PyObject *iodesc_alloc(CS_IODESC *iodesc);
+int CS_IODESC_Check(PyObject *obj);
 
 typedef struct {
     PyObject_HEAD
@@ -103,10 +136,22 @@ typedef struct {
     CS_SMALLINT *indicator;
 } DataBufObj;
 
+extern PyTypeObject DataBufType;
+PyObject *databuf_alloc(PyObject *obj);
+int DataBuf_Check(PyObject *obj);
+
 typedef struct {
     PyObject_HEAD
     CS_NUMERIC num;
 } NumericObj;
+
+extern PyTypeObject NumericType;
+NumericObj *numeric_alloc(CS_NUMERIC *num);
+int numeric_as_string(PyObject *obj, char *text);
+extern char numeric_new__doc__[];
+PyObject *NumericType_new(PyObject *module, PyObject *args);
+int Numeric_Check(PyObject *obj);
+void copy_reg_numeric(PyObject *dict);
 
 typedef struct {
     PyObject_HEAD
@@ -118,16 +163,10 @@ typedef struct {
     CS_SERVERMSG msg;
 } CS_SERVERMSGObj;
 
-extern PyTypeObject CS_CONTEXTType;
-extern PyTypeObject CS_CONNECTIONType;
-extern PyTypeObject CS_BLKDESCType;
-extern PyTypeObject CS_COMMANDType;
-extern PyTypeObject CS_DATAFMTType;
-extern PyTypeObject CS_IODESCType;
 extern PyTypeObject CS_CLIENTMSGType;
 extern PyTypeObject CS_SERVERMSGType;
-extern PyTypeObject DataBufType;
-extern PyTypeObject NumericType;
+PyObject *clientmsg_alloc(void);
+PyObject *servermsg_alloc(void);
 
 int first_tuple_int(PyObject *args, int *int_arg);
 
@@ -138,45 +177,4 @@ enum { CSVER, ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT,
 
 char *value_str(int type, int value);
 
-int Numeric_Check(PyObject *obj);
-int DataBuf_Check(PyObject *obj);
-int CS_DATAFMT_Check(PyObject *obj);
-int CS_IODESC_Check(PyObject *obj);
-
 #define NUMERIC_LEN (CS_MAX_PREC + 1)
-
-void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale);
-void char_datafmt(CS_DATAFMT *fmt);
-void int_datafmt(CS_DATAFMT *fmt);
-void float_datafmt(CS_DATAFMT *fmt);
-
-CS_CONTEXT *global_ctx(void);
-
-PyObject *ctx_find_object(CS_CONTEXT *cs_ctx);
-PyObject *ctx_alloc(CS_INT version);
-PyObject *ctx_global(CS_INT version);
-
-PyObject *conn_alloc(CS_CONTEXTObj *ctx);
-PyObject *conn_find_object(CS_CONNECTION *conn);
-
-PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version);
-
-PyObject *cmd_alloc(CS_CONNECTIONObj *conn);
-PyObject *cmd_eed(CS_CONNECTIONObj *conn, CS_COMMAND *eed);
-
-PyObject *clientmsg_alloc(void);
-PyObject *servermsg_alloc(void);
-
-extern char datafmt_new__doc__[];
-PyObject *datafmt_new(PyObject *module, PyObject *args);
-PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip);
-
-extern char iodesc_new__doc__[];
-PyObject *iodesc_new(PyObject *module, PyObject *args);
-PyObject *iodesc_alloc(CS_IODESC *iodesc);
-PyObject *buffer_alloc(PyObject *obj);
-
-NumericObj *numeric_alloc(CS_NUMERIC *num);
-int numeric_as_string(PyObject *obj, char *text);
-extern char numeric_new__doc__[];
-PyObject *NumericType_new(PyObject *module, PyObject *args);

@@ -40,7 +40,7 @@ setup (name = "Sybase",
        include_dirs = [syb_incdir, mxdatetime_incdir],
        ext_modules = [
            Extension('sybasect',
-                     ['blk.c', 'buffer.c', 'cmd.c', 'conn.c', 'ctx.c',
+                     ['blk.c', 'databuf.c', 'cmd.c', 'conn.c', 'ctx.c',
                       'datafmt.c', 'iodesc.c', 'msgs.c',
                       'numeric.c', 'sybasect.c'],
                      libraries = syb_libs,

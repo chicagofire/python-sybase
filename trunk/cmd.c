@@ -31,7 +31,7 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
 {
     CS_INT item;
     CS_DATAFMTObj *datafmt;
-    DataBufObj *buffer;
+    DataBufObj *databuf;
     CS_RETCODE status;
 
     if (!PyArg_ParseTuple(args, "iO!", &item, &CS_DATAFMTType, &datafmt))
@@ -42,18 +42,18 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
 	return NULL;
     }
 
-    buffer = (DataBufObj *)buffer_alloc((PyObject*)datafmt);
-    if (buffer == NULL)
+    databuf = (DataBufObj *)databuf_alloc((PyObject*)datafmt);
+    if (databuf == NULL)
 	return NULL;
 
     SY_BEGIN_THREADS;
     status = ct_bind(self->cmd, item, &datafmt->fmt,
-		     buffer->buff, buffer->copied, buffer->indicator);
+		     databuf->buff, databuf->copied, databuf->indicator);
     SY_END_THREADS;
     if (self->debug)
 	fprintf(stderr, "ct_bind(%d) -> %s\n",
 		(int)item, value_str(STATUS, status));
-    return Py_BuildValue("iN", status, buffer);
+    return Py_BuildValue("iN", status, databuf);
 }
 
 static char CS_COMMAND_ct_cancel__doc__[] = 
@@ -119,7 +119,7 @@ static char CS_COMMAND_ct_command__doc__[] =
 static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
 {
     int type;
-    char *buffer;
+    char *databuf;
     CS_INT num;
     CS_INT option = CS_UNUSED;
     CS_RETCODE status;
@@ -141,15 +141,15 @@ static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
 	/* ct_command(CS_RPC_CMD, name [,option]) -> status */
 	if (type_str == NULL)
 	    type_str = "CS_RPC_CMD";
-	if (!PyArg_ParseTuple(args, "is|i", &type, &buffer, &option))
+	if (!PyArg_ParseTuple(args, "is|i", &type, &databuf, &option))
 	    return NULL;
 
 	SY_BEGIN_THREADS;
-	status = ct_command(self->cmd, type, buffer, CS_NULLTERM, option);
+	status = ct_command(self->cmd, type, databuf, CS_NULLTERM, option);
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_command(%s, %s, %s) -> %s\n",
-		    type_str, buffer, value_str(CMD, option),
+		    type_str, databuf, value_str(CMD, option),
 		    value_str(STATUS, status));
 	return PyInt_FromLong(status);
 
@@ -168,15 +168,15 @@ static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
 
     case CS_PACKAGE_CMD:
 	/* ct_command(CS_PACKAGE_CMD, name) -> status */
-	if (!PyArg_ParseTuple(args, "is", &type, &buffer))
+	if (!PyArg_ParseTuple(args, "is", &type, &databuf))
 	    return NULL;
 
 	SY_BEGIN_THREADS;
-	status = ct_command(self->cmd, type, buffer, CS_NULLTERM, CS_UNUSED);
+	status = ct_command(self->cmd, type, databuf, CS_NULLTERM, CS_UNUSED);
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_command(CS_PACKAGE_CMD, %s) -> %s\n",
-		    buffer, value_str(STATUS, status));
+		    databuf, value_str(STATUS, status));
 	return PyInt_FromLong(status);
 
     case CS_SEND_DATA_CMD:
@@ -529,11 +529,11 @@ static char CS_COMMAND_ct_get_data__doc__[] =
 
 static PyObject *CS_COMMAND_ct_get_data(CS_COMMANDObj *self, PyObject *args)
 {
-    DataBufObj *buffer;
+    DataBufObj *databuf;
     int num;
     CS_RETCODE status;
 
-    if (!PyArg_ParseTuple(args, "iO!", &num, &DataBufType, &buffer))
+    if (!PyArg_ParseTuple(args, "iO!", &num, &DataBufType, &databuf))
 	return NULL;
 
     if (self->cmd == NULL) {
@@ -543,15 +543,15 @@ static PyObject *CS_COMMAND_ct_get_data(CS_COMMANDObj *self, PyObject *args)
 
     SY_BEGIN_THREADS;
     status = ct_get_data(self->cmd, (CS_INT)num,
-			 buffer->buff, buffer->fmt.maxlength,
-			 &buffer->copied[0]);
-    buffer->indicator[0] = 0;
+			 databuf->buff, databuf->fmt.maxlength,
+			 &databuf->copied[0]);
+    databuf->indicator[0] = 0;
     SY_END_THREADS;
     if (self->debug)
 	fprintf(stderr, "ct_get_data(%d) -> %s, %d\n",
-		num, value_str(STATUS, status), (int)buffer->copied[0]);
+		num, value_str(STATUS, status), (int)databuf->copied[0]);
 
-    return Py_BuildValue("ii", status, buffer->copied[0]);
+    return Py_BuildValue("ii", status, databuf->copied[0]);
 }
 
 static char CS_COMMAND_ct_param__doc__[] = 
@@ -572,12 +572,12 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 
     /* FIXME: Need to handle CS_UPDATECOL variant */
     if (DataBuf_Check(obj)) {
-	DataBufObj *buffer = (DataBufObj *)obj;
+	DataBufObj *databuf = (DataBufObj *)obj;
 
 	SY_BEGIN_THREADS;
-	status = ct_param(self->cmd, &buffer->fmt,
-			  buffer->buff, buffer->copied[0],
-			  buffer->indicator[0]);
+	status = ct_param(self->cmd, &databuf->fmt,
+			  databuf->buff, databuf->copied[0],
+			  databuf->indicator[0]);
 	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_param(buf) -> %s\n",
@@ -808,9 +808,9 @@ static char CS_COMMAND_ct_send_data__doc__[] =
 static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
 {
     CS_RETCODE status;
-    DataBufObj *buffer;
+    DataBufObj *databuf;
 
-    if (!PyArg_ParseTuple(args, "O!", &DataBufType, &buffer))
+    if (!PyArg_ParseTuple(args, "O!", &DataBufType, &databuf))
 	return NULL;
 
     if (self->cmd == NULL) {
@@ -819,7 +819,7 @@ static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
     }
 
     SY_BEGIN_THREADS;
-    status = ct_send_data(self->cmd, buffer->buff, buffer->copied[0]);
+    status = ct_send_data(self->cmd, databuf->buff, databuf->copied[0]);
     SY_END_THREADS;
 
     if (self->debug)
@@ -832,10 +832,10 @@ static char CS_COMMAND_ct_setparam__doc__[] =
 
 static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
 {
-    DataBufObj *buffer;
+    DataBufObj *databuf;
     CS_RETCODE status;
 
-    if (!PyArg_ParseTuple(args, "O!", &DataBufType, &buffer))
+    if (!PyArg_ParseTuple(args, "O!", &DataBufType, &databuf))
 	return NULL;
 
     if (self->cmd == NULL) {
@@ -844,9 +844,9 @@ static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
     }
 
     SY_BEGIN_THREADS;
-    status = ct_setparam(self->cmd, &buffer->fmt,
-			 buffer->buff, &buffer->copied[0],
-			 &buffer->indicator[0]);
+    status = ct_setparam(self->cmd, &databuf->fmt,
+			 databuf->buff, &databuf->copied[0],
+			 &databuf->indicator[0]);
     SY_END_THREADS;
     if (self->debug)
 	fprintf(stderr, "ct_setparam() -> %s\n", value_str(STATUS, status));
