@@ -148,9 +148,9 @@ def write_to_table(conn, data):
     # getting the bulk descriptor and initialize
     status, blk = conn.blk_alloc(EX_BLK_VERSION)
     if status != CS_SUCCEED:
-        raise CSError(conn.ctx, 'blk_alloc failed')
+        raise CSError(conn, 'blk_alloc failed')
     if blk.blk_init(CS_BLK_IN, 'test_pubs') != CS_SUCCEED:
-        raise CSError(conn.ctx, 'blk_init failed')
+        raise CTError(conn, 'blk_init failed')
 
     # Now bind the variables to the columns and transfer the data
     fmt = CS_DATAFMT()
@@ -218,7 +218,7 @@ status, cmd = conn.ct_cmd_alloc()
 if status != CS_SUCCEED:
     raise CTError(conn, 'ct_cmd_alloc failed')
 # Send a command to set the database context
-send_sql(cmd, 'use tempdb')
+send_sql(cmd, 'use pubs2')
 # handle results from the current command
 handle_returns(cmd)
 # Call the bulk copy routine
