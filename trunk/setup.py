@@ -101,7 +101,7 @@ for api in ('ct_cursor', 'ct_data_info', 'ct_dynamic', 'ct_send_data',
             'ct_setparam',):
     if api_exists(api, os.path.join(syb_incdir, 'ctpublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
-for api in ('cs_calc', 'cs_cmp'):
+for api in ('cs_calc', 'cs_cmp',):
     if api_exists(api, os.path.join(syb_incdir, 'cspublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
 
