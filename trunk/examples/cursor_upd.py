@@ -10,13 +10,13 @@ MAX_COLSIZE = 255
 
 def init_db():
     # allocate a context
-    status, ctx = cs_ctx_alloc(EX_CTLIB_VERSION)
+    status, ctx = cs_ctx_alloc(CS_VERSION_100)
     if status != CS_SUCCEED:
         raise Error('cs_ctx_alloc failed')
     if ctx.cs_diag(CS_INIT) != CS_SUCCEED:
         raise CSError(ctx, 'cs_diag failed')
     # initialize the library
-    if ctx.ct_init(EX_CTLIB_VERSION) != CS_SUCCEED:
+    if ctx.ct_init(CS_VERSION_100) != CS_SUCCEED:
         raise CSError(ctx, 'ct_init failed')
     return ctx
 
@@ -56,6 +56,27 @@ def bind_columns(cmd):
         bufs[i] = buf
     return bufs
 
+def single_row(cmd):
+    state = raw_input('New state: ')
+    if not len(state):
+        # If the user hit 'enter' for the new input value, don't
+        # bother updating.Return to the calling function.
+        return
+    sql = 'update pubs2.dbo.publishers2 set state = @state'
+    if cmd.ct_cursor(CS_CURSOR_UPDATE,
+                     'pubs2.dbo.publishers2', sql) != CS_SUCCEED:
+        raise CTError(cmd.conn, 'ct_cursor CS_CURSOR_UPDATE failed')
+    # Set up the parameters for the update
+    buf = Buffer(state)
+    buf.name = '@state'
+    buf.status = CS_INPUTVALUE;
+    # If an input value was entered, do the update.
+    if cmd.ct_param(buf) != CS_SUCCEED:
+        raise CTError(cmd.conn, 'ct_param failed')
+    if cmd.ct_send() != CS_SUCCEED:
+        raise CTError(cmd.conn, 'ct_send failed')
+    handle_returns(cmd)
+
 def fetch_n_print(cmd, bufs):
     status, num_cols = cmd.ct_res_info(CS_NUMDATA)
     if status != CS_SUCCEED:
@@ -72,6 +93,7 @@ def fetch_n_print(cmd, bufs):
         for i in range(num_cols):
             print ' %s \t' % bufs[i][0],
         print
+        single_row(cmd)
     if status != CS_END_DATA:
         raise CTError(cmd.conn, 'ct_fetch failed')
 
@@ -102,36 +124,17 @@ def handle_returns(cmd):
         raise CTError(cmd.conn, 'ct_results failed')
 
 def open_cursor(cmd):
-    sql = 'select * from pubs2.dbo.publishers where state = @state'
-    # This cursor will retrieve the records of all publishers for a
-    # given state. This value is to be input by the user.
-    prompt = 'Retrieve records of publishers from which state: [CA/MA] ?'
-    inp_state = raw_input(prompt)
-    # Declare and open the cursor.
     if cmd.ct_cursor(CS_CURSOR_DECLARE,
-                     'browse_cursor', sql, CS_READ_ONLY) != CS_SUCCEED:
-        raise CTError(cmd.conn, 'ct_cursor failed')
-    # Declare the input parameter for the cursor.
-    fmt = CS_DATAFMT()
-    fmt.name = '@state'
-    fmt.datatype = CS_CHAR_TYPE
-    fmt.status = CS_INPUTVALUE
-    fmt.maxlength = CS_UNUSED
-    if cmd.ct_param(fmt) != CS_SUCCEED:
-        raise CTError(cmd.conn, 'ct_param failed')
-
+                     'browse_cursor', 'select * from pubs2.dbo.publishers2',
+                     CS_FOR_UPDATE) != CS_SUCCEED:
+        raise CTError(cmd.conn, 'ct_cursor CS_CURSOR_DECLARE failed')
     if cmd.ct_cursor(CS_CURSOR_OPEN) != CS_SUCCEED:
-        raise CTError(cmd.conn, 'ct_cursor failed')
-    # Define the input parameter.
-    buf2 = Buffer(inp_state)
-    buf2.name = '@state'
-    if cmd.ct_param(buf2) != CS_SUCCEED:
-        raise CTError(cmd.conn, 'ct_param failed')
+        raise CTError(cmd.conn, 'ct_cursor CS_CURSOR_OPEN failed')
     if cmd.ct_send() != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_send failed')
     handle_returns(cmd)
     if cmd.ct_cursor(CS_CURSOR_CLOSE, CS_DEALLOC) != CS_SUCCEED:
-        raise CTError(cmd.conn, 'ct_cursor failed')
+        raise CTError(cmd.conn, 'ct_cursor CS_CURSOR_CLOSE failed')
     if cmd.ct_send() != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_send failed')
     handle_returns(cmd)
@@ -163,6 +166,6 @@ if cmd.ct_cmd_drop() != CS_SUCCEED:
     raise CTError(conn, 'ct_cmd_drop failed')
 # Close connection to the server
 status = conn.ct_close()
-# Drop the context and do general cleanup
+# Drop the context and perform cleanup
 cleanup_db(ctx, status)
 print '\n End of program run!'
