@@ -3,9 +3,6 @@
 - Enforce single result set over each connection by attaching all
   cursors to parent connection with a weakref.
 
-- Change documentation to describe Sybase CT library wrapping not CT
-  function semantics.
-
 - Change exception handling in Sybase.py
 
   * use message codes in ct_diag/cs_diag to determine type of
@@ -27,3 +24,5 @@
 - PyUnit
 
 - Bulkcopy copy out
+
+- DataBuf[n] = val should do conversions
