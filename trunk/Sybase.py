@@ -21,7 +21,7 @@ from sybasect import *
 
 set_debug(sys.stderr)
 
-__version__ = '0.35pre1'
+__version__ = '0.35pre2'
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
@@ -141,7 +141,7 @@ def _clientmsg_cb(ctx, conn, msg):
     raise DatabaseError(_fmt_client(msg))
 
 def _servermsg_cb(ctx, conn, msg):
-    if msg.msgnumber not in (5701,):
+    if msg.msgnumber not in (5701, 5703):
         raise DatabaseError(_fmt_server(msg))
 
 def _row_bind(cmd, count = 1):
@@ -165,15 +165,17 @@ def _row_bind(cmd, count = 1):
 def _extract_row(bufs, n):
     '''Extract a row tuple from buffers.
     '''
-    row = []
+    row = [None] * len(bufs)
+    col = 0
     for buf in bufs:
-        col = buf[n]
-        if use_datetime and type(col) is DateTimeType:
-            row.append(DateTime.DateTime(col.year, col.month + 1, col.day,
-                                         col.hour, col.minute,
-                                         col.second + col.msecond / 1000.0))
+        val = buf[n]
+        if use_datetime and type(val) is DateTimeType:
+            row[col] = DateTime.DateTime(val.year, val.month + 1, val.day,
+                                         val.hour, val.minute,
+                                         val.second + val.msecond / 1000.0)
         else:
-            row.append(col)
+            row[col] = val
+        col = col + 1
     return tuple(row)
         
 def _fetch_rows(cmd, bufs):
@@ -234,15 +236,38 @@ class Cursor:
         self.rowcount = -1              # DB-API
         self.arraysize = 1              # DB-API
         self._owner = owner
-        self._state = _CUR_IDLE
         self._lock_count = 0
-        self._lock()
+        self._do_locking = owner._do_locking
+        self._open()
+
+    def _open(self):
+        if self._do_locking:
+            self._lock()
         try:
-            status, self._cmd = owner._conn.ct_cmd_alloc()
+            status, self._cmd = self._owner._conn.ct_cmd_alloc()
             if status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_cmd_alloc')
+            self._state = _CUR_IDLE
         finally:
-            self._unlock()
+            if self._do_locking:
+                self._unlock()
+
+    def _close(self):
+        if self._state == _CUR_CLOSED:
+            return
+        if self._do_locking:
+            self._lock()
+        try:
+            if self._state != _CUR_IDLE:
+                status = self._cmd.ct_cancel(CS_CANCEL_ALL)
+                if status == CS_SUCCEED:
+                    if self._do_locking:
+                        self._unlock()
+            self._cmd = None
+            self._state = _CUR_CLOSED
+        finally:
+            if self._do_locking:
+                self._unlock()
 
     def __del__(self):
         if self._state not in (_CUR_IDLE, _CUR_CLOSED):
@@ -251,93 +276,95 @@ class Cursor:
             # By the time we get called the threading module might
             # have killed the thread the lock was created in ---
             # oops.
-            count, owner = self._owner._lock._release_save()
-            self._owner._lock._acquire_restore((count, threading.currentThread()))
+            count, owner = self._owner._connlock._release_save()
+            self._owner._connlock._acquire_restore((count, threading.currentThread()))
             while self._lock_count:
                 self._unlock()
 
     def _lock(self):
-        self._owner._lock.acquire()
+        if not self._do_locking:
+            return
+        self._owner._lock()
         self._lock_count = self._lock_count + 1
 
     def _unlock(self):
-        self._owner._lock.release()
+        if not self._do_locking:
+            return
+        self._owner._unlock()
         self._lock_count = self._lock_count - 1
 
     def _raise_error(self, exc, text):
         if self._state not in (_CUR_IDLE, _CUR_CLOSED):
             if self._owner._conn.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
                 self._state = _CUR_IDLE
-                self._unlock()
+                if self._do_locking:
+                    self._unlock()
         raise exc(text)
 
     def callproc(self, name, params = ()):
         '''DB-API Cursor.callproc()
         '''
-        self._lock()
+        if self._do_locking:
+            self._lock()
         try:
             if self._state == _CUR_CLOSED:
                 self._raise_error(ProgrammingError, 'cursor is closed')
-            while self._state != _CUR_IDLE:
-                self.nextset()
-            if self._state == _CUR_IDLE:
-                # At the start of a command acquire an extra lock -
-                # when the cursor is idle again the extra lock will be
-                # released.
+            if self._state != _CUR_IDLE:
+                self._close()
+                self._open()
+            # At the start of a command acquire an extra lock -
+            # when the cursor is idle again the extra lock will be
+            # released.
+            if self._do_locking:
                 self._lock()
-                status = self._cmd.ct_command(CS_RPC_CMD, name)
-                if status != CS_SUCCEED:
-                    self._raise_error(Error, 'ct_command')
-                if type(params) is type({}):
-                    for name, value in params.items():
-                        buf = DataBuf(value)
-                        buf.name = name
-                        status = self._cmd.ct_param(buf)
-                        if status != CS_SUCCEED:
-                            self._raise_error(Error, 'ct_param')
-                else:
-                    for value in params:
-                        buf = DataBuf(value)
-                        status = self._cmd.ct_param(buf)
-                        if status != CS_SUCCEED:
-                            self._raise_error(Error, 'ct_param')
-                status = self._cmd.ct_send()
-                if status != CS_SUCCEED:
-                    self._raise_error(Error, 'ct_send')
-                self._state = _CUR_FETCHING
-                self._start_results()
+            status = self._cmd.ct_command(CS_RPC_CMD, name)
+            if status != CS_SUCCEED:
+                self._raise_error(Error, 'ct_command')
+            if type(params) is type({}):
+                for name, value in params.items():
+                    buf = DataBuf(value)
+                    buf.name = name
+                    status = self._cmd.ct_param(buf)
+                    if status != CS_SUCCEED:
+                        self._raise_error(Error, 'ct_param')
+            else:
+                for value in params:
+                    buf = DataBuf(value)
+                    status = self._cmd.ct_param(buf)
+                    if status != CS_SUCCEED:
+                        self._raise_error(Error, 'ct_param')
+            status = self._cmd.ct_send()
+            if status != CS_SUCCEED:
+                self._raise_error(Error, 'ct_send')
+            self._state = _CUR_FETCHING
+            self._start_results()
         finally:
-            self._unlock()
+            if self._do_locking:
+                self._unlock()
 
     def close(self):
         '''DB-API Cursor.close()
         '''
-        self._lock()
-        try:
-            if self._state == _CUR_CLOSED:
-                self._raise_error(Error, 'cursor is closed')
-            if self._state != _CUR_IDLE:
-                status = self._cmd.ct_cancel(CS_CANCEL_ALL)
-                if status == CS_SUCCEED:
-                    self._unlock()
-            self._cmd = None
-            self._state = _CUR_CLOSED
-        finally:
-            self._unlock()
+        if self._state == _CUR_CLOSED:
+            self._raise_error(Error, 'cursor is closed')
+        self._close()
 
     def execute(self, sql, params = {}):
         '''DB-API Cursor.execute()
         '''
-        self._lock()
+        if self._do_locking:
+            self._lock()
         try:
             if self._state == _CUR_CLOSED:
                 self._raise_error(Error, 'cursor is closed')
-            while self._state != _CUR_IDLE:
-                self.nextset()
+            if self._state != _CUR_IDLE:
+                self._close()
+                self._open()
             # At the start of a command acquire an extra lock - when
             # the cursor is idle again the extra lock will be
             # released.
-            self._lock()
+            if self._do_locking:
+                self._lock()
             self._cmd.ct_command(CS_LANG_CMD, sql)
             for name, value in params.items():
                 buf = DataBuf(value)
@@ -348,67 +375,114 @@ class Cursor:
             self._cmd.ct_send()
             self._start_results()
         finally:
-            self._unlock()
+            if self._do_locking:
+                self._unlock()
 
     def executemany(self, sql, params_seq = []):
         '''DB-API Cursor.executemany()
         '''
-        self._lock()
+        if self._do_locking:
+            self._lock()
         try:
             for params in params_seq:
                 self.execute(sql, params)
                 if self._state != _CUR_IDLE:
                     self._raise_error(ProgrammingError, 'fetchable results on cursor')
         finally:
-            self._unlock()
+            if self._do_locking:
+                self._unlock()
 
     def fetchone(self):
         '''DB-API Cursor.fetchone()
         '''
-        self._lock()
+        if self._do_locking:
+            self._lock()
         try:
             if self._state == _CUR_IDLE:
-                return
+                self._raise_error(ProgrammingError, 'no result set pending')
             if self._state == _CUR_CLOSED:
                 self._raise_error(ProgrammingError, 'cursor is closed')
             if self._state == _CUR_FETCHING:
-                try:
-                    row = _fetch_rows(self._cmd, self._bufs)
-                except Error:
-                    status = self._cmd.ct_cancel(CS_CANCEL_ALL)
-                    if status == CS_SUCCEED:
-                        self._state = _CUR_IDLE
-                        self._unlock()
-                    raise
-                if row:
+                if self._array_pos >= len(self._array):
+                    try:
+                        self._array_pos = 0
+                        _array = _fetch_rows(self._cmd, self._bufs)
+                        if _array is None:
+                            self._array = []
+                        elif self._bufs[0].count == 1:
+                            self._array = [_array]
+                        else:
+                            self._array = _array
+                    except Error:
+                        status = self._cmd.ct_cancel(CS_CANCEL_ALL)
+                        if status == CS_SUCCEED:
+                            self._state = _CUR_IDLE
+                            if self._do_locking:
+                                self._unlock()
+                        raise
+                if self._array_pos < len(self._array):
+                    row = self._array[self._array_pos]
+                    self._array_pos = self._array_pos + 1
                     return row
-                if row is None:
-                    self._fetch_rowcount()
+                self._fetch_rowcount()
             self._state = _CUR_END_RESULT
         finally:
-            self._unlock()
+            if self._do_locking:
+                self._unlock()
 
     def fetchmany(self, num = -1):
         '''DB-API Cursor.fetchmany()
         '''
-        self._lock()
+        if self._do_locking:
+            self._lock()
         try:
-            if num == -1:
-                num = self.arraysize
-            rows = []
-            for i in xrange(num):
-                row = self.fetchone()
-                if not row:
-                    break
-                rows.append(row)
-            return rows
+            if self._state == _CUR_IDLE:
+                self._raise_error(ProgrammingError, 'no result set pending')
+            if self._state == _CUR_CLOSED:
+                self._raise_error(ProgrammingError, 'cursor is closed')
+            if self._state == _CUR_FETCHING:
+                if num == -1:
+                    num = self.arraysize
+                if num != self._bufs[0].count:
+                    rows = []
+                    for i in xrange(num):
+                        row = self.fetchone()
+                        if not row:
+                            break
+                        rows.append(row)
+                    return rows
+                elif self._array and self._array_pos < len(self._array):
+                    rows = self._array[self._array_pos:]
+                else:
+                    try:
+                        rows = _fetch_rows(self._cmd, self._bufs)
+                        if rows is None:
+                            rows = []
+                        elif self._bufs[0].count == 1:
+                            rows = [rows]
+                    except Error:
+                        status = self._cmd.ct_cancel(CS_CANCEL_ALL)
+                        if status == CS_SUCCEED:
+                            self._state = _CUR_IDLE
+                            if self._do_locking:
+                                self._unlock()
+                        raise
+                self._array = []
+                self._array_pos = 0
+                if rows:
+                    return rows
+                self._fetch_rowcount()
+            self._state = _CUR_END_RESULT
+            return []
         finally:
-            self._unlock()
+            if self._do_locking:
+                self._unlock()
 
     def fetchall(self):
         '''DB-API Cursor.fetchall()
         '''
-        self._lock()
+        if self._do_locking:
+            self._lock()
         try:
             rows = []
             while 1:
@@ -418,12 +492,14 @@ class Cursor:
                 rows.append(row)
             return rows
         finally:
-            self._unlock()
+            if self._do_locking:
+                self._unlock()
 
     def nextset(self):
         '''DB-API Cursor.nextset()
         '''
-        self._lock()
+        if self._do_locking:
+            self._lock()
         try:
             if self._state == _CUR_CLOSED:
                 self._raise_error(ProgrammingError, 'cursor is closed')
@@ -436,7 +512,8 @@ class Cursor:
             self._start_results()
             return self._state != _CUR_IDLE or None
         finally:
-            self._unlock()
+            if self._do_locking:
+                self._unlock()
 
     def setinputsizes(self):
         '''DB-API Cursor.setinputsizes()
@@ -452,7 +529,8 @@ class Cursor:
         status, result = self._cmd.ct_results()
         if status == CS_END_RESULTS:
             self._state = _CUR_IDLE
-            self._unlock()
+            if self._do_locking:
+                self._unlock()
             return
         elif status != CS_SUCCEED:
             self._raise_error(Error, 'ct_results')
@@ -464,17 +542,23 @@ class Cursor:
             self._raise_error(Error, 'ct_results')
 
     def _start_results(self):
+        self._array = []
+        self._array_pos = 0
         while 1:
             status, result = self._cmd.ct_results()
             if status == CS_END_RESULTS:
                 self._state = _CUR_IDLE
-                self._unlock()
+                if self._do_locking:
+                    self._unlock()
                 return
             elif status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_results')
             if result in (CS_COMPUTE_RESULT, CS_CURSOR_RESULT,
                           CS_PARAM_RESULT, CS_ROW_RESULT, CS_STATUS_RESULT):
-                bufs = self._bufs = _row_bind(self._cmd)
+                if self.arraysize > 0:
+                    bufs = self._bufs = _row_bind(self._cmd, self.arraysize)
+                else:
+                    bufs = self._bufs = _row_bind(self._cmd)
                 desc = []
                 for buf in bufs:
                     desc.append((buf.name, buf.datatype, 0,
@@ -492,7 +576,7 @@ class Cursor:
 
 class Connection:
     def __init__(self, dsn, user, passwd, database = None,
-                 strip = 0, auto_commit = 0, delay_connect = 0):
+                 strip = 0, auto_commit = 0, delay_connect = 0, locking = 1):
         '''DB-API Sybase.Connect()
         '''
         self._conn = self._cmd = None
@@ -501,8 +585,12 @@ class Connection:
         self.passwd = passwd
         self.database = database
         self.auto_commit = auto_commit
-        self._lock = threading.RLock()
+        self._do_locking = locking
+        self.arraysize = 32
+        if locking:
+            self._connlock = threading.RLock()
 
+        # Do not lock in sybasect - we take care if locking in Python.
         status, conn = _ctx.ct_con_alloc(0)
         if status != CS_SUCCEED:
             raise Error('ct_con_alloc')
@@ -517,13 +605,21 @@ class Connection:
         if not delay_connect:
             self.connect()
 
+    def _lock(self):
+        if self._do_locking:
+            self._connlock.acquire()
+
+    def _unlock(self):
+        if self._do_locking:
+            self._connlock.release()
+
     def _raise_error(self, exc, text):
         self._conn.ct_cancel(CS_CANCEL_ALL)
         raise exc(text)
 
     def connect(self):
         conn = self._conn
-        self._lock.acquire()
+        self._lock()
         try:
             status = conn.ct_connect(self.dsn)
             if status != CS_SUCCEED:
@@ -532,31 +628,31 @@ class Connection:
             if status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_options')
         finally:
-            self._lock.release()
+            self._unlock()
         if self.database:
             self.execute('use %s' % self.database)
         self._dyn_num = 0
 
     def get_property(self, prop):
         conn = self._conn
-        self._lock.acquire()
+        self._lock()
         try:
             status, value = conn.ct_con_props(CS_GET, prop)
             if status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_con_props')
         finally:
-            self._lock.release()
+            self._unlock()
         return value
 
     def set_property(self, prop, value):
         conn = self._conn
-        self._lock.acquire()
+        self._lock()
         try:
             status = conn.ct_con_props(CS_SET, prop, value)
             if status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_con_props')
         finally:
-            self._lock.release()
+            self._unlock()
 
     def __del__(self):
         try:
@@ -568,7 +664,7 @@ class Connection:
         '''DBI-API Connection.close()
         '''
         conn = self._conn
-        self._lock.acquire()
+        self._lock()
         try:
             status, result = conn.ct_con_props(CS_GET, CS_CON_STATUS)
             if status != CS_SUCCEED:
@@ -581,7 +677,7 @@ class Connection:
             if status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_close')
         finally:
-            self._lock.release()
+            self._unlock()
 
     def begin(self, name = None):
         '''Not in DB-API, but useful for Sybase
@@ -616,7 +712,7 @@ class Connection:
         '''Backwards compatibility
         '''
         conn = self._conn
-        self._lock.acquire()
+        self._lock()
         try:
             status, cmd = self._conn.ct_cmd_alloc()
             if status != CS_SUCCEED:
@@ -631,7 +727,7 @@ class Connection:
             result_list = self._fetch_results()
         finally:
             self._cmd = None
-            self._lock.release()
+            self._unlock()
         return result_list
 
     def _fetch_results(self):
@@ -646,7 +742,7 @@ class Connection:
                 self._raise_error(Error, 'ct_results')
             if result in (CS_COMPUTE_RESULT, CS_CURSOR_RESULT,
                           CS_PARAM_RESULT, CS_ROW_RESULT, CS_STATUS_RESULT):
-                bufs = _row_bind(cmd, 16)
+                bufs = _row_bind(cmd, self.arraysize)
 		logical_result = self._fetch_logical_result(bufs)
                 result_list.append(logical_result)
             elif result not in (CS_CMD_DONE, CS_CMD_SUCCEED):
@@ -662,6 +758,6 @@ class Connection:
             logical_result.extend(rows)
 
 def connect(dsn, user, passwd, database = None,
-            strip = 0, auto_commit = 0, delay_connect = 0):
+            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1):
     return Connection(dsn, user, passwd, database,
-                      strip, auto_commit, delay_connect)
+                      strip, auto_commit, delay_connect, locking)
