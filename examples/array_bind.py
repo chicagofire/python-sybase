@@ -111,7 +111,7 @@ def write_to_table(conn, data):
     int_fmt.datatype = CS_INT_TYPE
     int_fmt.format = CS_FMT_UNUSED
     int_fmt.maxlength = sizeof_type(CS_INT_TYPE)
-    int_buf = Buffer(int_fmt)
+    int_buf = DataBuf(int_fmt)
     for i in range(len(data[0])):
         int_buf[i] = data[0][i]
     if blk.blk_bind(1, int_buf) != CS_SUCCEED:
@@ -126,7 +126,7 @@ def write_to_table(conn, data):
     char_fmt.maxlength = 10
     # Since we have variable length data, specify the length of each
     # data value.
-    char_buf = Buffer(char_fmt)
+    char_buf = DataBuf(char_fmt)
     for i in range(len(data[1])):
         char_buf[i] = data[1][i]
     if blk.blk_bind(2, char_buf) != CS_SUCCEED:
