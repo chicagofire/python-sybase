@@ -190,6 +190,23 @@ static PyObject *DateTime_repr(DateTimeObj *self)
     return PyString_FromString(text);
 }
 
+static PyObject *DateTime_str(DateTimeObj *self)
+{
+    char text[DATETIME_LEN + 2];
+    CS_RETCODE conv_result;
+
+    /* PyErr_Clear(); */
+    conv_result = datetime_as_string((PyObject*)self, text);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
+	PyErr_SetString(PyExc_TypeError, "datetime to string conversion failed");
+	return NULL;
+    }
+
+    return PyString_FromString(text);
+}
+
 static PyObject *DateTime_int(DateTimeObj *v)
 {
     CS_DATAFMT datetime_fmt;
@@ -373,7 +390,7 @@ PyTypeObject DateTimeType = {
     0,				/*tp_as_mapping*/
     (hashfunc)0,		/*tp_hash*/
     (ternaryfunc)0,		/*tp_call*/
-    (reprfunc)0,		/*tp_str*/
+    (reprfunc)DateTime_str,	/*tp_str*/
 
     /* Space for future expansion */
     0L,0L,0L,0L,
