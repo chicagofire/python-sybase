@@ -1,0 +1,17 @@
+Subject: Sybase module 0.35pre3 released
+To: python-sybase@object-craft.com.au
+Cc: python-announce@python.org,freetds@franklin.oit.unc.edu,db-sig@python.org,python-list@python.org
+
+WHAT IS IT:
+
+The Sybase module provides a Python interface to the Sybase relational
+database system.  It supports all of the Python Database API, version
+2.0 with extensions.
+
+This release corrects a mistake I made in packaging the 0.35pre2 release.
+
+    http://www.object-craft.com.au/projects/sybase/
+
+CHANGES SINCE 0.35pre2:
+
+* Fixed the MANIFEST.in file to include freetds.h and sybasect.h.

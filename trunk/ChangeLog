@@ -1,7 +1,40 @@
+2002-10-28 22:35  djc
+
+	* dist/release-0.35pre2: More cleanup.  
+
+2002-10-28 22:34  djc
+
+	* dist/release-0.35pre2: Fix download URL.  
+
+2002-10-28 22:33  djc
+
+	* dist/release-0.35pre2: Removed warning about segfaults.  
+
+2002-10-28 22:25  djc
+
+	* dist/release-0.35pre2: Post to FreeTDS mailing list too.  
+
+2002-10-28 21:55  djc
+
+	* doc/dbapi.tex: Forgot to document locking argument to connect().  
+
+2002-10-28 21:47  djc
+
+	* setup.py: Package name should be sybase not Sybase.  
+
+2002-10-28 21:13  djc
+
+	* ChangeLog, dist/release-0.35pre2: Ready for 0.35pre2 release.  
+
+2002-10-28 20:56  djc
+
+	* ChangeLog, setup.py, doc/sybase.tex: Added ChangeLog and bumped
+	revisions.  
+
 2002-10-28 20:50  djc
 
-	* Sybase.py: Optimise fetchmany() - increases speed over threefold
-	in some cases.
+	* Sybase.py: Optimise fetchmany() - increases speed over fivefold
+	in some cases.  
 
 2002-10-28 16:04  djc
 
