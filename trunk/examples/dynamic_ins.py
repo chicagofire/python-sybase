@@ -46,9 +46,9 @@ def handle_returns(cmd):
             bufs = bind_columns(cmd)
             fetch_n_print(cmd, bufs)
         elif result == CS_CMD_SUCCEED:    
-            print "TYPE: CMD SUCCEEDED"
+            print 'TYPE: CMD SUCCEEDED'
         elif result == CS_CMD_DONE:
-            print "TYPE: CMD DONE"
+            print 'TYPE: CMD DONE'
         elif result == CS_CMD_FAIL:
             raise CTError(cmd.conn, 'ct_results: CS_CMD_FAIL')
         elif result == CS_PARAM_RESULT:
@@ -65,7 +65,7 @@ def handle_returns(cmd):
 
 def do_dynamic_insert(cmd, insert_statement, repeat_count):
     # prepare the dynamic statement
-    if cmd.ct_dynamic(CS_PREPARE, "d_insert", insert_statement) != CS_SUCCEED:
+    if cmd.ct_dynamic(CS_PREPARE, 'd_insert', insert_statement) != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_dynamic CS_PREPARE failed')
     if cmd.ct_send() != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_send failed')
@@ -73,10 +73,10 @@ def do_dynamic_insert(cmd, insert_statement, repeat_count):
     # loop the requested number of times prompting for parameters and
     # sending actual values to server
     for i in range(repeat_count):
-        col1 = raw_input("Enter value for col1 ( int ) ")
-        col2 = raw_input("Enter value for col2 ( char )")
+        col1 = raw_input('Enter value for col1 ( int ) ')
+        col2 = raw_input('Enter value for col2 ( char )')
         # Execute phase of the dynamic statement
-        if cmd.ct_dynamic(CS_EXECUTE, "d_insert") != CS_SUCCEED:
+        if cmd.ct_dynamic(CS_EXECUTE, 'd_insert') != CS_SUCCEED:
             raise CTError(cmd.conn, 'ct_dynamic CS_EXECUTE failed')
         # prepare the first parameter description
         buf1 = Buffer(int(col1))
@@ -95,7 +95,7 @@ def do_dynamic_insert(cmd, insert_statement, repeat_count):
             raise CTError(cmd.conn, 'ct_send failed')
         handle_returns(cmd)
     # clean up the dynamic insert
-    if cmd.ct_dynamic(CS_DEALLOC, "d_insert") != CS_SUCCEED:
+    if cmd.ct_dynamic(CS_DEALLOC, 'd_insert') != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_dynamic CS_DEALLOC failed')
     if cmd.ct_send() != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_send failed')
@@ -124,7 +124,7 @@ if status != CS_SUCCEED:
 # send a dynamic insert to the server the ? marks are placeholders for
 # values to be supplied latter The integer is the number of times to
 # repeat the insert, in this case, 2.
-do_dynamic_insert(cmd, "insert tempdb..test values (? ,?)", 2)
+do_dynamic_insert(cmd, 'insert tempdb..test values (? ,?)', 2)
 # drop the command structure
 if cmd.ct_cmd_drop() != CS_SUCCEED:
     raise CTError(conn, 'ct_cmd_drop failed')
@@ -133,4 +133,4 @@ if conn.ct_close() != CS_SUCCEED:
     raise CTError(conn, 'ct_close failed')
 status = conn.ct_close()
 cleanup_db(ctx, status)
-print "End of program run!"
+print 'End of program run!'
