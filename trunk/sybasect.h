@@ -34,7 +34,7 @@ PERFORMANCE OF THIS SOFTWARE.
 #endif
 
 #ifdef WANT_THREADS
-#define SY_DECLARE_LOCK PyThread_type_lock lock
+#define SY_DECLARE_LOCK PyThread_type_lock lock;
 #define SY_THREAD_STATE PyThreadState *_save;
 #define SY_LOCK_CLEAR(self) self->lock = NULL
 #define SY_LOCK_ALLOC(self) \
@@ -91,7 +91,7 @@ typedef struct CS_CONTEXTObj {
     int is_global;
     int debug;
     int serial;
-    SY_DECLARE_LOCK;
+    SY_DECLARE_LOCK
     struct CS_CONTEXTObj *next;
 } CS_CONTEXTObj;
 
@@ -108,7 +108,7 @@ typedef struct CS_CONNECTIONObj {
     int strip;
     int debug;
     int serial;
-    SY_DECLARE_LOCK;
+    SY_DECLARE_LOCK
     struct CS_CONNECTIONObj *next;
 } CS_CONNECTIONObj;
 
