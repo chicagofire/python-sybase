@@ -30,6 +30,7 @@ def init_db():
     status, ctx = cs_ctx_alloc(EX_CTLIB_VERSION)
     if status != CS_SUCCEED:
         raise Error('cs_ctx_alloc failed')
+    set_global_ctx(ctx)
     if ctx.cs_diag(CS_INIT) != CS_SUCCEED:
         raise CSError(ctx, 'cs_diag failed')
     if ctx.ct_init(EX_CTLIB_VERSION) != CS_SUCCEED:
