@@ -546,6 +546,11 @@ PyTypeObject NumericType = {
     NumericType__doc__		/* Documentation string */
 };
 
+char numeric_new__doc__[] =
+"numeric(num, precision = -1, scale = -1) -> num\n"
+"\n"
+"Create a Sybase numeric object.";
+
 /* Implement the Sybase.numeric() method
  */
 PyObject *NumericType_new(PyObject *module, PyObject *args)

@@ -24,23 +24,307 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
-static char CS_CONTEXT_ct_init__doc__[] = 
-"ct_init() -> status";
 
-static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
+#if 0
+static CS_RETCODE directory_cb(CS_CONNECTION *conn,
+			       CS_INT reqid,
+			       CS_RETCODE status,
+			       CS_INT numentries,
+			       CS_DS_OBJECT *ds_object,
+			       CS_VOID *userdata)
 {
-    int version;
-    CS_RETCODE status;
+}
 
-    version = CS_VERSION_100;
-    if (!PyArg_ParseTuple(args, "|i", &version))
+static CS_RETCODE encrypt_cb(CS_CONNECTION *conn,
+			     CS_BYTE *pwd,
+			     CS_INT pwdlen,
+			     CS_BYTE *key,
+			     CS_INT keylen,
+			     CS_BYTE *buf,
+			     CS_INT buflen,
+			     CS_INT *outlen)
+{
+}
+
+static CS_RETCODE negotiation_cb(CS_CONNECTION *conn,
+				 CS_INT inmsgid,
+				 CS_INT *outmsgid,
+				 CS_DATAFMT *inbuffmt,
+				 CS_BYTE *inbuf,
+				 CS_DATAFMT *outbuffmt,
+				 CS_BYTE *outbuf,
+				 CS_INT *outbufoutlen)
+{
+}
+
+static CS_RETCODE notification_cb(CS_CONNECTION *conn,
+				  CS_CHAR *proc_name,
+				  CS_INT namelen)
+{
+}
+
+CS_RETCODE CS_PUBLIC secsession_cb(CS_CONNECTION *conn,
+				   CS_INT numinputs,
+				   CS_DATAFMT *infmt,
+				   CS_BYTE **inbuf,
+				   CS_INT *numoutputs,
+				   CS_DATAFMT *outfmt,
+				   CS_BYTE **outbuf,
+				   CS_INT *outlen)
+{
+}
+
+static CS_RETCODE completion_cb(CS_CONNECTION *conn,
+				CS_COMMAND *cmd,
+				CS_INT function,
+				CS_RETCODE status)
+{
+}
+#endif
+
+static CS_CONTEXTObj *ctx_list;
+
+static void ctx_add_object(CS_CONTEXTObj *ctx)
+{
+    ctx->next = ctx_list;
+    ctx_list = ctx;
+}
+
+static void ctx_del_object(CS_CONTEXTObj *ctx)
+{
+    CS_CONTEXTObj *scan, *prev;
+
+    for (prev = NULL, scan = ctx_list; scan != NULL; scan = scan->next) {
+	if (scan == ctx) {
+	    if (prev == NULL)
+		ctx_list = scan->next;
+	    else
+		prev->next = scan->next;
+	}
+    }
+}
+
+PyObject *ctx_find_object(CS_CONTEXT *cs_ctx)
+{
+    CS_CONTEXTObj *scan;
+
+    for (scan = ctx_list; scan != NULL; scan = scan->next)
+	if (scan->ctx == cs_ctx)
+	    return (PyObject*)scan;
+    return NULL;
+}
+
+static CS_RETCODE clientmsg_cb(CS_CONTEXT *cs_ctx,
+			       CS_CONNECTION *cs_conn,
+			       CS_CLIENTMSG *cs_msg)
+{
+    CS_CONTEXTObj *ctx;
+    CS_CONNECTIONObj *conn;
+    PyObject *args, *result;
+    CS_CLIENTMSGObj *client_msg;
+
+    ctx = (CS_CONTEXTObj *)ctx_find_object(cs_ctx);
+    if (ctx == NULL || ctx->clientmsg_cb == NULL)
+	return CS_SUCCEED;
+    conn = (CS_CONNECTIONObj *)conn_find_object(cs_conn);
+    if (conn == NULL)
+	return CS_SUCCEED;
+    if (ctx->debug || conn->debug)
+	fprintf(stderr, "clientmsg_cb\n");
+    client_msg = (CS_CLIENTMSGObj *)clientmsg_alloc();
+    if (client_msg == NULL)
+	return CS_SUCCEED;
+    memmove(&client_msg->msg, cs_msg, sizeof(*cs_msg));
+
+    args = Py_BuildValue("(OON)", ctx, conn, client_msg);
+    if (args == NULL)
+	return CS_SUCCEED;
+    result = PyEval_CallObject(ctx->clientmsg_cb, args);
+    Py_DECREF(args);
+    if (result != NULL) {
+	CS_RETCODE retcode = CS_SUCCEED;
+
+	if (PyInt_Check(result))
+	    retcode = PyInt_AsLong(result);
+	Py_DECREF(result);
+	return retcode;
+    }
+    return CS_SUCCEED;
+}
+
+static CS_RETCODE servermsg_cb(CS_CONTEXT *cs_ctx,
+			       CS_CONNECTION *cs_conn,
+			       CS_SERVERMSG *cs_msg)
+{
+    CS_CONTEXTObj *ctx;
+    CS_CONNECTIONObj *conn;
+    PyObject *args, *result;
+    CS_SERVERMSGObj *server_msg;
+
+    ctx = (CS_CONTEXTObj *)ctx_find_object(cs_ctx);
+    if (ctx == NULL || ctx->servermsg_cb == NULL)
+	return CS_SUCCEED;
+    conn = (CS_CONNECTIONObj *)conn_find_object(cs_conn);
+    if (conn == NULL)
+	return CS_SUCCEED;
+    if (ctx->debug || conn->debug)
+	fprintf(stderr, "servermsg_cb\n");
+    server_msg = (CS_SERVERMSGObj *)servermsg_alloc();
+    if (server_msg == NULL)
+	return CS_SUCCEED;
+    memmove(&server_msg->msg, cs_msg, sizeof(*cs_msg));
+
+    args = Py_BuildValue("(OON)", ctx, conn, server_msg);
+    if (args == NULL)
+	return CS_SUCCEED;
+    result = PyEval_CallObject(ctx->servermsg_cb, args);
+    Py_DECREF(args);
+    if (result != NULL) {
+	CS_RETCODE retcode = CS_SUCCEED;
+
+	if (PyInt_Check(result))
+	    retcode = PyInt_AsLong(result);
+	Py_DECREF(result);
+	return retcode;
+    }
+
+    return CS_SUCCEED;
+}
+
+static char CS_CONTEXT_ct_callback__doc__[] = 
+"ct_callback(CS_SET, type, func) -> status\n"
+"ct_callback(CS_GET, type) -> status, func";
+
+static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
+{
+    int action;
+    int type;
+    PyObject *func, **ptr_func;
+    CS_RETCODE status;
+    void *cb_func;
+    void *curr_cb_func;
+
+    if (!first_tuple_int(args, &action))
 	return NULL;
 
-    Py_BEGIN_ALLOW_THREADS;
-    status = ct_init(self->ctx, version);
-    Py_END_ALLOW_THREADS;
+    switch (action) {
+    case CS_SET:
+	/* ct_callback(CS_SET, type, func) -> status */
+	if (!PyArg_ParseTuple(args, "iiO", &action, &type, &func))
+	    return NULL;
 
-    return PyInt_FromLong(status);
+	switch (type) {
+#ifdef CS_CLIENTMSG_CB
+	case CS_CLIENTMSG_CB:
+	    ptr_func = &self->clientmsg_cb;
+	    cb_func = clientmsg_cb;
+	    break;
+#endif
+#ifdef CS_SERVERMSG_CB
+	case CS_SERVERMSG_CB:
+	    ptr_func = &self->servermsg_cb;
+	    cb_func = servermsg_cb;
+	    break;
+#endif
+#ifdef CS_COMPLETION_CB
+	case CS_COMPLETION_CB:
+#endif
+#ifdef CS_DS_LOOKUP_CB
+	case CS_DS_LOOKUP_CB:
+#endif
+#ifdef CS_ENCRYPT_CB
+	case CS_ENCRYPT_CB:
+#endif
+#ifdef CS_CHALLENGE_CB
+	case CS_CHALLENGE_CB:
+#endif
+#ifdef CS_NOTIF_CB
+	case CS_NOTIF_CB:
+#endif
+#ifdef CS_SECSESSION_CB
+	case CS_SECSESSION_CB:
+#endif
+	default:
+	    PyErr_SetString(PyExc_TypeError, "unknown callback type");
+	    return NULL;
+	}
+
+	if (func == Py_None) {
+	    Py_XDECREF(*ptr_func);
+	    *ptr_func = NULL;
+	    cb_func = NULL;
+	} else {
+	    if (!PyCallable_Check(func)) {
+		PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+		return NULL;
+	    }
+	    Py_XDECREF(*ptr_func);
+	    Py_XINCREF(func);
+	    *ptr_func = func;
+	}
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_callback(self->ctx, NULL, CS_SET, type, cb_func);
+	/* Py_END_ALLOW_THREADS; */
+	if (self->debug)
+	    fprintf(stderr, "ct_callback(CS_SET, %s) -> %s\n",
+		    value_str(CBTYPE, type), value_str(STATUS, status));
+	return PyInt_FromLong(status);
+
+    case CS_GET:
+	/* ct_callback(CS_GET, type) -> status, func */
+	if (!PyArg_ParseTuple(args, "ii", &action, &type))
+	    return NULL;
+
+	switch (type) {
+#ifdef CS_CLIENTMSG_CB
+	case CS_CLIENTMSG_CB:
+	    ptr_func = &self->clientmsg_cb;
+	    cb_func = clientmsg_cb;
+	    break;
+#endif
+#ifdef CS_SERVERMSG_CB
+	case CS_SERVERMSG_CB:
+	    ptr_func = &self->servermsg_cb;
+	    cb_func = servermsg_cb;
+	    break;
+#endif
+#ifdef CS_COMPLETION_CB
+	case CS_COMPLETION_CB:
+#endif
+#ifdef CS_DS_LOOKUP_CB
+	case CS_DS_LOOKUP_CB:
+#endif
+#ifdef CS_ENCRYPT_CB
+	case CS_ENCRYPT_CB:
+#endif
+#ifdef CS_CHALLENGE_CB
+	case CS_CHALLENGE_CB:
+#endif
+#ifdef CS_NOTIF_CB
+	case CS_NOTIF_CB:
+#endif
+#ifdef CS_SECSESSION_CB
+	case CS_SECSESSION_CB:
+#endif
+	default:
+	    PyErr_SetString(PyExc_TypeError, "unknown callback type");
+	    return NULL;
+	}
+
+	/* Py_BEGIN_ALLOW_THREADS; */
+	status = ct_callback(self->ctx, NULL, CS_GET, type, &curr_cb_func);
+	/* Py_END_ALLOW_THREADS; */
+	if (self->debug)
+	    fprintf(stderr, "ct_callback(CS_GET, %s) -> %s\n",
+		    value_str(CBTYPE, type), value_str(STATUS, status));
+	if (status != CS_SUCCEED || curr_cb_func != cb_func)
+	    return Py_BuildValue("iO", status, Py_None);
+	return Py_BuildValue("iO", status, *ptr_func);
+
+    default:
+	PyErr_SetString(PyExc_TypeError, "unknown action");
+	return NULL;
+    }
 }
 
 static int property_type(int property)
@@ -89,20 +373,20 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    int_value = PyInt_AsLong(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    Py_BEGIN_ALLOW_THREADS;
+	    /* Py_BEGIN_ALLOW_THREADS; */
 	    status = ct_config(self->ctx, CS_SET, property,
 			       &int_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return PyInt_FromLong(status);
 
 	case OPTION_STRING:
 	    str_value = PyString_AsString(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    Py_BEGIN_ALLOW_THREADS;
+	    /* Py_BEGIN_ALLOW_THREADS; */
 	    status = ct_config(self->ctx, CS_SET, property,
 			       str_value, CS_NULLTERM, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return PyInt_FromLong(status);
 
 	default:
@@ -118,17 +402,17 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 
 	switch (property_type(property)) {
 	case OPTION_INT:
-	    Py_BEGIN_ALLOW_THREADS;
+	    /* Py_BEGIN_ALLOW_THREADS; */
 	    status = ct_config(self->ctx, CS_GET, property,
 			       &int_value, CS_UNUSED, NULL);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_STRING:
-	    Py_BEGIN_ALLOW_THREADS;
+	    /* Py_BEGIN_ALLOW_THREADS; */
 	    status = ct_config(self->ctx, CS_GET, property,
 			       str_buff, sizeof(str_buff), &buff_len);
-	    Py_END_ALLOW_THREADS;
+	    /* Py_END_ALLOW_THREADS; */
 	    if (buff_len > sizeof(str_buff))
 		buff_len = sizeof(str_buff);
 	    return Py_BuildValue("is#", status, str_buff, buff_len);
@@ -144,10 +428,10 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &action, &property))
 	    return NULL;
 
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = ct_config(self->ctx, CS_CLEAR, property,
 			   NULL, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	return PyInt_FromLong(status);
 
     default:
@@ -163,7 +447,7 @@ static PyObject *CS_CONTEXT_ct_con_alloc(CS_CONTEXTObj *self, PyObject *args)
 {
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
-    return con_alloc(self);
+    return conn_alloc(self);
 }
 
 static char CS_CONTEXT_cs_diag__doc__[] = 
@@ -188,27 +472,27 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	/* cs_diag(CS_INIT) -> status */
 	if (!PyArg_ParseTuple(args, "i", &operation))
 	    return NULL;
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = cs_diag(self->ctx, operation, CS_UNUSED, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	return PyInt_FromLong(status);
 
     case CS_MSGLIMIT:
 	/* cs_diag(CS_MSGLIMIT, type, num) -> status */
 	if (!PyArg_ParseTuple(args, "iii", &operation, &type, &num))
 	    return NULL;
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, &num);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	return PyInt_FromLong(status);
 
     case CS_CLEAR:
 	/* cs_diag(CS_CLEAR, type) -> status */
 	if (!PyArg_ParseTuple(args, "ii", &operation, &type))
 	    return NULL;
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, NULL);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	return PyInt_FromLong(status);
 
     case CS_GET:
@@ -227,9 +511,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	    PyErr_SetString(PyExc_TypeError, "unsupported message type");
 	    return NULL;
 	}
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = cs_diag(self->ctx, operation, type, index, buffer);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	if (status != CS_SUCCEED)
 	    return Py_BuildValue("iO", status, Py_None);
 	return Py_BuildValue("iN", CS_SUCCEED, msg);
@@ -239,9 +523,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &operation, &type))
 	    return NULL;
 	num = 0;
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, &num);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
 	return Py_BuildValue("ii", status, num);
 
     default:
@@ -250,10 +534,30 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
     }
 }
 
+static char CS_CONTEXT_ct_init__doc__[] = 
+"ct_init() -> status";
+
+static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
+{
+    int version;
+    CS_RETCODE status;
+
+    version = CS_VERSION_100;
+    if (!PyArg_ParseTuple(args, "|i", &version))
+	return NULL;
+
+    /* Py_BEGIN_ALLOW_THREADS; */
+    status = ct_init(self->ctx, version);
+    /* Py_END_ALLOW_THREADS; */
+
+    return PyInt_FromLong(status);
+}
+
 static struct PyMethodDef CS_CONTEXT_methods[] = {
     { "ct_init", (PyCFunction)CS_CONTEXT_ct_init, METH_VARARGS, CS_CONTEXT_ct_init__doc__ },
     { "ct_config", (PyCFunction)CS_CONTEXT_ct_config, METH_VARARGS, CS_CONTEXT_ct_config__doc__ },
     { "ct_con_alloc", (PyCFunction)CS_CONTEXT_ct_con_alloc, METH_VARARGS, CS_CONTEXT_ct_con_alloc__doc__ },
+    { "ct_callback", (PyCFunction)CS_CONTEXT_ct_callback, METH_VARARGS, CS_CONTEXT_ct_callback__doc__ },
     { "cs_diag", (PyCFunction)CS_CONTEXT_cs_diag, METH_VARARGS, CS_CONTEXT_cs_diag__doc__ },
     { NULL }			/* sentinel */
 };
@@ -268,16 +572,20 @@ PyObject *ctx_alloc(CS_INT version)
     if (self == NULL)
 	return NULL;
     self->ctx = NULL;
+    self->servermsg_cb = NULL;
+    self->clientmsg_cb = NULL;
+    self->debug = 0;
 
-    Py_BEGIN_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
     status = cs_ctx_alloc(version, &ctx);
-    Py_END_ALLOW_THREADS;
+    /* Py_END_ALLOW_THREADS; */
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
     }
 
     self->ctx = ctx;
+    ctx_add_object(self);
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
@@ -291,16 +599,20 @@ PyObject *ctx_global(CS_INT version)
     if (self == NULL)
 	return NULL;
     self->ctx = NULL;
+    self->servermsg_cb = NULL;
+    self->clientmsg_cb = NULL;
+    self->debug = 0;
 
-    Py_BEGIN_ALLOW_THREADS;
+    /* Py_BEGIN_ALLOW_THREADS; */
     status = cs_ctx_global(version, &ctx);
-    Py_END_ALLOW_THREADS;
+    /* Py_END_ALLOW_THREADS; */
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
     }
 
     self->ctx = ctx;
+    ctx_add_object(self);
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
@@ -309,26 +621,40 @@ static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
     if (self->ctx) {
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
-	Py_BEGIN_ALLOW_THREADS;
+	/* Py_BEGIN_ALLOW_THREADS; */
 	cs_ctx_drop(self->ctx);
-	Py_END_ALLOW_THREADS;
+	/* Py_END_ALLOW_THREADS; */
     }
-
+    Py_XDECREF(self->servermsg_cb);
+    ctx_del_object(self);
     PyMem_DEL(self);
 }
 
+#define OFF(x) offsetof(CS_CONTEXTObj, x)
+
+static struct memberlist CS_CONTEXT_memberlist[] = {
+    { "debug", T_INT, OFF(debug) },
+    { NULL }			/* Sentinel */
+};
+
 static PyObject *CS_CONTEXT_getattr(CS_CONTEXTObj *self, char *name)
 {
-    /* XXXX Add your own getattr code here */
+    PyObject *rv;
+
+    rv = PyMember_Get((char *)self, CS_CONTEXT_memberlist, name);
+    if (rv)
+	return rv;
+    PyErr_Clear();
     return Py_FindMethod(CS_CONTEXT_methods, (PyObject *)self, name);
 }
 
 static int CS_CONTEXT_setattr(CS_CONTEXTObj *self, char *name, PyObject *v)
 {
-    /* Set attribute 'name' to value 'v'. v==NULL means delete */
-
-    /* XXXX Add your own setattr code here */
-    return -1;
+    if (v == NULL) {
+	PyErr_SetString(PyExc_AttributeError, "Cannot delete attribute");
+	return -1;
+    }
+    return PyMember_Set((char *)self, CS_CONTEXT_memberlist, name, v);
 }
 
 static char CS_CONTEXTType__doc__[] = 
