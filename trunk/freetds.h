@@ -79,7 +79,9 @@ typedef CS_NUMERIC CS_DECIMAL;
 
 /* Emulate Sybase inline error handling
  */
+#ifndef CS_CLEAR
 #define CS_CLEAR 35
+#endif 
 #define CS_INIT 36
 #define CS_STATUS 37
 #define CS_MSGLIMIT 38
@@ -111,7 +113,7 @@ CS_RETCODE ct_cancel(CS_CONNECTION *conn, CS_COMMAND *cmd, CS_INT type);
 CS_RETCODE ct_close(CS_CONNECTION *con, CS_INT option);
 CS_RETCODE ct_cmd_alloc(CS_CONNECTION *con, CS_COMMAND **cmd);
 CS_RETCODE ct_cmd_drop(CS_COMMAND *cmd);
-CS_RETCODE ct_command(CS_COMMAND *cmd, CS_INT type, CS_VOID *buffer, CS_INT buflen, CS_INT option);
+CS_RETCODE ct_command(CS_COMMAND *cmd, CS_INT type, const CS_VOID *buffer, CS_INT buflen, CS_INT option);
 CS_RETCODE ct_con_alloc(CS_CONTEXT *ctx, CS_CONNECTION **con);
 CS_RETCODE ct_con_drop(CS_CONNECTION *con);
 CS_RETCODE ct_con_props(CS_CONNECTION *con, CS_INT action, CS_INT property, CS_VOID *buffer, CS_INT buflen, CS_INT *out_len);
