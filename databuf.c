@@ -389,11 +389,11 @@ static PySequenceMethods Buffer_as_sequence = {
 static struct memberlist Buffer_memberlist[] = {
     { "name", T_STRING, OFF(fmt.name) }, /* faked */
     { "datatype", T_INT, OFF(fmt.datatype), RO },
-    { "format", T_INT, OFF(fmt.format), RO },
+    { "format", T_INT, OFF(fmt.format) },
     { "maxlength", T_INT, OFF(fmt.maxlength), RO },
     { "scale", T_INT, OFF(fmt.scale), RO },
     { "precision", T_INT, OFF(fmt.precision), RO },
-    { "status", T_INT, OFF(fmt.status), RO },
+    { "status", T_INT, OFF(fmt.status) },
     { "count", T_INT, OFF(fmt.count), RO },
     { "usertype", T_INT, OFF(fmt.usertype), RO },
     { "strip", T_INT, OFF(strip) },
