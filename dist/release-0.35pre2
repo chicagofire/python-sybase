@@ -21,7 +21,7 @@ correctly.
 
 FreeTDS support is much improved in this version.
 
-For the adventurous, you can build for FreeTDS like this:
+You can build for FreeTDS like this:
 
      python setup.py build_ext -D HAVE_FREETDS -U WANT_BULKCOPY
      python setup.py install
