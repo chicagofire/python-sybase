@@ -76,6 +76,8 @@ static struct memberlist CS_IODESC_memberlist[] = {
     { "offset",        T_INT,    OFF(iodesc.offset) },
     { "log_on_update", T_INT,    OFF(iodesc.log_on_update) },
     { "name",          T_STRING, OFF(iodesc.name) }, /* faked */
+    { "timestamp",     T_STRING, OFF(iodesc.timestamp) }, /* faked */
+    { "textptr",       T_STRING, OFF(iodesc.textptr) }, /* faked */
     { NULL }			/* Sentinel */
 };
 
@@ -84,7 +86,14 @@ static PyObject *CS_IODESC_getattr(CS_IODESCObj *self, char *name)
     PyObject *rv;
 
     if (strcmp(name, "name") == 0)
-	return PyString_FromStringAndSize(self->iodesc.name, self->iodesc.namelen);
+	return PyString_FromStringAndSize(self->iodesc.name,
+					  self->iodesc.namelen);
+    if (strcmp(name, "timestamp") == 0)
+	return PyString_FromStringAndSize(self->iodesc.timestamp,
+					  self->iodesc.timestamplen);
+    if (strcmp(name, "textptr") == 0)
+	return PyString_FromStringAndSize(self->iodesc.textptr,
+					  self->iodesc.textptrlen);
 
     rv = PyMember_Get((char *)self, CS_IODESC_memberlist, name);
     if (rv)
@@ -95,11 +104,28 @@ static PyObject *CS_IODESC_getattr(CS_IODESCObj *self, char *name)
 
 static int CS_IODESC_setattr(CS_IODESCObj *self, char *name, PyObject *v)
 {
+    void *ptr = NULL;
+    CS_INT *len_ptr = NULL;
+    int max_len = 0;
+
     if (v == NULL) {
 	PyErr_SetString(PyExc_AttributeError, "Cannot delete attribute");
 	return -1;
     }
     if (strcmp(name, "name") == 0) {
+	ptr = self->iodesc.name;
+	len_ptr = &self->iodesc.namelen;
+	max_len = sizeof(self->iodesc.name);
+    } else if (strcmp(name, "timestamp") == 0) {
+	ptr = self->iodesc.timestamp;
+	len_ptr = &self->iodesc.timestamplen;
+	max_len = sizeof(self->iodesc.timestamp);
+    } else if (strcmp(name, "textptr") == 0) {
+	ptr = self->iodesc.textptr;
+	len_ptr = &self->iodesc.textptrlen;
+	max_len = sizeof(self->iodesc.textptr);
+    }
+    if (ptr != NULL) {
 	int size;
 
 	if (!PyString_Check(v)) {
@@ -107,12 +133,12 @@ static int CS_IODESC_setattr(CS_IODESCObj *self, char *name, PyObject *v)
 	    return -1;
 	}
 	size = PyString_Size(v);
-	if (size > sizeof(self->iodesc.name)) {
-	    PyErr_SetString(PyExc_TypeError, "name too long");
+	if (size > max_len) {
+	    PyErr_SetString(PyExc_TypeError, "too long");
 	    return -1;
 	}
-	strncpy(self->iodesc.name, PyString_AsString(v), sizeof(self->iodesc.name));
-	self->iodesc.namelen = size;
+	memmove(ptr, PyString_AsString(v), size);
+	*len_ptr = size;
 	return 0;
     }
     return PyMember_Set((char *)self, CS_IODESC_memberlist, name, v);

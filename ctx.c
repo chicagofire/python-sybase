@@ -114,6 +114,7 @@ PyObject *ctx_find_object(CS_CONTEXT *cs_ctx)
     return NULL;
 }
 
+#ifndef WANT_THREADS
 static CS_RETCODE clientmsg_cb(CS_CONTEXT *cs_ctx,
 			       CS_CONNECTION *cs_conn,
 			       CS_CLIENTMSG *cs_msg)
@@ -262,9 +263,9 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 	    Py_XINCREF(func);
 	    *ptr_func = func;
 	}
-	/* Py_BEGIN_ALLOW_THREADS; */
+	SY_BEGIN_THREADS;
 	status = ct_callback(self->ctx, NULL, CS_SET, type, cb_func);
-	/* Py_END_ALLOW_THREADS; */
+	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_callback(CS_SET, %s) -> %s\n",
 		    value_str(CBTYPE, type), value_str(STATUS, status));
@@ -311,9 +312,9 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 	    return NULL;
 	}
 
-	/* Py_BEGIN_ALLOW_THREADS; */
+	SY_BEGIN_THREADS;
 	status = ct_callback(self->ctx, NULL, CS_GET, type, &curr_cb_func);
-	/* Py_END_ALLOW_THREADS; */
+	SY_END_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_callback(CS_GET, %s) -> %s\n",
 		    value_str(CBTYPE, type), value_str(STATUS, status));
@@ -326,6 +327,7 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 	return NULL;
     }
 }
+#endif
 
 static int property_type(int property)
 {
@@ -373,20 +375,20 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    int_value = PyInt_AsLong(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    /* Py_BEGIN_ALLOW_THREADS; */
+	    SY_BEGIN_THREADS;
 	    status = ct_config(self->ctx, CS_SET, property,
 			       &int_value, CS_UNUSED, NULL);
-	    /* Py_END_ALLOW_THREADS; */
+	    SY_END_THREADS;
 	    return PyInt_FromLong(status);
 
 	case OPTION_STRING:
 	    str_value = PyString_AsString(obj);
 	    if (PyErr_Occurred())
 		return NULL;
-	    /* Py_BEGIN_ALLOW_THREADS; */
+	    SY_BEGIN_THREADS;
 	    status = ct_config(self->ctx, CS_SET, property,
 			       str_value, CS_NULLTERM, NULL);
-	    /* Py_END_ALLOW_THREADS; */
+	    SY_END_THREADS;
 	    return PyInt_FromLong(status);
 
 	default:
@@ -402,17 +404,17 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 
 	switch (property_type(property)) {
 	case OPTION_INT:
-	    /* Py_BEGIN_ALLOW_THREADS; */
+	    SY_BEGIN_THREADS;
 	    status = ct_config(self->ctx, CS_GET, property,
 			       &int_value, CS_UNUSED, NULL);
-	    /* Py_END_ALLOW_THREADS; */
+	    SY_END_THREADS;
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_STRING:
-	    /* Py_BEGIN_ALLOW_THREADS; */
+	    SY_BEGIN_THREADS;
 	    status = ct_config(self->ctx, CS_GET, property,
 			       str_buff, sizeof(str_buff), &buff_len);
-	    /* Py_END_ALLOW_THREADS; */
+	    SY_END_THREADS;
 	    if (buff_len > sizeof(str_buff))
 		buff_len = sizeof(str_buff);
 	    return Py_BuildValue("is#", status, str_buff, buff_len);
@@ -428,10 +430,10 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &action, &property))
 	    return NULL;
 
-	/* Py_BEGIN_ALLOW_THREADS; */
+	SY_BEGIN_THREADS;
 	status = ct_config(self->ctx, CS_CLEAR, property,
 			   NULL, CS_UNUSED, NULL);
-	/* Py_END_ALLOW_THREADS; */
+	SY_END_THREADS;
 	return PyInt_FromLong(status);
 
     default:
@@ -472,27 +474,27 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	/* cs_diag(CS_INIT) -> status */
 	if (!PyArg_ParseTuple(args, "i", &operation))
 	    return NULL;
-	/* Py_BEGIN_ALLOW_THREADS; */
+	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, CS_UNUSED, CS_UNUSED, NULL);
-	/* Py_END_ALLOW_THREADS; */
+	SY_END_THREADS;
 	return PyInt_FromLong(status);
 
     case CS_MSGLIMIT:
 	/* cs_diag(CS_MSGLIMIT, type, num) -> status */
 	if (!PyArg_ParseTuple(args, "iii", &operation, &type, &num))
 	    return NULL;
-	/* Py_BEGIN_ALLOW_THREADS; */
+	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, &num);
-	/* Py_END_ALLOW_THREADS; */
+	SY_END_THREADS;
 	return PyInt_FromLong(status);
 
     case CS_CLEAR:
 	/* cs_diag(CS_CLEAR, type) -> status */
 	if (!PyArg_ParseTuple(args, "ii", &operation, &type))
 	    return NULL;
-	/* Py_BEGIN_ALLOW_THREADS; */
+	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, NULL);
-	/* Py_END_ALLOW_THREADS; */
+	SY_END_THREADS;
 	return PyInt_FromLong(status);
 
     case CS_GET:
@@ -511,9 +513,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	    PyErr_SetString(PyExc_TypeError, "unsupported message type");
 	    return NULL;
 	}
-	/* Py_BEGIN_ALLOW_THREADS; */
+	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, index, buffer);
-	/* Py_END_ALLOW_THREADS; */
+	SY_END_THREADS;
 	if (status != CS_SUCCEED)
 	    return Py_BuildValue("iO", status, Py_None);
 	return Py_BuildValue("iN", CS_SUCCEED, msg);
@@ -523,9 +525,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &operation, &type))
 	    return NULL;
 	num = 0;
-	/* Py_BEGIN_ALLOW_THREADS; */
+	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, &num);
-	/* Py_END_ALLOW_THREADS; */
+	SY_END_THREADS;
 	return Py_BuildValue("ii", status, num);
 
     default:
@@ -546,9 +548,9 @@ static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "|i", &version))
 	return NULL;
 
-    /* Py_BEGIN_ALLOW_THREADS; */
+    SY_BEGIN_THREADS;
     status = ct_init(self->ctx, version);
-    /* Py_END_ALLOW_THREADS; */
+    SY_END_THREADS;
 
     return PyInt_FromLong(status);
 }
@@ -557,7 +559,9 @@ static struct PyMethodDef CS_CONTEXT_methods[] = {
     { "ct_init", (PyCFunction)CS_CONTEXT_ct_init, METH_VARARGS, CS_CONTEXT_ct_init__doc__ },
     { "ct_config", (PyCFunction)CS_CONTEXT_ct_config, METH_VARARGS, CS_CONTEXT_ct_config__doc__ },
     { "ct_con_alloc", (PyCFunction)CS_CONTEXT_ct_con_alloc, METH_VARARGS, CS_CONTEXT_ct_con_alloc__doc__ },
+#ifndef WANT_THREADS
     { "ct_callback", (PyCFunction)CS_CONTEXT_ct_callback, METH_VARARGS, CS_CONTEXT_ct_callback__doc__ },
+#endif
     { "cs_diag", (PyCFunction)CS_CONTEXT_cs_diag, METH_VARARGS, CS_CONTEXT_cs_diag__doc__ },
     { NULL }			/* sentinel */
 };
@@ -576,9 +580,9 @@ PyObject *ctx_alloc(CS_INT version)
     self->clientmsg_cb = NULL;
     self->debug = 0;
 
-    /* Py_BEGIN_ALLOW_THREADS; */
+    SY_BEGIN_THREADS;
     status = cs_ctx_alloc(version, &ctx);
-    /* Py_END_ALLOW_THREADS; */
+    SY_END_THREADS;
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
@@ -603,9 +607,9 @@ PyObject *ctx_global(CS_INT version)
     self->clientmsg_cb = NULL;
     self->debug = 0;
 
-    /* Py_BEGIN_ALLOW_THREADS; */
+    SY_BEGIN_THREADS;
     status = cs_ctx_global(version, &ctx);
-    /* Py_END_ALLOW_THREADS; */
+    SY_END_THREADS;
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
@@ -621,9 +625,9 @@ static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
     if (self->ctx) {
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
-	/* Py_BEGIN_ALLOW_THREADS; */
+	SY_BEGIN_THREADS;
 	cs_ctx_drop(self->ctx);
-	/* Py_END_ALLOW_THREADS; */
+	SY_END_THREADS;
     }
     Py_XDECREF(self->servermsg_cb);
     ctx_del_object(self);
