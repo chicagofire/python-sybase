@@ -419,6 +419,9 @@ static int ct_property_type(int property)
     case CS_VERSION:
 #endif
 	return OPTION_INT;
+#ifdef CS_IFILE
+    case CS_IFILE:
+#endif
 #ifdef CS_VER_STRING
     case CS_VER_STRING:
 	return OPTION_STRING;

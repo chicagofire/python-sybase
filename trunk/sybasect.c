@@ -667,6 +667,9 @@ static value_desc sybase_args[] = {
 #ifdef CS_VERSION
     SYVAL(VAL_PROPS, CS_VERSION),
 #endif
+#ifdef CS_IFILE
+    SYVAL(VAL_PROPS, CS_IFILE),
+#endif
 #ifdef CS_LOGIN_TIMEOUT
     SYVAL(VAL_PROPS, CS_LOGIN_TIMEOUT),
 #endif
