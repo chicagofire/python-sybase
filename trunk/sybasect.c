@@ -299,6 +299,8 @@ static struct PyMethodDef sybasect_methods[] = {
     { "numeric", (PyCFunction)NumericType_new, METH_VARARGS, NumericType_new__doc__ },
     { "money", (PyCFunction)MoneyType_new, METH_VARARGS, MoneyType_new__doc__ },
     { "datetime", (PyCFunction)DateTimeType_new, METH_VARARGS, DateTimeType_new__doc__ },
+    { "pickle_datetime", (PyCFunction)pickle_datetime, METH_VARARGS, pickle_datetime__doc__ },
+    { "pickle_money", (PyCFunction)pickle_money, METH_VARARGS, pickle_money__doc__ },
     { "pickle_numeric", (PyCFunction)pickle_numeric, METH_VARARGS, pickle_numeric__doc__ },
     { "sizeof_type", (PyCFunction)sybasect_sizeof_type, METH_VARARGS, sybasect_sizeof_type__doc__ },
     { "CS_DATAFMT", (PyCFunction)datafmt_new, METH_VARARGS, datafmt_new__doc__ },
