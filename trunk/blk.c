@@ -466,8 +466,8 @@ static PyObject *CS_BLKDESC_blk_rowxfer_mult(CS_BLKDESCObj *self, PyObject *args
 }
 
 static char CS_BLKDESC_blk_textxfer__doc__[] = 
-"blk_textxfer(buffer) -> status\n"
-"blk_textxfer() -> status, string";
+"blk_textxfer(str) -> status\n"
+"blk_textxfer() -> status, str";
 
 static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 {
@@ -589,9 +589,33 @@ static void CS_BLKDESC_dealloc(CS_BLKDESCObj *self)
     PyMem_DEL(self);
 }
 
+#define OFFSET(x) offsetof(CS_BLKDESCObj, x)
+
+static struct memberlist CS_BLKDESC_memberlist[] = {
+    { "conn",      T_OBJECT, OFFSET(conn),      RO },
+    { "direction", T_INT,    OFFSET(direction), RO },
+    { "debug",     T_INT,    OFFSET(debug) },
+    { NULL }			/* Sentinel */
+};
+
 static PyObject *CS_BLKDESC_getattr(CS_BLKDESCObj *self, char *name)
 {
+    PyObject *rv;
+
+    rv = PyMember_Get((char *)self, CS_BLKDESC_memberlist, name);
+    if (rv)
+	return rv;
+    PyErr_Clear();
     return Py_FindMethod(CS_BLKDESC_methods, (PyObject *)self, name);
+}
+
+static int CS_BLKDESC_setattr(CS_BLKDESCObj *self, char *name, PyObject *v)
+{
+    if (v == NULL) {
+	PyErr_SetString(PyExc_AttributeError, "Cannot delete attribute");
+	return -1;
+    }
+    return PyMember_Set((char *)self, CS_BLKDESC_memberlist, name, v);
 }
 
 static char CS_BLKDESCType__doc__[] = 
@@ -607,7 +631,7 @@ PyTypeObject CS_BLKDESCType = {
     (destructor)CS_BLKDESC_dealloc,/*tp_dealloc*/
     (printfunc)0,		/*tp_print*/
     (getattrfunc)CS_BLKDESC_getattr, /*tp_getattr*/
-    (setattrfunc)0,		/*tp_setattr*/
+    (setattrfunc)CS_BLKDESC_setattr, /*tp_setattr*/
     (cmpfunc)0,			/*tp_compare*/
     (reprfunc)0,		/*tp_repr*/
     0,				/*tp_as_number*/
