@@ -13,6 +13,12 @@ established by the \function{set_debug()} function.  The default value
 is zero.
 \end{memberdesc}
 
+\begin{methoddesc}[CS_CONTEXT]{debug_msg}{msg}
+If the \member{debug} member is non-zero the \var{msg} argument will
+be written to the debug file established by the \function{set_debug()}
+function.
+\end{methoddesc}
+
 \begin{methoddesc}[CS_CONTEXT]{cs_config}{action, property \optional{, value}}
 Configures, retrieves and clears properties of the \texttt{comn}
 library for the context.
