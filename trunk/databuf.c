@@ -309,13 +309,13 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	break;
 
     case CS_MONEY_TYPE:
-	if (!money_from_value((MoneyUnion*)self->buff, CS_MONEY_TYPE, v))
+	if (!money_from_value((MoneyUnion*)item, CS_MONEY_TYPE, v))
 	    return -1;
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
     case CS_MONEY4_TYPE:
-	if (!money_from_value((MoneyUnion*)self->buff, CS_MONEY4_TYPE, v))
+	if (!money_from_value((MoneyUnion*)item, CS_MONEY4_TYPE, v))
 	    return -1;
 	self->copied[i] = self->fmt.maxlength;
 	break;
@@ -343,7 +343,7 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
             PyErr_SetString(PyExc_TypeError, "datetime expected");
             return -1;
         }
-	if (datetime_assign(v, CS_DATETIME_TYPE, self->buff) != CS_SUCCEED)
+	if (datetime_assign(v, CS_DATETIME_TYPE, item) != CS_SUCCEED)
 	    return -1;
 	self->copied[i] = self->fmt.maxlength;
         break;
@@ -353,18 +353,15 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
             PyErr_SetString(PyExc_TypeError, "datetime expected");
             return -1;
         }
-	if (datetime_assign(v, CS_DATETIME4_TYPE, self->buff) != CS_SUCCEED)
+	if (datetime_assign(v, CS_DATETIME4_TYPE, item) != CS_SUCCEED)
 	    return -1;
 	self->copied[i] = self->fmt.maxlength;
         break;
 
     case CS_DECIMAL_TYPE:
     case CS_NUMERIC_TYPE:
-	if (!Numeric_Check(v)) {
-	    PyErr_SetString(PyExc_TypeError, "numeric expected");
+	if (!numeric_from_value((CS_NUMERIC*)item, -1, -1, v))
 	    return -1;
-	}
-	*(CS_NUMERIC*)item = ((NumericObj*)v)->num;
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
