@@ -100,6 +100,8 @@ static struct PyMethodDef CS_DATAFMT_methods[] = {
     { NULL }			/* sentinel */
 };
 
+static int datafmt_serial;
+
 PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip)
 {
     CS_DATAFMTObj *self;
@@ -111,6 +113,8 @@ PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip)
     SY_LEAK_REG(self);
     self->strip = strip;
     self->fmt = *datafmt;
+    self->serial = datafmt_serial++;
+
     return (PyObject*)self;
 }
 
@@ -133,6 +137,8 @@ PyObject *datafmt_new(PyObject *module, PyObject *args)
     SY_LEAK_REG(self);
     memset(&self->fmt, 0, sizeof(self->fmt));
     self->strip = 0;
+    self->serial = datafmt_serial++;
+
     char_datafmt(&self->fmt);
     self->fmt.maxlength = 1;
     return (PyObject*)self;

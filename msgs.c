@@ -24,6 +24,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
+static int clientmsg_serial;
+
 PyObject *clientmsg_alloc()
 {
     CS_CLIENTMSGObj *self;
@@ -34,6 +36,8 @@ PyObject *clientmsg_alloc()
 
     SY_LEAK_REG(self);
     memset(&self->msg, 0, sizeof(self->msg));
+    self->serial = clientmsg_serial++;
+
     return (PyObject*)self;
 }
 
@@ -118,6 +122,8 @@ PyTypeObject CS_CLIENTMSGType = {
     CS_CLIENTMSGType__doc__	/* Documentation string */
 };
 
+static int servermsg_serial;
+
 PyObject *servermsg_alloc()
 {
     CS_SERVERMSGObj *self;
@@ -128,6 +134,8 @@ PyObject *servermsg_alloc()
 
     SY_LEAK_REG(self);
     memset(&self->msg, 0, sizeof(self->msg));
+    self->serial = servermsg_serial++;
+
     return (PyObject*)self;
 }
 

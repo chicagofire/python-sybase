@@ -52,6 +52,8 @@ static PyObject *allocate_buffers(DataBufObj *self)
 
 static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v);
 
+static int databuf_serial;
+
 PyObject *databuf_alloc(PyObject *obj)
 {
     DataBufObj *self;
@@ -64,6 +66,7 @@ PyObject *databuf_alloc(PyObject *obj)
     self->buff = NULL;
     self->copied = NULL;
     self->indicator = NULL;
+    self->serial = databuf_serial++;
 
     if (CS_DATAFMT_Check(obj)) {
 	self->strip = ((CS_DATAFMTObj*)obj)->strip;

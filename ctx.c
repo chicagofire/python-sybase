@@ -24,6 +24,32 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
+#ifdef WANT_THREADS
+static PyThread_type_lock ctx_lock;
+
+static void acquire_ctx_lock(void)
+{
+    if (ctx_lock == NULL)
+	ctx_lock = PyThread_allocate_lock();
+    if (ctx_lock != NULL)
+	PyThread_acquire_lock(ctx_lock, WAIT_LOCK);
+}
+
+static void release_ctx_lock(void)
+{
+    if (ctx_lock != NULL)
+	PyThread_release_lock(ctx_lock);
+}
+#else
+
+static void acquire_ctx_lock()
+{
+}
+
+static void release_ctx_lock()
+{
+}
+#endif
 
 #if 0
 static CS_RETCODE directory_cb(CS_CONNECTION *conn,
@@ -131,7 +157,7 @@ static CS_RETCODE clientmsg_cb(CS_CONTEXT *cs_ctx,
     if (conn == NULL)
 	return CS_SUCCEED;
     if (ctx->debug || conn->debug)
-	fprintf(stderr, "clientmsg_cb\n");
+	debug_msg("clientmsg_cb\n");
     client_msg = (CS_CLIENTMSGObj *)clientmsg_alloc();
     if (client_msg == NULL)
 	return CS_SUCCEED;
@@ -169,7 +195,7 @@ static CS_RETCODE servermsg_cb(CS_CONTEXT *cs_ctx,
     if (conn == NULL)
 	return CS_SUCCEED;
     if (ctx->debug || conn->debug)
-	fprintf(stderr, "servermsg_cb\n");
+	debug_msg("servermsg_cb\n");
     server_msg = (CS_SERVERMSGObj *)servermsg_alloc();
     if (server_msg == NULL)
 	return CS_SUCCEED;
@@ -271,12 +297,13 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 	}
 
 	PyErr_Clear();
-	SY_BEGIN_THREADS;
+
 	status = ct_callback(self->ctx, NULL, CS_SET, type, cb_func);
-	SY_END_THREADS;
+
 	if (self->debug)
-	    fprintf(stderr, "ct_callback(CS_SET, %s) -> %s\n",
-		    value_str(VAL_CBTYPE, type), value_str(VAL_STATUS, status));
+	    debug_msg("ct_callback(ctx%d, NULL, CS_SET, %s, cb_func) -> %s\n",
+		      self->serial, value_str(VAL_CBTYPE, type),
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -324,12 +351,13 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 	}
 
 	PyErr_Clear();
-	SY_BEGIN_THREADS;
+
 	status = ct_callback(self->ctx, NULL, CS_GET, type, &curr_cb_func);
-	SY_END_THREADS;
+
 	if (self->debug)
-	    fprintf(stderr, "ct_callback(CS_GET, %s) -> %s\n",
-		    value_str(VAL_CBTYPE, type), value_str(VAL_STATUS, status));
+	    debug_msg("ct_callback(ctx%d, NULL, CS_GET, %s, &cb_func) -> %s\n",
+		      self->serial, value_str(VAL_CBTYPE, type),
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -392,6 +420,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
     char *str_value;
     char str_buff[10240];
     CS_INT buff_len;
+    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &action))
 	return NULL;
@@ -414,14 +443,20 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 		return NULL;
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_config(self->ctx, CS_SET, property,
 			       &int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_config(CS_SET, %s, %d) -> %s\n",
-			value_str(VAL_PROPS, property), int_value,
-			value_str(VAL_STATUS, status));
+		debug_msg("ct_config(ctx%d, CS_SET, %s, %d, CS_UNUSED, NULL)"
+			  " -> %s\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), int_value,
+			  value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -433,14 +468,20 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 		return NULL;
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_config(self->ctx, CS_SET, property,
 			       str_value, CS_NULLTERM, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_config(CS_SET, %s, '%s') -> %s\n",
-			value_str(VAL_PROPS, property), str_value,
-			value_str(VAL_STATUS, status));
+		debug_msg("ct_config(ctx%d, CS_SET, %s, \"%s\", CS_NULLTERM,"
+			  " NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), str_value,
+			  value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -460,14 +501,20 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	switch (ct_property_type(property)) {
 	case OPTION_INT:
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_config(self->ctx, CS_GET, property,
 			       &int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_config(CS_GET, %s) -> %s, %d\n",
-			value_str(VAL_PROPS, property),
-			value_str(VAL_STATUS, status), int_value);
+		debug_msg("ct_config(ctx%d, CS_GET, %s, &value, CS_UNUSED,"
+			  " NULL) -> %s, %d\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property),
+			  value_str(VAL_STATUS, status), int_value);
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -475,16 +522,22 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 
 	case OPTION_STRING:
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_config(self->ctx, CS_GET, property,
 			       str_buff, sizeof(str_buff), &buff_len);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (buff_len > sizeof(str_buff))
 		buff_len = sizeof(str_buff);
 	    if (self->debug)
-		fprintf(stderr, "ct_config(CS_GET, %s) -> %s, '%.*s'\n",
-			value_str(VAL_PROPS, property),
-			value_str(VAL_STATUS, status), (int)buff_len, str_buff);
+		debug_msg("ct_config(ctx%d, CS_GET, %s, buff, %d, &outlen)"
+			  " -> %s, \"%.*s\"\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), sizeof(str_buff),
+			  value_str(VAL_STATUS, status), (int)buff_len, str_buff);
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -503,14 +556,20 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_config(self->ctx, CS_CLEAR, property,
 			   NULL, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "ct_config(CS_CLEAR, %s) -> %s\n",
-		    value_str(VAL_PROPS, property),
-		    value_str(VAL_STATUS, status));
+	    debug_msg("ct_config(ctx%d, CS_CLEAR, %s, NULL, CS_UNUSED, NULL)"
+		      " -> %s\n",
+		      self->serial,
+		      value_str(VAL_PROPS, property),
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -540,11 +599,14 @@ static PyObject *CS_CONTEXT_cs_loc_alloc(CS_CONTEXTObj *self, PyObject *args)
 }
 
 static char CS_CONTEXT_ct_con_alloc__doc__[] = 
-"ct_con_alloc() -> status, conn";
+"ct_con_alloc(enable_lock = 1) -> status, conn";
 
 static PyObject *CS_CONTEXT_ct_con_alloc(CS_CONTEXTObj *self, PyObject *args)
 {
-    if (!PyArg_ParseTuple(args, ""))
+    int enable_lock;
+
+    enable_lock = 1;
+    if (!PyArg_ParseTuple(args, "|i", &enable_lock))
 	return NULL;
 
     if (self->ctx == NULL) {
@@ -552,9 +614,13 @@ static PyObject *CS_CONTEXT_ct_con_alloc(CS_CONTEXTObj *self, PyObject *args)
 	return NULL;
     }
 
-    return conn_alloc(self);
+    return conn_alloc(self, enable_lock);
 }
 
+/* Threading:
+ *    "Calls to ct_init() and ct_exit() must not occur simultaneously
+ *     with any other call to ct_init() or ct_exit()."
+ */
 static char CS_CONTEXT_ct_init__doc__[] = 
 "ct_init(version = CS_VERSION_100) -> status";
 
@@ -562,6 +628,7 @@ static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
 {
     int version;
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (self->ctx == NULL) {
 	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
@@ -573,18 +640,27 @@ static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
 	return NULL;
 
     PyErr_Clear();
+
+    acquire_ctx_lock();
     SY_BEGIN_THREADS;
     status = ct_init(self->ctx, version);
     SY_END_THREADS;
+    release_ctx_lock();
+
     if (self->debug)
-	fprintf(stderr, "ct_init(%s) -> %s\n",
-		value_str(VAL_CSVER, version), value_str(VAL_STATUS, status));
+	debug_msg("ct_init(ctx%d, %s) -> %s\n",
+		  self->serial, value_str(VAL_CSVER, version),
+		  value_str(VAL_STATUS, status));
     if (PyErr_Occurred())
 	return NULL;
 
     return PyInt_FromLong(status);
 }
 
+/* Threading:
+ *    "Calls to ct_init() and ct_exit() must not occur simultaneously
+ *     with any other call to ct_init() or ct_exit()."
+ */
 static char CS_CONTEXT_ct_exit__doc__[] = 
 "ct_exit(|option) -> status";
 
@@ -592,6 +668,7 @@ static PyObject *CS_CONTEXT_ct_exit(CS_CONTEXTObj *self, PyObject *args)
 {
     int option = CS_UNUSED;
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "|i", &option))
 	return NULL;
@@ -602,12 +679,17 @@ static PyObject *CS_CONTEXT_ct_exit(CS_CONTEXTObj *self, PyObject *args)
     }
 
     PyErr_Clear();
+
+    acquire_ctx_lock();
     SY_BEGIN_THREADS;
     status = ct_exit(self->ctx, option);
     SY_END_THREADS;
+    release_ctx_lock();
+
     if (self->debug)
-	fprintf(stderr, "ct_exit(%s) -> %s\n",
-		value_str(VAL_OPTION, option), value_str(VAL_STATUS, status));
+	debug_msg("ct_exit(ctx%d, %s) -> %s\n",
+		  self->serial, value_str(VAL_OPTION, option),
+		  value_str(VAL_STATUS, status));
     if (PyErr_Occurred())
 	return NULL;
 
@@ -628,6 +710,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
     CS_VOID *buffer;
     PyObject *msg;
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &operation))
 	return NULL;
@@ -644,12 +727,17 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, CS_UNUSED, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "cs_diag(CS_INIT) -> %s\n",
-		    value_str(VAL_STATUS, status));
+	    debug_msg("cs_diag(ctx%d, CS_INIT, CS_UNUSED, CS_UNUSED, NULL)"
+		      " -> %s\n",
+		      self->serial, value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -661,12 +749,17 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, &num);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "cs_diag(CS_MSGLIMIT, %s, %d) -> %s\n",
-		    value_str(VAL_TYPE, type), num, value_str(VAL_STATUS, status));
+	    debug_msg("cs_diag(ctx%d, CS_MSGLIMIT, %s, CS_UNUSED, %d) -> %s\n",
+		      self->serial, value_str(VAL_TYPE, type), num,
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -678,12 +771,17 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "cs_diag(CS_CLEAR, %s) -> %s\n",
-		    value_str(VAL_TYPE, type), value_str(VAL_STATUS, status));
+	    debug_msg("cs_diag(ctx%d, CS_CLEAR, %s, CS_UNUSED, NULL) -> %s\n",
+		      self->serial, value_str(VAL_TYPE, type),
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -703,12 +801,17 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	}
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, index, buffer);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "cs_diag(CS_GET, %s, %d) -> %s\n",
-		    value_str(VAL_TYPE, type), index, value_str(VAL_STATUS, status));
+	    debug_msg("cs_diag(ctx%d, CS_GET, %s, %d, buff) -> %s\n",
+		      self->serial, value_str(VAL_TYPE, type), index,
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred()) {
 	    Py_DECREF(msg);
 	    return NULL;
@@ -727,12 +830,18 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	num = 0;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, &num);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "cs_diag(CS_STATUS, %s) -> %s, %d\n",
-		    value_str(VAL_TYPE, type), value_str(VAL_STATUS, status), num);
+	    debug_msg("cs_diag(ctx%d, CS_STATUS, %s, CS_UNUSED, &num)"
+		      " -> %s, %d\n",
+		      self->serial, value_str(VAL_TYPE, type),
+		      value_str(VAL_STATUS, status), num);
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -745,12 +854,18 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 }
 #endif
 
+/* Threading:
+ *    "Calls to cs_ctx_alloc() and cs_ctx_drop() must not occur
+ *     simultaneously with any other call to cs_ctx_alloc() or
+ *     cs_ctx_drop()."
+ */
 static char CS_CONTEXT_cs_ctx_drop__doc__[] = 
 "cs_ctx_drop() -> status";
 
 static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
 {
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
@@ -761,11 +876,16 @@ static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
     }
 
     PyErr_Clear();
+
+    acquire_ctx_lock();
     SY_BEGIN_THREADS;
     status = cs_ctx_drop(self->ctx);
     SY_END_THREADS;
+    release_ctx_lock();
+
     if (self->debug)
-	fprintf(stderr, "cs_ctx_drop() -> %s\n", value_str(VAL_STATUS, status));
+	debug_msg("cs_ctx_drop(ctx%d) -> %s\n",
+		  self->serial, value_str(VAL_STATUS, status));
     if (status == CS_SUCCEED)
 	self->ctx = NULL;
     if (PyErr_Occurred())
@@ -790,11 +910,19 @@ static struct PyMethodDef CS_CONTEXT_methods[] = {
     { NULL }			/* sentinel */
 };
 
+static int ctx_serial;
+
+/* Threading:
+ *    "Calls to cs_ctx_alloc() and cs_ctx_drop() must not occur
+ *     simultaneously with any other call to cs_ctx_alloc() or
+ *     cs_ctx_drop()."
+ */
 PyObject *ctx_alloc(CS_INT version)
 {
     CS_CONTEXTObj *self;
     CS_RETCODE status;
     CS_CONTEXT *ctx;
+    SY_THREAD_STATE;
 
     self = PyObject_NEW(CS_CONTEXTObj, &CS_CONTEXTType);
     if (self == NULL)
@@ -806,25 +934,38 @@ PyObject *ctx_alloc(CS_INT version)
     self->clientmsg_cb = NULL;
     self->debug = 0;
     self->is_global = 0;
+    self->serial = ctx_serial++;
+    SY_LOCK_ALLOC(self);
 
     PyErr_Clear();
+
+    acquire_ctx_lock();
     SY_BEGIN_THREADS;
     status = cs_ctx_alloc(version, &ctx);
     SY_END_THREADS;
+    release_ctx_lock();
+
     if (self->debug)
-	fprintf(stderr, "cs_ctx_alloc() -> %s\n", value_str(VAL_STATUS, status));
+	debug_msg("cs_ctx_alloc(%s, &ctx) -> %s",
+		  value_str(VAL_CSVER, version), value_str(VAL_STATUS, status));
     if (PyErr_Occurred()) {
+	if (self->debug)
+	    debug_msg("\n");
 	Py_DECREF(self);
 	return NULL;
     }
 
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
+	if (self->debug)
+	    debug_msg(", None\n");
 	return Py_BuildValue("iO", status, Py_None);
     }
 
     self->ctx = ctx;
     ctx_add_object(self);
+    if (self->debug)
+	debug_msg(", ctx%d\n", self->serial);
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
@@ -833,21 +974,31 @@ CS_CONTEXT *global_ctx()
     static CS_CONTEXT *ctx;
 
     if (ctx == NULL) {
+	SY_THREAD_STATE;
+
+	acquire_ctx_lock();
+	SY_BEGIN_THREADS;
 #ifdef HAVE_CS_CTX_GLOBAL
 	cs_ctx_global(CS_VERSION_100, &ctx);
 #else
 	cs_ctx_alloc(CS_VERSION_100, &ctx);
 #endif
+	SY_END_THREADS;
+	release_ctx_lock();
     }
     return ctx;
 }
 
 #ifdef HAVE_CS_CTX_GLOBAL
+/* Threading:
+ *    "SAFE: All calls after the first call has completed."
+ */
 PyObject *ctx_global(CS_INT version)
 {
     CS_CONTEXTObj *self;
     CS_RETCODE status;
     CS_CONTEXT *ctx;
+    SY_THREAD_STATE;
 
     self = PyObject_NEW(CS_CONTEXTObj, &CS_CONTEXTType);
     if (self == NULL)
@@ -859,29 +1010,48 @@ PyObject *ctx_global(CS_INT version)
     self->clientmsg_cb = NULL;
     self->debug = 0;
     self->is_global = 1;
+    self->serial = ctx_serial++;
+    SY_LOCK_ALLOC(self);
 
     PyErr_Clear();
+
+    acquire_ctx_lock();
     SY_BEGIN_THREADS;
     status = cs_ctx_global(version, &ctx);
     SY_END_THREADS;
+    release_ctx_lock();
+
     if (self->debug)
-	fprintf(stderr, "cs_ctx_global() -> %s\n", value_str(VAL_STATUS, status));
+	debug_msg("cs_ctx_global(%s) -> %s",
+		  value_str(VAL_CSVER, version),
+		  value_str(VAL_STATUS, status));
     if (PyErr_Occurred()) {
+	if (self->debug)
+	    debug_msg("\n");
 	Py_DECREF(self);
 	return NULL;
     }
 
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
+	if (self->debug)
+	    debug_msg(", None\n");
 	return Py_BuildValue("iO", status, Py_None);
     }
 
     self->ctx = ctx;
     ctx_add_object(self);
+    if (self->debug)
+	debug_msg(", ctx%d\n", self->serial);
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 #endif
 
+/* Threading:
+ *    "Calls to cs_ctx_alloc() and cs_ctx_drop() must not occur
+ *     simultaneously with any other call to cs_ctx_alloc() or
+ *     cs_ctx_drop()."
+ */
 static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
 {
     SY_LEAK_UNREG(self);
@@ -890,13 +1060,12 @@ static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
 	CS_RETCODE status;
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
-	SY_BEGIN_THREADS;
 	status = cs_ctx_drop(self->ctx);
-	SY_END_THREADS;
 	if (self->debug)
-	    fprintf(stderr, "cs_ctx_drop() -> %s\n",
-		    value_str(VAL_STATUS, status));
+	    debug_msg("cs_ctx_drop(ctx%d) -> %s\n",
+		      self->serial, value_str(VAL_STATUS, status));
     }
+    SY_LOCK_FREE(self);
     Py_XDECREF(self->servermsg_cb);
     ctx_del_object(self);
 

@@ -26,6 +26,7 @@ PERFORMANCE OF THIS SOFTWARE.
 #include <ctpublic.h>
 #include <bkpublic.h>
 #include "Python.h"
+#include "pythread.h"
 #include "structmember.h"
 
 #ifdef HAVE_FREETDS
@@ -33,11 +34,38 @@ PERFORMANCE OF THIS SOFTWARE.
 #endif
 
 #ifdef WANT_THREADS
-#define SY_BEGIN_THREADS Py_BEGIN_ALLOW_THREADS
-#define SY_END_THREADS Py_END_ALLOW_THREADS
+#define SY_DECLARE_LOCK PyThread_type_lock lock
+#define SY_THREAD_STATE PyThreadState *_save;
+#define SY_LOCK_CLEAR(self) self->lock = NULL
+#define SY_LOCK_ALLOC(self) \
+    self->lock = PyThread_allocate_lock(); \
+    if (self->lock == NULL) { \
+	return NULL; \
+    }
+#define SY_LOCK_FREE(self) \
+    if (self->lock != NULL) { \
+	PyThread_free_lock(self->lock); \
+    }
+#define SY_LOCK_ACQUIRE(owner) \
+    if (owner->lock != NULL) { \
+	PyThread_acquire_lock(owner->lock, WAIT_LOCK); \
+    }
+#define SY_LOCK_RELEASE(owner) \
+    if (owner->lock != NULL) { \
+	PyThread_release_lock(owner->lock); \
+    }
+#define SY_BEGIN_THREADS Py_UNBLOCK_THREADS
+#define SY_END_THREADS Py_BLOCK_THREADS
 #else
-#define SY_BEGIN_THREADS {
-#define SY_END_THREADS }
+#define SY_DECLARE_LOCK
+#define SY_THREAD_STATE
+#define SY_LOCK_CLEAR(self)
+#define SY_LOCK_ALLOC(self)
+#define SY_LOCK_FREE(self)
+#define SY_LOCK_ACQUIRE(owner)
+#define SY_LOCK_RELEASE(owner)
+#define SY_BEGIN_THREADS
+#define SY_END_THREADS
 #endif
 
 #ifdef FIND_LEAKS
@@ -53,6 +81,8 @@ void leak_unreg(PyObject *obj);
 enum { OPTION_BOOL, OPTION_INT, OPTION_STRING, OPTION_CMD,
        OPTION_NUMERIC, OPTION_LOCALE, OPTION_UNKNOWN };
 
+void debug_msg(char *fmt, ...);
+
 typedef struct CS_CONTEXTObj {
     PyObject_HEAD
     CS_CONTEXT *ctx;
@@ -60,6 +90,8 @@ typedef struct CS_CONTEXTObj {
     PyObject *clientmsg_cb;
     int is_global;
     int debug;
+    int serial;
+    SY_DECLARE_LOCK;
     struct CS_CONTEXTObj *next;
 } CS_CONTEXTObj;
 
@@ -75,11 +107,13 @@ typedef struct CS_CONNECTIONObj {
     CS_CONNECTION *conn;
     int strip;
     int debug;
+    int serial;
+    SY_DECLARE_LOCK;
     struct CS_CONNECTIONObj *next;
 } CS_CONNECTIONObj;
 
 extern PyTypeObject CS_CONNECTIONType;
-PyObject *conn_alloc(CS_CONTEXTObj *ctx);
+PyObject *conn_alloc(CS_CONTEXTObj *ctx, int enable_lock);
 PyObject *conn_find_object(CS_CONNECTION *conn);
 
 typedef struct {
@@ -88,6 +122,7 @@ typedef struct {
     CS_BLKDESC *blk;
     CS_INT direction;
     int debug;
+    int serial;
 } CS_BLKDESCObj;
 
 extern PyTypeObject CS_BLKDESCType;
@@ -100,6 +135,7 @@ typedef struct {
     int is_eed;
     int strip;
     int debug;
+    int serial;
 } CS_COMMANDObj;
 
 extern PyTypeObject CS_COMMANDType;
@@ -110,6 +146,7 @@ typedef struct {
     PyObject_HEAD
     CS_DATAFMT fmt;
     int strip;
+    int serial;
 } CS_DATAFMTObj;
 
 extern PyTypeObject CS_DATAFMTType;
@@ -127,6 +164,7 @@ PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip);
 typedef struct {
     PyObject_HEAD
     CS_IODESC iodesc;
+    int serial;
 } CS_IODESCObj;
 
 extern PyTypeObject CS_IODESCType;
@@ -140,6 +178,7 @@ typedef struct {
     CS_CONTEXTObj *ctx;
     int debug;
     CS_LOCALE *locale;
+    int serial;
 } CS_LOCALEObj;
 
 extern PyTypeObject CS_LOCALEType;
@@ -153,6 +192,7 @@ typedef struct {
     char *buff;
     CS_INT *copied;
     CS_SMALLINT *indicator;
+    int serial;
 } DataBufObj;
 
 extern PyTypeObject DataBufType;
@@ -224,11 +264,13 @@ PyObject *pickle_datetime(PyObject *module, PyObject *args);
 typedef struct {
     PyObject_HEAD
     CS_CLIENTMSG msg;
+    int serial;
 } CS_CLIENTMSGObj;
 
 typedef struct {
     PyObject_HEAD
     CS_SERVERMSG msg;
+    int serial;
 } CS_SERVERMSGObj;
 
 extern PyTypeObject CS_CLIENTMSGType;

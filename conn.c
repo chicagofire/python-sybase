@@ -72,6 +72,7 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
     PyObject *cmd, *msg;
     CS_RETCODE status;
     CS_COMMAND *eed;
+    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &operation))
 	return NULL;
@@ -88,12 +89,17 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_diag(self->conn, operation, CS_UNUSED, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "ct_diag(CS_INIT) -> %s\n",
-		    value_str(VAL_STATUS, status));
+	    debug_msg("ct_diag(conn%d, CS_INIT, CS_UNUSED, CS_UNUSED, NULL)"
+		      " -> %s\n",
+		      self->serial, value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -105,12 +111,18 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_diag(self->conn, operation, type, CS_UNUSED, &num);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "ct_diag(CS_MSGLIMIT, %s, %d) -> %s\n",
-		    value_str(VAL_TYPE, type), num, value_str(VAL_STATUS, status));
+	    debug_msg("ct_diag(conn%d, CS_MSGLIMIT, %s, CS_UNUSED, %d)"
+		      " -> %s\n",
+		      self->serial, value_str(VAL_TYPE, type), num,
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -122,12 +134,17 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_diag(self->conn, operation, type, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "ct_diag(CS_CLEAR, %s) -> %s\n",
-		    value_str(VAL_TYPE, type), value_str(VAL_STATUS, status));
+	    debug_msg("ct_diag(conn%d, CS_CLEAR, %s, CS_UNUSED, NULL) -> %s\n",
+		      self->serial, value_str(VAL_TYPE, type),
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -151,12 +168,17 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	}
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_diag(self->conn, operation, type, index, buffer);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "ct_diag(CS_GET, %s, %d) -> %s\n",
-		    value_str(VAL_TYPE, type), index, value_str(VAL_STATUS, status));
+	    debug_msg("ct_diag(conn%d, CS_GET, %s, %d, buff) -> %s\n",
+		      self->serial, value_str(VAL_TYPE, type), index,
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred()) {
 	    Py_DECREF(msg);
 	    return NULL;
@@ -175,12 +197,18 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	num = 0;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_diag(self->conn, operation, type, CS_UNUSED, &num);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "ct_diag(CS_STATUS, %s) -> %s, %d\n",
-		    value_str(VAL_TYPE, type), value_str(VAL_STATUS, status), num);
+	    debug_msg("ct_diag(conn%d, CS_STATUS, %s, CS_UNUSED, &num)"
+		      " -> %s, %d\n",
+		      self->serial, value_str(VAL_TYPE, type),
+		      value_str(VAL_STATUS, status), num);
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -192,18 +220,31 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_diag(self->conn, operation, type, index, &eed);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "ct_diag(CS_EED_CMD, %s, %d) -> %s\n",
-		    value_str(VAL_TYPE, type), index, value_str(VAL_STATUS, status));
-	if (PyErr_Occurred())
+	    debug_msg("ct_diag(conn%d, CS_EED_CMD, %s, %d, &eed) -> %s",
+		      self->serial, value_str(VAL_TYPE, type), index,
+		      value_str(VAL_STATUS, status));
+	if (PyErr_Occurred()) {
+	    if (self->debug)
+		debug_msg("\n");
 	    return NULL;
+	}
 
 	cmd = cmd_eed(self, eed);
-	if (cmd == NULL)
+	if (cmd == NULL) {
+	    if (self->debug)
+		debug_msg("\n");
 	    return NULL;
+	}
+	if (self->debug)
+	    debug_msg(", cmd%d\n", ((CS_COMMANDObj*)cmd)->serial);
 	return Py_BuildValue("iN", status, cmd);
 
     default:
@@ -220,6 +261,7 @@ static PyObject *CS_CONNECTION_ct_cancel(CS_CONNECTIONObj *self, PyObject *args)
 {
     int type;
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "i", &type))
 	return NULL;
@@ -230,12 +272,17 @@ static PyObject *CS_CONNECTION_ct_cancel(CS_CONNECTIONObj *self, PyObject *args)
     }
 
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(self);
     SY_BEGIN_THREADS;
     status = ct_cancel(self->conn, NULL, type);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self);
+
     if (self->debug)
-	fprintf(stderr, "ct_cancel(%s) -> %s\n",
-		value_str(VAL_CANCEL, type), value_str(VAL_STATUS, status));
+	debug_msg("ct_cancel(conn%d, NULL, %s) -> %s\n",
+		  self->serial, value_str(VAL_CANCEL, type),
+		  value_str(VAL_STATUS, status));
     if (PyErr_Occurred())
 	return NULL;
 
@@ -249,6 +296,7 @@ static PyObject *CS_CONNECTION_ct_connect(CS_CONNECTIONObj *self, PyObject *args
 {
     CS_RETCODE status;
     char *dsn = NULL;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "|s", &dsn))
 	return NULL;
@@ -260,19 +308,25 @@ static PyObject *CS_CONNECTION_ct_connect(CS_CONNECTIONObj *self, PyObject *args
 
     PyErr_Clear();
     if (dsn == NULL) {
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_connect(self->conn, NULL, 0);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "ct_connect(NULL) -> %s\n",
-		    value_str(VAL_STATUS, status));
+	    debug_msg("ct_connect(conn%d, NULL, 0) -> %s\n",
+		      self->serial, value_str(VAL_STATUS, status));
     } else {
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_connect(self->conn, dsn, CS_NULLTERM);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "ct_connect(%s) -> %s\n",
-		    dsn, value_str(VAL_STATUS, status));
+	    debug_msg("ct_connect(conn%d, \"%s\", CS_NULLTERM) -> %s\n",
+		      self->serial, dsn, value_str(VAL_STATUS, status));
     }
     if (PyErr_Occurred())
 	return NULL;
@@ -321,6 +375,7 @@ static PyObject *CS_CONNECTION_ct_close(CS_CONNECTIONObj *self, PyObject *args)
 {
     CS_RETCODE status;
     int option = CS_UNUSED;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "|i", &option))
 	return NULL;
@@ -331,12 +386,17 @@ static PyObject *CS_CONNECTION_ct_close(CS_CONNECTIONObj *self, PyObject *args)
     }
 
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(self);
     SY_BEGIN_THREADS;
     status = ct_close(self->conn, option);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self);
+
     if (self->debug)
-	fprintf(stderr, "ct_close(%s) -> %s\n",
-		value_str(VAL_OPTION, option), value_str(VAL_STATUS, status));
+	debug_msg("ct_close(conn%d, %s) -> %s\n",
+		  self->serial, value_str(VAL_OPTION, option),
+		  value_str(VAL_STATUS, status));
     if (PyErr_Occurred())
 	return NULL;
 
@@ -349,6 +409,7 @@ static char CS_CONNECTION_ct_con_drop__doc__[] =
 static PyObject *CS_CONNECTION_ct_con_drop(CS_CONNECTIONObj *self, PyObject *args)
 {
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
@@ -359,11 +420,16 @@ static PyObject *CS_CONNECTION_ct_con_drop(CS_CONNECTIONObj *self, PyObject *arg
     }
 
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(self);
     SY_BEGIN_THREADS;
     status = ct_con_drop(self->conn);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self);
+
     if (self->debug)
-	fprintf(stderr, "ct_con_drop() -> %s\n", value_str(VAL_STATUS, status));
+	debug_msg("ct_con_drop(conn%d) -> %s\n",
+		  self->serial, value_str(VAL_STATUS, status));
     if (PyErr_Occurred())
 	return NULL;
 
@@ -572,6 +638,7 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
     char *str_value;
     char str_buff[10240];
     CS_INT buff_len;
+    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &action))
 	return NULL;
@@ -594,14 +661,20 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 		return NULL;
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_con_props(self->conn, CS_SET, property,
 				  &bool_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_con_props(CS_SET, %s, %d) -> %s\n",
-			value_str(VAL_PROPS, property), (int)bool_value,
-			value_str(VAL_STATUS, status));
+		debug_msg("ct_con_props(conn%d, CS_SET, %s, %d, CS_UNUSED,"
+			  " NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), (int)bool_value,
+			  value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -613,14 +686,20 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 		return NULL;
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_con_props(self->conn, CS_SET, property,
 				  &int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_con_props(CS_SET, %s, %d) -> %s\n",
-			value_str(VAL_PROPS, property), (int)int_value,
-			value_str(VAL_STATUS, status));
+		debug_msg("ct_con_props(conn%d, CS_SET, %s, %d, CS_UNUSED,"
+			  " NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), (int)int_value,
+			  value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -632,14 +711,20 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 		return NULL;
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_con_props(self->conn, CS_SET, property,
 				  str_value, CS_NULLTERM, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_con_props(CS_SET, %s, '%s') -> %s\n",
-			value_str(VAL_PROPS, property), str_value,
-			value_str(VAL_STATUS, status));
+		debug_msg("ct_con_props(conn%d, CS_SET, %s, \"%s\","
+			  " CS_NULLTERM, NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), str_value,
+			  value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -652,13 +737,20 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	    }
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_con_props(self->conn, CS_SET, property,
 				  ((CS_LOCALEObj*)obj)->locale, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_con_props(CS_SET, LOCALE, '%s') -> %s\n",
-			value_str(VAL_PROPS, property), value_str(VAL_STATUS, status));
+		debug_msg("ct_con_props(conn%d, CS_SET, %s, locale%d,"
+			  " CS_UNUSED, NULL) -> %s\n",
+			  self->serial, value_str(VAL_PROPS, property),
+			  ((CS_LOCALEObj*)obj)->serial,
+			  value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -678,14 +770,20 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	switch (property_type(property)) {
 	case OPTION_BOOL:
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_con_props(self->conn, CS_GET, property,
 				  &bool_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_con_props(CS_GET, %s) -> %s, %d\n",
-			value_str(VAL_PROPS, property),
-			value_str(VAL_STATUS, status), (int)bool_value);
+		debug_msg("ct_con_props(conn%d, CS_GET, %s, &value, CS_UNUSED,"
+			  " NULL) -> %s, %d\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property),
+			  value_str(VAL_STATUS, status), (int)bool_value);
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -693,24 +791,32 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 
 	case OPTION_INT:
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_con_props(self->conn, CS_GET, property,
 				  &int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug) {
 #ifdef CS_LOGIN_STATUS
 		if (property == CS_CON_STATUS || property == CS_LOGIN_STATUS)
 #else
 		if (property == CS_CON_STATUS)
 #endif
-		    fprintf(stderr, "ct_con_props(CS_GET, %s) -> %s, %s\n",
-			    value_str(VAL_PROPS, property),
-			    value_str(VAL_STATUS, status),
-			    mask_str(VAL_CONSTAT, (int)int_value));
+		    debug_msg("ct_con_props(conn%d, CS_GET, %s, &value,"
+			      " CS_UNUSED, NULL) -> %s, %s\n",
+			      self->serial,
+			      value_str(VAL_PROPS, property),
+			      value_str(VAL_STATUS, status),
+			      mask_str(VAL_CONSTAT, (int)int_value));
 		else
-		    fprintf(stderr, "ct_con_props(CS_GET, %s) -> %s, %d\n",
-			    value_str(VAL_PROPS, property),
-			    value_str(VAL_STATUS, status), (int)int_value);
+		    debug_msg("ct_con_props(conn%d, CS_GET, %s, &value,"
+			      " CS_UNUSED, NULL) -> %s, %d\n",
+			      self->serial,
+			      value_str(VAL_PROPS, property),
+			      value_str(VAL_STATUS, status), (int)int_value);
 	    }
 	    if (PyErr_Occurred())
 		return NULL;
@@ -719,16 +825,22 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 
 	case OPTION_STRING:
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_con_props(self->conn, CS_GET, property,
 				  str_buff, sizeof(str_buff), &buff_len);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (buff_len > sizeof(str_buff))
 		buff_len = sizeof(str_buff);
 	    if (self->debug)
-		fprintf(stderr, "ct_con_props(CS_GET, %s) -> %s, '%.*s'\n",
-			value_str(VAL_PROPS, property),
-			value_str(VAL_STATUS, status), (int)buff_len, str_buff);
+		debug_msg("ct_con_props(conn%d, CS_GET, %s, buff, %d, &outlen)"
+			  " -> %s, '%.*s'\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), sizeof(str_buff),
+			  value_str(VAL_STATUS, status), (int)buff_len, str_buff);
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -759,13 +871,20 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_con_props(self->conn, CS_CLEAR, property,
 			      NULL, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "ct_con_props(CS_CLEAR, %s) -> %s\n",
-		    value_str(VAL_PROPS, property), value_str(VAL_STATUS, status));
+	    debug_msg("ct_con_props(conn%d, CS_CLEAR, %s, NULL, CS_UNUSED,"
+		      " NULL) -> %s\n",
+		      self->serial,
+		      value_str(VAL_PROPS, property),
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -900,6 +1019,7 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
     char *str_value;
     char str_buff[10240];
     CS_INT buff_len;
+    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &action))
 	return NULL;
@@ -922,14 +1042,20 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 		return NULL;
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_options(self->conn, CS_SET, option,
 				&bool_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_options(CS_SET, %s, %d) -> %s\n",
-			value_str(VAL_OPTION, option), (int)bool_value,
-			value_str(VAL_STATUS, status));
+		debug_msg("ct_options(conn%d, CS_SET, %s, %d, CS_UNUSED,"
+			  " NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_OPTION, option), (int)bool_value,
+			  value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -941,14 +1067,20 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 		return NULL;
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_options(self->conn, CS_SET, option,
 				&int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_options(CS_SET, %s, %d) -> %s\n",
-			value_str(VAL_OPTION, option), (int)int_value,
-			value_str(VAL_STATUS, status));
+		debug_msg("ct_options(conn%d, CS_SET, %s, %d, CS_UNUSED,"
+			  " NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_OPTION, option), (int)int_value,
+			  value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -960,14 +1092,20 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 		return NULL;
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_options(self->conn, CS_SET, option,
 				str_value, CS_NULLTERM, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_options(CS_SET, %s, '%s') -> %s\n",
-			value_str(VAL_OPTION, option), str_value,
-			value_str(VAL_STATUS, status));
+		debug_msg("ct_options(conn%d, CS_SET, %s, \"%s\", CS_NULLTERM,"
+			  " NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_OPTION, option), str_value,
+			  value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -987,14 +1125,19 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	switch (option_type(option)) {
 	case OPTION_BOOL:
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_options(self->conn, CS_GET, option,
 				&bool_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_options(CS_GET, %s) -> %s, %d\n",
-			value_str(VAL_OPTION, option),
-			value_str(VAL_STATUS, status), (int)bool_value);
+		debug_msg("ct_options(conn%d, CS_GET, %s, &value, CS_UNUSED,"
+			  " NULL) -> %s, %d\n",
+			  self->serial, value_str(VAL_OPTION, option),
+			  value_str(VAL_STATUS, status), (int)bool_value);
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -1002,14 +1145,19 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 
 	case OPTION_INT:
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_options(self->conn, CS_GET, option,
 				&int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (self->debug)
-		fprintf(stderr, "ct_options(CS_GET, %s) -> %s, %d\n",
-			value_str(VAL_OPTION, option),
-			value_str(VAL_STATUS, status), (int)int_value);
+		debug_msg("ct_options(conn%d, CS_GET, %s, &value, CS_UNUSED,"
+			  " NULL) -> %s, %d\n",
+			  self->serial, value_str(VAL_OPTION, option),
+			  value_str(VAL_STATUS, status), (int)int_value);
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -1017,16 +1165,22 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 
 	case OPTION_STRING:
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self);
 	    SY_BEGIN_THREADS;
 	    status = ct_options(self->conn, CS_GET, option,
 				str_buff, sizeof(str_buff), &buff_len);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self);
+
 	    if (buff_len > sizeof(str_buff))
 		buff_len = sizeof(str_buff);
 	    if (self->debug)
-		fprintf(stderr, "ct_options(CS_GET, %s) -> %s, '%.*s'\n",
-			value_str(VAL_OPTION, option),
-			value_str(VAL_STATUS, status), (int)buff_len, str_buff);
+		debug_msg("ct_options(conn%d, CS_GET, %s, buff, %d, &outlen)"
+			  " -> %s, '%.*s'\n",
+			  self->serial,
+			  value_str(VAL_OPTION, option), sizeof(str_buff),
+			  value_str(VAL_STATUS, status), (int)buff_len, str_buff);
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -1049,13 +1203,19 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_options(self->conn, CS_CLEAR, option,
 			    NULL, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self);
+
 	if (self->debug)
-	    fprintf(stderr, "ct_options(CS_CLEAR, %s) -> %s\n",
-		    value_str(VAL_OPTION, option), value_str(VAL_STATUS, status));
+	    debug_msg("ct_options(conn%d, CS_CLEAR, %s, NULL, CS_UNUSED,"
+		      " NULL) -> %s\n",
+		      self->serial, value_str(VAL_OPTION, option),
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -1083,11 +1243,14 @@ static struct PyMethodDef CS_CONNECTION_methods[] = {
     { NULL }			/* sentinel */
 };
 
-PyObject *conn_alloc(CS_CONTEXTObj *ctx)
+static int conn_serial;
+
+PyObject *conn_alloc(CS_CONTEXTObj *ctx, int enable_lock)
 {
     CS_CONNECTIONObj *self;
     CS_RETCODE status;
     CS_CONNECTION *conn;
+    SY_THREAD_STATE;
 
     self = PyObject_NEW(CS_CONNECTIONObj, &CS_CONNECTIONType);
     if (self == NULL)
@@ -1098,19 +1261,33 @@ PyObject *conn_alloc(CS_CONTEXTObj *ctx)
     self->ctx = NULL;
     self->strip = 0;
     self->debug = ctx->debug;
-
+    self->serial = conn_serial++;
+    if (enable_lock) {
+	SY_LOCK_ALLOC(self);
+    } else {
+	SY_LOCK_CLEAR(self);
+    }
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(ctx);
     SY_BEGIN_THREADS;
     status = ct_con_alloc(ctx->ctx, &conn);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(ctx);
+
     if (self->debug)
-	fprintf(stderr, "ct_con_alloc() -> %s\n", value_str(VAL_STATUS, status));
+	debug_msg("ct_con_alloc(ctx%d, &conn) -> %s",
+		  ctx->serial, value_str(VAL_STATUS, status));
     if (PyErr_Occurred()) {
+	if (self->debug)
+	    debug_msg("\n");
 	Py_DECREF(self);
 	return NULL;
     }
 
     if (status != CS_SUCCEED) {
+	if (self->debug)
+	    debug_msg(", None\n");
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
     }
@@ -1119,6 +1296,8 @@ PyObject *conn_alloc(CS_CONTEXTObj *ctx)
     self->ctx = ctx;
     Py_INCREF(self->ctx);
     conn_add_object(self);
+    if (self->debug)
+	debug_msg(", conn%d\n", self->serial);
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
@@ -1132,9 +1311,10 @@ static void CS_CONNECTION_dealloc(CS_CONNECTIONObj *self)
 
 	status = ct_con_drop(self->conn);
 	if (self->debug)
-	    fprintf(stderr, "ct_con_drop() -> %s\n",
-		    value_str(VAL_STATUS, status));
+	    debug_msg("ct_con_drop(conn%d) -> %s\n",
+		      self->serial, value_str(VAL_STATUS, status));
     }
+    SY_LOCK_FREE(self);
     Py_XDECREF(self->ctx);
     conn_del_object(self);
     PyMem_DEL(self);
