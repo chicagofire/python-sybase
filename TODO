@@ -1,19 +1,10 @@
+- Use native datetime and convert to mxDateTime in Sybase.py
+
 - Complete CS_CONTEXT_cs_config
 
 - Complete CS_LOCALE_cs_locale
 
 - Finish testing locales.py
-
-- Check all places where I have done
-    PyErr_Clear();
-    if (PyErr_Occurred())
-	return NULL;
-
-- Add exception in callback check to all native column type wrapper
-  objects
-    PyErr_Clear();
-    if (PyErr_Occurred())
-	return NULL;
 
 - Enforce single result set over each connection by attaching all
   cursors to parent connection with a weakref.

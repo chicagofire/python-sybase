@@ -156,11 +156,15 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	if (self->debug)
 	    fprintf(stderr, "ct_diag(CS_GET, %s, %d) -> %s\n",
 		    value_str(TYPE, type), index, value_str(STATUS, status));
-	if (PyErr_Occurred())
+	if (PyErr_Occurred()) {
+	    Py_DECREF(msg);
 	    return NULL;
+	}
 
-	if (status != CS_SUCCEED)
+	if (status != CS_SUCCEED) {
+	    Py_DECREF(msg);
 	    return Py_BuildValue("iO", status, Py_None);
+	}
 	return Py_BuildValue("iN", CS_SUCCEED, msg);
 
     case CS_STATUS:
@@ -333,6 +337,7 @@ static PyObject *CS_CONNECTION_ct_close(CS_CONNECTIONObj *self, PyObject *args)
 		value_str(OPTION, option), value_str(STATUS, status));
     if (PyErr_Occurred())
 	return NULL;
+
     return PyInt_FromLong(status);
 }
 

@@ -211,7 +211,10 @@ static PyObject *DataBuf_item(DataBufObj *self, int i)
 
     case CS_DATETIME4_TYPE:
     case CS_DATETIME_TYPE:
+	PyErr_Clear();
 	cs_dt_crack(global_ctx(), self->fmt.datatype, item, &date_rec);
+	if (PyErr_Occurred())
+	    return NULL;
 	return mx_datetime(&date_rec);
 
     case CS_DECIMAL_TYPE:

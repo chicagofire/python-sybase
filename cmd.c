@@ -54,8 +54,10 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
     if (self->debug)
 	fprintf(stderr, "ct_bind(%d) -> %s\n",
 		(int)item, value_str(STATUS, status));
-    if (PyErr_Occurred())
+    if (PyErr_Occurred()) {
+	Py_DECREF(databuf);
         return NULL;
+    }
 
     return Py_BuildValue("iN", status, databuf);
 }
