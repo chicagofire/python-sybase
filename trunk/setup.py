@@ -116,6 +116,11 @@ for i in range(1, len(sys.argv)):
         del sys.argv[i - 1]
     # Now set the TDS level the other other way.
     syb_macros.append(('HAVE_FREETDS', suffix[1:]))
+    if prefix:
+        # Handle -D WANT_X,HAVE_FREETDS=60 case
+        if prefix[-1] == ',':
+            prefix = prefix[:-1]
+        sys.argv[i:i] = [prefix]
     break
 
 for api in ('blk_alloc', 'blk_describe', 'blk_drop', 'blk_rowxfer_mult',

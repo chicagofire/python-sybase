@@ -261,7 +261,11 @@ class _FetchNow:
         if status != CS_SUCCEED:
             self._raise_error(Error, 'ct_send')
         while 1:
-            status, result = self._cmd.ct_results()
+            try:
+                status, result = self._cmd.ct_results()
+            except Exception, e:
+                self._conn.ct_cancel(CS_CANCEL_ALL)
+                raise e
             if status == CS_END_RESULTS:
                 if self._description_list:
                     return self._description_list[0]
