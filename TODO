@@ -1,18 +1,10 @@
-- Use native datetime and convert to mxDateTime in Sybase.py
-
 - Complete CS_CONTEXT_cs_config
-
-- Complete CS_LOCALE_cs_locale
-
-- Finish testing locales.py
 
 - Enforce single result set over each connection by attaching all
   cursors to parent connection with a weakref.
 
 - Change documentation to describe Sybase CT library wrapping not CT
   function semantics.
-
-- Finish documenting Sybase.py
 
 - Change exception handling in Sybase.py
 
@@ -41,10 +33,12 @@
       DATETIME
       ROWID
 
-- Document Bulkcopy
-
 - Document numeric, money, datetime
 
 - Check Py_BuildValue("is#", status, str_buff, buff_len) for props GET.
 
 - PyUnit
+
+- Installation instructions
+
+- Bulkcopy copy out
