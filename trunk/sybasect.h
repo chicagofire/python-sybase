@@ -152,6 +152,8 @@ extern char numeric_new__doc__[];
 PyObject *NumericType_new(PyObject *module, PyObject *args);
 int Numeric_Check(PyObject *obj);
 void copy_reg_numeric(PyObject *dict);
+extern char pickle_numeric__doc__[];
+PyObject *pickle_numeric(PyObject *module, PyObject *args);
 
 typedef struct {
     PyObject_HEAD

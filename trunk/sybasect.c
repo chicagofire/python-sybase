@@ -248,6 +248,7 @@ static struct PyMethodDef sybasect_methods[] = {
     { "cs_ctx_global", (PyCFunction)sybasect_cs_ctx_global, METH_VARARGS, sybasect_cs_ctx_global__doc__ },
     { "DataBuf", (PyCFunction)sybasect_DataBuf, METH_VARARGS, sybasect_DataBuf__doc__ },
     { "numeric", (PyCFunction)NumericType_new, METH_VARARGS, numeric_new__doc__ },
+    { "pickle_numeric", (PyCFunction)pickle_numeric, METH_VARARGS, pickle_numeric__doc__ },
     { "sizeof_type", (PyCFunction)sybasect_sizeof_type, METH_VARARGS, sybasect_sizeof_type__doc__ },
     { "CS_DATAFMT", (PyCFunction)datafmt_new, METH_VARARGS, datafmt_new__doc__ },
     { "CS_IODESC", (PyCFunction)iodesc_new, METH_VARARGS, iodesc_new__doc__ },
