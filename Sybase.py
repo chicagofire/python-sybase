@@ -244,10 +244,15 @@ class Cursor:
             self._lock.release()
 
     def __del__(self):
-        try:
-            self.close()
-        except:
-            pass
+        if self._state not in (CUR_IDLE, CUR_CLOSED):
+            self._owner._conn.ct_cancel(CS_CANCEL_ALL)
+            try:
+                # By the time we get called the threading module might
+                # have killed the thread the lock was created in ---
+                # oops.
+                self._lock._RLock__block.release()
+            except:
+                pass
 
     def _raise_error(self, exc, text):
         if self._state not in (CUR_IDLE, CUR_CLOSED):
@@ -264,17 +269,21 @@ class Cursor:
         try:
             if self._state == CUR_CLOSED:
                 self._raise_error(ProgrammingError, 'cursor is closed')
-            if self._state in (CUR_FETCHING, CUR_END_RESULT):
-                while self._state != CUR_IDLE:
-                    self.nextset()
+            while self._state != CUR_IDLE:
+                self.nextset()
             if self._state == CUR_IDLE:
                 # At the start of a command acquire an extra lock -
                 # when the cursor is idle again the extra lock will be
                 # released.
                 self._lock.acquire()
-                status = self._cmd.ct_command(CS_RPC_CMD, name % params)
+                status = self._cmd.ct_command(CS_RPC_CMD, name)
                 if status != CS_SUCCEED:
                     self._raise_error(Error, 'ct_command')
+                for param in params:
+                    buf = DataBuf(param)
+                    status = self._cmd.ct_param(buf)
+                    if status != CS_SUCCEED:
+                        self._raise_error(Error, 'ct_param')
                 status = self._cmd.ct_send()
                 if status != CS_SUCCEED:
                     self._raise_error(Error, 'ct_send')
@@ -290,12 +299,11 @@ class Cursor:
         try:
             if self._state == CUR_CLOSED:
                 self._raise_error(Error, 'cursor is closed')
-            if self._state == CUR_IDLE:
-                self._state = CUR_CLOSED
-            else:
-                while self._state != CUR_IDLE:
-                    self.nextset()
-                self._cmd = None
+            if self._state != CUR_IDLE:
+                status = self._cmd.ct_cancel(CS_CANCEL_ALL)
+                if status == CS_SUCCEED:
+                    self._lock.release()
+            self._cmd = None
             self._state = CUR_CLOSED
         finally:
             self._lock.release()
@@ -307,13 +315,13 @@ class Cursor:
         try:
             if self._state == CUR_CLOSED:
                 self._raise_error(Error, 'cursor is closed')
-            if self._state != CUR_IDLE:
+            while self._state != CUR_IDLE:
                 self.nextset()
             # At the start of a command acquire an extra lock - when
             # the cursor is idle again the extra lock will be
             # released.
             self._lock.acquire()
-            self._cmd.ct_command(CS_LANG_CMD, sql % params)
+            self._cmd.ct_command(CS_LANG_CMD, sql % tuple(params))
             self._cmd.ct_send()
             self._start_results()
         finally:
@@ -342,7 +350,8 @@ class Cursor:
                 try:
                     row = _fetch_rows(self._cmd, self._bufs)
                 except Error:
-                    if self._owner._conn.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
+                    status = self._cmd.ct_cancel(CS_CANCEL_ALL)
+                    if status == CS_SUCCEED:
                         self._state = CUR_IDLE
                         self._lock.release()
                     raise
@@ -396,7 +405,9 @@ class Cursor:
             if self._state == CUR_IDLE:
                 return
             if self._state == CUR_FETCHING:
-                self._cancel_current()
+                status = self._cmd.ct_cancel(CS_CANCEL_CURRENT)
+                if status != CS_SUCCEED:
+                    self._raise_error(Error, 'ct_cancel')
             self._start_results()
             return self._state != CUR_IDLE or None
         finally:
