@@ -114,6 +114,7 @@ typedef struct {
 
 extern PyTypeObject CS_DATAFMTType;
 #define CS_DATAFMT_Check(obj) (obj->ob_type == &CS_DATAFMTType)
+void datetime_datafmt(int type, CS_DATAFMT *fmt);
 void money_datafmt(CS_DATAFMT *fmt);
 void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale);
 void char_datafmt(CS_DATAFMT *fmt);
@@ -176,6 +177,29 @@ PyObject *MoneyType_new(PyObject *module, PyObject *args);
 void copy_reg_money(PyObject *dict);
 extern char pickle_money__doc__[];
 PyObject *pickle_money(PyObject *module, PyObject *args);
+
+typedef struct {
+    PyObject_HEAD
+    int type;
+    union {
+	CS_DATETIME datetime;
+	CS_DATETIME4 datetime4;
+    } v;
+    CS_DATEREC daterec;
+    int cracked;
+} DateTimeObj;
+
+#define DATETIME_LEN 32
+
+extern PyTypeObject DateTimeType;
+#define DateTime_Check(obj) (obj->ob_type == &DateTimeType)
+PyObject *datetime_alloc(int type, void *value);
+int datetime_as_string(PyObject *obj, char *text);
+extern char datetime_new__doc__[];
+PyObject *DateTimeType_new(PyObject *module, PyObject *args);
+void copy_reg_datetime(PyObject *dict);
+extern char pickle_datetime__doc__[];
+PyObject *pickle_datetime(PyObject *module, PyObject *args);
 
 typedef struct {
     PyObject_HEAD
