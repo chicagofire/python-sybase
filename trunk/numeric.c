@@ -618,7 +618,7 @@ PyObject *pickle_numeric(PyObject *module, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "O!", &NumericType, &obj))
 	goto error;
-    numeric_as_string(obj, text);
+    numeric_as_string((PyObject*)obj, text);
     if ((values = Py_BuildValue("(sii)", text,
 				obj->num.precision, obj->num.scale)) == NULL)
 	goto error;
