@@ -1,7 +1,36 @@
+2005-03-19 12:48  djc
+
+	* Sybase.py: Consume the CS_STATUS_RESULT internally and set the
+	  stored procedure return value in the Cursor.return_status member.
+	  Small modification to work around different handling for FreeTDS
+	  output parameters.
+
+2005-03-18 16:14  djc
+
+	* Sybase.py: Fix sequence arguments to Cursor.callproc().
+
+2004-11-16 10:57  djc
+
+	* setup.py: Attempt to make setup detect OCS automagically.
+
+2004-11-16 10:56  djc
+
+	* Sybase.py: Apply output hook patch from Ty Sarna
+	  <tsarna@sarna.org>.
+
+2003-11-25 10:58  djc
+
+	* Sybase.py, setup.py: Applied patch from Andre Sedinin to improve
+	  error handling.
+
+2003-04-27 21:54  djc
+
+	* ChangeLog: Getting release ready.
+
 2003-04-27 21:52  djc
 
 	* dist/release-0.36, examples/rpc.sql: Getting ready for release
-	0.36 
+	  0.36
 
 2003-04-27 21:28  djc
 
