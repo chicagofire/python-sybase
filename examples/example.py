@@ -1,3 +1,5 @@
+from sybasect import *
+
 class Error(Exception):
     pass
 
@@ -30,3 +32,7 @@ class SybaseError:
     def __str__(self):
         return string.join(self.err, '\n')
 
+EX_USERNAME = "sa"
+EX_PASSWORD = ""
+EX_CTLIB_VERSION = CS_VERSION_110
+EX_BLK_VERSION = BLK_VERSION_110
