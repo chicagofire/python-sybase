@@ -208,12 +208,12 @@ def _fetch_rows(cmd, bufs):
 status, _ctx = cs_ctx_alloc()
 if status != CS_SUCCEED:
     raise InternalError('cs_ctx_alloc failed')
+set_global_ctx(_ctx)
 if _ctx.ct_init() != CS_SUCCEED:
     raise Error('ct_init')
 _ctx.cs_config(CS_SET, CS_MESSAGE_CB, _cslib_cb)
 _ctx.ct_callback(CS_SET, CS_CLIENTMSG_CB, _clientmsg_cb)
 _ctx.ct_callback(CS_SET, CS_SERVERMSG_CB, _servermsg_cb)
-set_global_ctx(_ctx)
 if _ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
     raise Error('ct_config')
 
