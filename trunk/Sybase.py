@@ -1,6 +1,6 @@
 from sybasect import *
 
-__version__ = '0.26'
+__version__ = '0.28'
 
 # _sybase is a thin wrapper on top of the Sybase CT library.  The
 # objects in _sybase perform some CT functions automatically:
@@ -421,7 +421,7 @@ class Cursor:
 class Bulkcopy:
     def __init__(self, owner, table, direction):
         self._owner = owner
-        self._con = owner._con
+        self._con = con = owner._con
         self._table = table
         self._direction = direction
         status, blk = con.blk_alloc()
@@ -431,12 +431,6 @@ class Bulkcopy:
         status = blk.blk_init(direction, table)
         if status != CS_SUCCEED:
             raise InternalError(_build_ct_except(con, 'blk_init'))
-
-    def format(self):
-        pass
-
-    def split(self):
-        pass
 
     def rowxfer(self, data):
         if type(data) not in (type([]), type(())):
@@ -467,7 +461,7 @@ class Bulkcopy:
 
 class Connection:
     def __init__(self, dsn, user, passwd, database = None,
-                 strip = 0, auto_commit = 0, delay_connect = 0):
+                 strip = 0, auto_commit = 0, bulkcopy = 0, delay_connect = 0):
         '''DB-API Sybase.Connect()
         '''
         self._con = self._cmd = None
@@ -487,6 +481,8 @@ class Connection:
             raise DatabaseError(_build_ct_except(con, 'ct_con_props CS_USERNAME'))
         if con.ct_con_props(CS_SET, CS_PASSWORD, passwd) != CS_SUCCEED:
             raise DatabaseError(_build_ct_except(con, 'ct_con_props CS_PASSWORD'))
+        if bulkcopy and con.ct_con_props(CS_SET, CS_BULK_LOGIN, 1) != CS_SUCCEED:
+            raise DatabaseError(_build_ct_except(con, 'ct_con_props CS_BULK_LOGIN'))
         if not delay_connect:
             self.connect()
 
@@ -608,6 +604,6 @@ class Connection:
             logical_result.extend(rows)
 
 def connect(dsn, user, passwd, database = None,
-            strip = 0, auto_commit = 0, delay_connect = 0):
+            strip = 0, auto_commit = 0, bulkcopy = 0, delay_connect = 0):
     return Connection(dsn, user, passwd, database,
-                      strip, auto_commit, delay_connect)
+                      strip, auto_commit, bulkcopy, delay_connect)
