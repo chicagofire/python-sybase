@@ -13,6 +13,39 @@ NOTES:
 This release contains a number of small bugfixes and patches received
 from users.
 
+I have been unable to find the source of the memory leak reported here:
+    http://www.object-craft.com.au/pipermail/python-sybase/2004-December/000346.html
+
+The test program I wrote follows:
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+import sys
+import Sybase
+
+db = Sybase.connect(..., auto_commit=True)
+db.execute('''
+if exists (select name from sysobjects where name = "sp_test_leak")
+begin
+    drop procedure sp_test_leak
+end
+''')
+db.execute('''
+create procedure sp_test_leak
+    @arg int
+as
+    select @arg
+''')
+for i in range(200):
+    for j in range(1000):
+        c = db.cursor()
+        c.callproc('sp_test_leak', {'@arg': 12345 })
+    sys.stdout.write('%3d\r' % i)
+    sys.stdout.flush()
+sys.stdout.write('\n')
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+If someone is able to modify this and come up with a leaking result I
+am interested in working on the fix.
+
 You can build for FreeTDS like this:
 
      python setup.py build_ext -D HAVE_FREETDS -U WANT_BULKCOPY
