@@ -275,16 +275,16 @@ static PyNumberMethods DateTime_as_number = {
 
 static struct memberlist DateTime_memberlist[] = {
     { "type",      T_INT, OFFSET(type), RO },
-    { "year",      T_INT, OFFSET(daterec.dateyear) },
-    { "month",     T_INT, OFFSET(daterec.datemonth) },
-    { "day",       T_INT, OFFSET(daterec.datedmonth) },
-    { "dayofyear", T_INT, OFFSET(daterec.datedyear) },
-    { "weekday",   T_INT, OFFSET(daterec.datedweek) },
-    { "hour",      T_INT, OFFSET(daterec.datehour) },
-    { "minute",    T_INT, OFFSET(daterec.dateminute) },
-    { "second",    T_INT, OFFSET(daterec.datesecond) },
-    { "msecond",   T_INT, OFFSET(daterec.datemsecond) },
-    { "tzone",     T_INT, OFFSET(daterec.datetzone) },
+    { "year",      T_INT, OFFSET(daterec.dateyear), RO },
+    { "month",     T_INT, OFFSET(daterec.datemonth), RO },
+    { "day",       T_INT, OFFSET(daterec.datedmonth), RO },
+    { "dayofyear", T_INT, OFFSET(daterec.datedyear), RO },
+    { "weekday",   T_INT, OFFSET(daterec.datedweek), RO },
+    { "hour",      T_INT, OFFSET(daterec.datehour), RO },
+    { "minute",    T_INT, OFFSET(daterec.dateminute), RO },
+    { "second",    T_INT, OFFSET(daterec.datesecond), RO },
+    { "msecond",   T_INT, OFFSET(daterec.datemsecond), RO },
+    { "tzone",     T_INT, OFFSET(daterec.datetzone), RO },
     { NULL }
 };
 
