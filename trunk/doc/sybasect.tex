@@ -81,12 +81,12 @@ data values.
 Calls the Sybase-CT \function{cs_ctx_alloc()} function:
 
 \begin{verbatim}
-result = cs_ctx_alloc(version, &ctx)
+result = cs_ctx_alloc(version, &ctx);
 \end{verbatim}
 
-The result is a tuple containing the Sybase result code and a new
-instance of the \class{CS_CONTEXT} class constructed from the
-\var{ctx} value returned by Sybase.  \code{None} is returned as the
+Returns a tuple containing the Sybase result code and a new instance
+of the \class{CS_CONTEXT} class constructed from the \var{ctx} value
+returned by \function{cs_ctx_alloc()}.  \code{None} is returned as the
 \class{CS_CONTEXT} object when the result code is not
 \code{CS_SUCCEED}.
 \end{funcdesc}
@@ -95,12 +95,12 @@ instance of the \class{CS_CONTEXT} class constructed from the
 Calls the Sybase-CT \function{cs_ctx_global()} function:
 
 \begin{verbatim}
-result = cs_ctx_global(version, &ctx)
+result = cs_ctx_global(version, &ctx);
 \end{verbatim}
 
-The result is a tuple containing the Sybase result code and a new
-instance of the \class{CS_CONTEXT} class constructed from the
-\var{ctx} value returned by Sybase.  \code{None} is returned as the
+Returns a tuple containing the Sybase result code and a new instance
+of the \class{CS_CONTEXT} class constructed from the \var{ctx} value
+returned by \function{cs_ctx_global()}.  \code{None} is returned as the
 \class{CS_CONTEXT} object when the result code is not
 \code{CS_SUCCEED}.
 \end{funcdesc}
