@@ -19,6 +19,17 @@ __version__ = '0.30'
 # CS_COMMAND.__init__()        executes ct_cmd_alloc()
 # CS_COMMAND.__del__()         executes ct_cmd_drop()
 
+# Setup global library context
+status, _ctx = cs_ctx_global()
+if status != CS_SUCCEED:
+    raise InternalError('cs_ctx_alloc failed')
+if _ctx.cs_diag(CS_INIT) != CS_SUCCEED:
+    raise InternalError('cs_diag failed')
+if _ctx.ct_init() != CS_SUCCEED:
+    raise InternalError(_build_cs_except(_ctx, 'ct_init'))
+if _ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
+    raise InternalError(_build_cs_except(_ctx, 'ct_config'))
+
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
 
@@ -102,17 +113,6 @@ def _build_cs_except(ctx, msg):
     err.extend(_get_diag(ctx.cs_diag, CS_CLIENTMSG_TYPE))
     ctx.cs_diag(CS_CLEAR, CS_CLIENTMSG_TYPE)
     return err
-
-# Setup global library context
-status, _ctx = cs_ctx_global()
-if status != CS_SUCCEED:
-    raise InternalError('cs_ctx_alloc failed')
-if _ctx.cs_diag(CS_INIT) != CS_SUCCEED:
-    raise InternalError('cs_diag failed')
-if _ctx.ct_init() != CS_SUCCEED:
-    raise InternalError(_build_cs_except(_ctx, 'ct_init'))
-if _ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
-    raise InternalError(_build_cs_except(_ctx, 'ct_config'))
 
 def _extract_row(bufs, n):
     '''Extract a row tuple from buffers.
