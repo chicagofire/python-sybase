@@ -80,7 +80,7 @@ extra_objects = None
 #except:
 #    pass
 
-syb_macros = []
+syb_macros = [('WANT_BULKCOPY', None)]
 for api in ('blk_describe', 'blk_rowxfer_mult', 'blk_textxfer',):
     if api_exists(api, os.path.join(syb_incdir, 'bkpublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))

@@ -373,6 +373,7 @@ static PyObject *CS_CONNECTION_ct_cmd_alloc(CS_CONNECTIONObj *self, PyObject *ar
     return cmd_alloc(self);
 }
 
+#ifdef WANT_BULKCOPY
 static char CS_CONNECTION_blk_alloc__doc__[] = 
 "blk_alloc([version = BLK_VERSION_100) -> status, blk";
 
@@ -390,6 +391,7 @@ static PyObject *CS_CONNECTION_blk_alloc(CS_CONNECTIONObj *self, PyObject *args)
 
     return bulk_alloc(self, version);
 }
+#endif
 
 static char CS_CONNECTION_ct_close__doc__[] = 
 "ct_close([option]) - > status";
@@ -1256,7 +1258,9 @@ static struct PyMethodDef CS_CONNECTION_methods[] = {
     { "ct_cancel", (PyCFunction)CS_CONNECTION_ct_cancel, METH_VARARGS, CS_CONNECTION_ct_cancel__doc__ },
     { "ct_connect", (PyCFunction)CS_CONNECTION_ct_connect, METH_VARARGS, CS_CONNECTION_ct_connect__doc__ },
     { "ct_cmd_alloc", (PyCFunction)CS_CONNECTION_ct_cmd_alloc, METH_VARARGS, CS_CONNECTION_ct_cmd_alloc__doc__ },
+#ifdef WANT_BULKCOPY
     { "blk_alloc", (PyCFunction)CS_CONNECTION_blk_alloc, METH_VARARGS, CS_CONNECTION_blk_alloc__doc__ },
+#endif
     { "ct_close", (PyCFunction)CS_CONNECTION_ct_close, METH_VARARGS, CS_CONNECTION_ct_close__doc__ },
     { "ct_con_drop", (PyCFunction)CS_CONNECTION_ct_con_drop, METH_VARARGS, CS_CONNECTION_ct_con_drop__doc__ },
     { "ct_con_props", (PyCFunction)CS_CONNECTION_ct_con_props, METH_VARARGS, CS_CONNECTION_ct_con_props__doc__ },

@@ -116,6 +116,7 @@ extern PyTypeObject CS_CONNECTIONType;
 PyObject *conn_alloc(CS_CONTEXTObj *ctx, int enable_lock);
 PyObject *conn_find_object(CS_CONNECTION *conn);
 
+#ifdef WANT_BULKCOPY
 typedef struct {
     PyObject_HEAD
     CS_CONNECTIONObj *conn;
@@ -127,6 +128,7 @@ typedef struct {
 
 extern PyTypeObject CS_BLKDESCType;
 PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version);
+#endif
 
 typedef struct {
     PyObject_HEAD

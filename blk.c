@@ -24,6 +24,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
+#ifdef WANT_BULKCOPY
+
 static char CS_BLKDESC_blk_bind__doc__[] = 
 "blk_bind(int, buffer) -> status";
 
@@ -799,3 +801,4 @@ PyTypeObject CS_BLKDESCType = {
     CS_BLKDESCType__doc__	/* documentation string */
 };
 
+#endif
