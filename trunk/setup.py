@@ -92,7 +92,7 @@ for api in ('cs_ctx_global',):
         syb_macros.append(('HAVE_' + string.upper(api), None))
 
 setup(name = "Sybase",
-      version = "0.33pre3",
+      version = "0.33pre4",
       maintainer = "Dave Cole",
       maintainer_email = " djc@object-craft.com.au",
       description = "Sybase Extension to Python",
