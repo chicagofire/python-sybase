@@ -977,59 +977,6 @@ static value_desc sybase_args[] = {
     SYVAL(CBTYPE, CS_SERVERMSG_CB),
 #endif
 
-    SYVAL(CSDATES, CS_DATES_SHORT), /* default      */
-    SYVAL(CSDATES, CS_DATES_MDY1), /* mm/dd/yy     */
-    SYVAL(CSDATES, CS_DATES_YMD1), /* yy.mm.dd     */
-    SYVAL(CSDATES, CS_DATES_DMY1), /* dd/mm/yy     */
-    SYVAL(CSDATES, CS_DATES_DMY2), /* dd.mm.yy     */
-    SYVAL(CSDATES, CS_DATES_DMY3), /* dd-mm-yy     */
-    SYVAL(CSDATES, CS_DATES_DMY4), /* dd mon yy    */
-    SYVAL(CSDATES, CS_DATES_MDY2), /* mon dd, yy   */
-    SYVAL(CSDATES, CS_DATES_HMS), /* hh:mm:ss     */
-    SYVAL(CSDATES, CS_DATES_LONG), /* default with micro secs */
-    SYVAL(CSDATES, CS_DATES_MDY3), /* mm-dd-yy     */
-    SYVAL(CSDATES, CS_DATES_YMD2), /* yy/mm/dd     */
-    SYVAL(CSDATES, CS_DATES_YMD3), /* yymmdd       */
-    SYVAL(CSDATES, CS_DATES_YDM1), /* yy/dd/mm     */
-    SYVAL(CSDATES, CS_DATES_MYD1), /* mm/yy/dd     */
-    SYVAL(CSDATES, CS_DATES_DYM1), /* dd/yy/mm     */
-    SYVAL(CSDATES, CS_DATES_SHORT_ALT),	/* default      */
-    SYVAL(CSDATES, CS_DATES_MDY1_YYYY),	/* mm/dd/yyyy   */
-    SYVAL(CSDATES, CS_DATES_YMD1_YYYY),	/* yyyy.mm.dd   */
-    SYVAL(CSDATES, CS_DATES_DMY1_YYYY),	/* dd/mm/yyyy   */
-    SYVAL(CSDATES, CS_DATES_DMY2_YYYY),	/* dd.mm.yyyy   */
-    SYVAL(CSDATES, CS_DATES_DMY3_YYYY),	/* dd-mm-yyyy   */
-    SYVAL(CSDATES, CS_DATES_DMY4_YYYY),	/* dd mon yyyy  */
-    SYVAL(CSDATES, CS_DATES_MDY2_YYYY),	/* mon dd, yyyy */
-    SYVAL(CSDATES, CS_DATES_HMS_ALT), /* hh:mm:ss     */
-    SYVAL(CSDATES, CS_DATES_LONG_ALT), /* default with micro secs */
-    SYVAL(CSDATES, CS_DATES_MDY3_YYYY),	/* mm-dd-yyyy   */
-    SYVAL(CSDATES, CS_DATES_YMD2_YYYY),	/* yyyy/mm/dd   */
-    SYVAL(CSDATES, CS_DATES_YMD3_YYYY),	/* yyyymmdd     */
-
-    SYVAL(LOCALE, CS_LC_COLLATE),
-    SYVAL(LOCALE, CS_LC_CTYPE),
-    SYVAL(LOCALE, CS_LC_MESSAGE),
-    SYVAL(LOCALE, CS_LC_MONETARY),
-    SYVAL(LOCALE, CS_LC_NUMERIC),
-    SYVAL(LOCALE, CS_LC_TIME),
-    SYVAL(LOCALE, CS_LC_ALL),
-    SYVAL(LOCALE, CS_SYB_LANG),
-    SYVAL(LOCALE, CS_SYB_CHARSET),
-    SYVAL(LOCALE, CS_SYB_SORTORDER),
-    SYVAL(LOCALE, CS_SYB_COLLATE),
-    SYVAL(LOCALE, CS_SYB_LANG_CHARSET),
-    SYVAL(LOCALE, CS_SYB_TIME),
-    SYVAL(LOCALE, CS_SYB_MONETARY),
-    SYVAL(LOCALE, CS_SYB_NUMERIC),
-
-    SYVAL(DTINFO, CS_MONTH),
-    SYVAL(DTINFO, CS_SHORTMONTH),
-    SYVAL(DTINFO, CS_DAYNAME),
-    SYVAL(DTINFO, CS_DATEORDER),
-    SYVAL(DTINFO, CS_12HOUR),
-    SYVAL(DTINFO, CS_DT_CONVFMT),
-
     SYVAL(RESULT, CS_TRUE),
     SYVAL(RESULT, CS_FALSE),
     {0,0,0}
@@ -1066,7 +1013,6 @@ void initsybasect(void)
     CS_CONTEXTType.ob_type = &PyType_Type;
     CS_DATAFMTType.ob_type = &PyType_Type;
     CS_IODESCType.ob_type = &PyType_Type;
-    CS_LOCALEType.ob_type = &PyType_Type;
     CS_CLIENTMSGType.ob_type = &PyType_Type;
     CS_SERVERMSGType.ob_type = &PyType_Type;
     NumericType.ob_type = &PyType_Type;
