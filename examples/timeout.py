@@ -83,6 +83,7 @@ def init_db():
     status, ctx = cs_ctx_alloc(CS_VERSION_100)
     if bad_status(status, 'cs_ctx_alloc'):
         return status, None
+    set_global_ctx(ctx)
     # initialize the library
     status = ctx.ct_init(CS_VERSION_100)
     bad_status(status, 'ct_init')

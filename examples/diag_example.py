@@ -159,6 +159,7 @@ def handle_returns(cmd):
 status, ctx = cs_ctx_alloc(EX_CTLIB_VERSION)
 if status != CS_SUCCEED:
     raise Error('cs_ctx_alloc failed')
+set_global_ctx(ctx)
 # Initialize client library	
 if ctx.ct_init(EX_CTLIB_VERSION) != CS_SUCCEED:
     raise CSError(ctx, 'ct_init failed')
