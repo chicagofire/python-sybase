@@ -69,12 +69,12 @@ static PyObject *sybasect_cs_ctx_global(PyObject *module, PyObject *args)
     return ctx_global(version);
 }
 
-static char sybasect_Buffer__doc__[] =
-"Buffer(obj) -> buffer\n"
+static char sybasect_DataBuf__doc__[] =
+"DataBuf(obj) -> buffer\n"
 "\n"
 "Allocate a buffer to store data described by datafmt or object type.";
 
-static PyObject *sybasect_Buffer(PyObject *module, PyObject *args)
+static PyObject *sybasect_DataBuf(PyObject *module, PyObject *args)
 {
     PyObject *obj;
 
@@ -246,7 +246,7 @@ static PyObject *sybasect_sizeof_type(PyObject *module, PyObject *args)
 static struct PyMethodDef sybasect_methods[] = {
     { "cs_ctx_alloc", (PyCFunction)sybasect_cs_ctx_alloc, METH_VARARGS, sybasect_cs_ctx_alloc__doc__ },
     { "cs_ctx_global", (PyCFunction)sybasect_cs_ctx_global, METH_VARARGS, sybasect_cs_ctx_global__doc__ },
-    { "Buffer", (PyCFunction)sybasect_Buffer, METH_VARARGS, sybasect_Buffer__doc__ },
+    { "DataBuf", (PyCFunction)sybasect_DataBuf, METH_VARARGS, sybasect_DataBuf__doc__ },
     { "numeric", (PyCFunction)NumericType_new, METH_VARARGS, numeric_new__doc__ },
     { "sizeof_type", (PyCFunction)sybasect_sizeof_type, METH_VARARGS, sybasect_sizeof_type__doc__ },
     { "CS_DATAFMT", (PyCFunction)datafmt_new, METH_VARARGS, datafmt_new__doc__ },
@@ -264,18 +264,6 @@ static struct PyMethodDef sybasect_methods[] = {
 static char sybasect_module_documentation[] = 
 "Thin wrapper on top of the Sybase CT library - intended to be used\n"
 "by the Sybase.py module.";
-
-static int dict_add_int(PyObject *dict, char *key, int value)
-{
-    int err;
-    PyObject *obj = PyInt_FromLong(value);
-    if (obj == NULL)
-	return 0;
-
-    err = PyDict_SetItemString(dict, key, obj);
-    Py_DECREF(obj);
-    return !err;
-}
 
 #define SYVAL(t, v) { t, #v, v }
 
@@ -979,6 +967,7 @@ static value_desc sybase_args[] = {
 
     SYVAL(RESULT, CS_TRUE),
     SYVAL(RESULT, CS_FALSE),
+    SYVAL(RESULT, CS_MAX_PREC),
     {0,0,0}
 };
 
@@ -1000,6 +989,23 @@ char *value_str(int type, int value)
     return num_str;
 }
 
+static int dict_add_int(PyObject *dict, char *key, int value)
+{
+    int err;
+    PyObject *obj = PyInt_FromLong(value);
+    if (obj == NULL)
+	return 0;
+
+    err = PyDict_SetItemString(dict, key, obj);
+    Py_DECREF(obj);
+    return !err;
+}
+
+static int dict_add_type(PyObject *dict, PyTypeObject *type)
+{
+    return PyDict_SetItemString(dict, type->tp_name, (PyObject*)type);
+}
+
 void initsybasect(void)
 {
     PyObject *m, *d;
@@ -1016,7 +1022,7 @@ void initsybasect(void)
     CS_CLIENTMSGType.ob_type = &PyType_Type;
     CS_SERVERMSGType.ob_type = &PyType_Type;
     NumericType.ob_type = &PyType_Type;
-    BufferType.ob_type = &PyType_Type;
+    DataBufType.ob_type = &PyType_Type;
 
     /* Create the module and add the functions */
     m = Py_InitModule4(module, sybasect_methods,
@@ -1025,10 +1031,23 @@ void initsybasect(void)
 
     /* Add some symbolic constants to the module */
     d = PyModule_GetDict(m);
-    /* Add constants here */
+    /* Add constants */
     for (desc = sybase_args; desc->name != NULL; desc++)
 	if (!dict_add_int(d, desc->name, desc->value))
 	    break;
+
+    /* Add type objects */
+    if (dict_add_type(d, &CS_BLKDESCType)
+	|| dict_add_type(d, &CS_COMMANDType)
+	|| dict_add_type(d, &CS_CONNECTIONType)
+	|| dict_add_type(d, &CS_CONTEXTType)
+	|| dict_add_type(d, &CS_DATAFMTType)
+	|| dict_add_type(d, &CS_IODESCType)
+	|| dict_add_type(d, &CS_CLIENTMSGType)
+	|| dict_add_type(d, &CS_SERVERMSGType)
+	|| dict_add_type(d, &NumericType)
+	|| dict_add_type(d, &DataBufType))
+	;
 
     /* Check for errors */
     if (PyErr_Occurred()) {
