@@ -1,0 +1,21 @@
+# Setup file to build the Sybase module
+
+*shared*
+
+# Define the root directory of your Sybase installation.  eg. on my
+# Linux box, which isql yields /opt/sybase/bin/isql, so SYBROOT is
+# /opt/sybase
+
+SYBROOT = /opt/sybase
+
+SYBINC = $(SYBROOT)/include
+
+# Uncomment exactly one of the following:
+
+# For Linux
+SYBLIB = $(SYBROOT)/lib -lblk -lct -lcs -lsybtcl -lcomn -linsck -lintl
+# For Solaris
+#SYBLIB = $(SYBROOT)/lib -lblk -lct -lcs -ltcl -lcomn -lintl -lxnet
+
+_sybase _sybase.c ctx.c con.c cmd.c datafmt.c buffer.c numeric.c msgs.c -I$(SYBINC) -L$(SYBLIB)
+
