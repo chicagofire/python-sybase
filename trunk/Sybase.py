@@ -3,6 +3,7 @@ try:
     use_datetime = 1
 except:
     use_datetime = 0
+import time
 from sybasect import *
 
 __version__ = '0.30'
@@ -106,6 +107,22 @@ NUMBER = DBAPITypeObject(CS_BIT_TYPE, CS_TINYINT_TYPE,
                          CS_DECIMAL_TYPE, CS_NUMERIC_TYPE)
 DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE)
 ROWID = DBAPITypeObject(CS_DECIMAL_TYPE, CS_NUMERIC_TYPE)
+
+def Date(year, month, day):
+    return datetime('%s-%s-%s' % (year, month, day))
+
+def Timestamp(year, month, day, hour, minute, second):
+    return datetime('%s-%s-%s %d:%d:%d' % (year, month, day,
+                                           hour, minute, second))
+
+def DateFromTicks(ticks):
+    return apply(Date, time.localtime(ticks)[:3])
+
+def TimestampFromTicks(ticks):
+    return apply(Timestamp, time.localtime(ticks)[:6])
+
+def Binary(str):
+    pass
 
 # Query diagnostic information from Sybase API
 
