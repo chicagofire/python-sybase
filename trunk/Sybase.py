@@ -24,8 +24,6 @@ threadsafety = 3                        # Threads may share the
 paramstyle = 'qmark'                    # Question mark style,
                                         # e.g. '...WHERE name=?'
 
-import exceptions
-
 # DB-API exceptions
 #
 # StandardError
@@ -40,10 +38,10 @@ import exceptions
 #       |__ProgrammingError
 #       |__NotSupportedError
 
-class Warning(exceptions.StandardError):
+class Warning(StandardError):
     pass
 
-class Error(exceptions.StandardError):
+class Error(StandardError):
     pass
 
 class InterfaceError(Error):
@@ -468,13 +466,16 @@ class Bulkcopy:
         return num_rows
 
 class Connection:
-    def __init__(self, dsn, user, passwd, database = None, strip = 0):
+    def __init__(self, dsn, user, passwd, database = None,
+                 strip = 0, auto_commit = 0, delay_connect = 0):
         '''DB-API Sybase.Connect()
         '''
         self._con = self._cmd = None
         self.dsn = dsn
         self.user = user
         self.passwd = passwd
+        self.database = database
+        self.auto_commit = auto_commit
         status, con = _ctx.ct_con_alloc()
         if status != CS_SUCCEED:
             raise InternalError(_build_cs_except(_ctx, 'ct_con_alloc'))
@@ -486,15 +487,33 @@ class Connection:
             raise DatabaseError(_build_ct_except(con, 'ct_con_props CS_USERNAME'))
         if con.ct_con_props(CS_SET, CS_PASSWORD, passwd) != CS_SUCCEED:
             raise DatabaseError(_build_ct_except(con, 'ct_con_props CS_PASSWORD'))
-        if con.ct_connect(dsn) != CS_SUCCEED:
+        if not delay_connect:
+            self.connect()
+
+    def connect(self):
+        con = self._con
+        if con.ct_connect(self.dsn) != CS_SUCCEED:
             raise DatabaseError(_build_ct_except(con, 'ct_connect'))
-        if con.ct_options(CS_SET, CS_OPT_CHAINXACTS, 1) != CS_SUCCEED:
+        if con.ct_options(CS_SET, CS_OPT_CHAINXACTS,
+                          not self.auto_commit) != CS_SUCCEED:
             raise DatabaseError(_build_ct_except(con, 'ct_options'))
         con.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
         self._cmd = _Cmd(con)
-        if database:
-            self.execute('use %s' % database)
+        if self.database:
+            self.execute('use %s' % self.database)
         self._dyn_num = 0
+
+    def get_property(self, prop):
+        con = self._con
+        status, value = con.ct_con_props(CS_GET, prop)
+        if status != CS_SUCCEED:
+            raise DatabaseError(_build_ct_except(con, 'ct_con_props'))
+        return value
+
+    def set_property(self, prop, value):
+        con = self._con
+        if con.ct_con_props(CS_SET, prop, value) != CS_SUCCEED:
+            raise DatabaseError(_build_ct_except(con, 'ct_con_props'))
 
     def __del__(self):
         self.close()
@@ -588,5 +607,7 @@ class Connection:
                 return logical_result
             logical_result.extend(rows)
 
-def connect(dsn, user, passwd, database = None, strip = 0):
-    return Connection(dsn, user, passwd, database, strip)
+def connect(dsn, user, passwd, database = None,
+            strip = 0, auto_commit = 0, delay_connect = 0):
+    return Connection(dsn, user, passwd, database,
+                      strip, auto_commit, delay_connect)
