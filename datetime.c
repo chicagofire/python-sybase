@@ -68,7 +68,7 @@ int datetime_assign(PyObject *obj, int type, void *buff)
     PyErr_Clear();
     conv_result = cs_convert(global_ctx(),
 			     &src_fmt, src_buff,
-			     &dest_fmt, &buff, &datetime_len);
+			     &dest_fmt, buff, &datetime_len);
     if (PyErr_Occurred())
 	return CS_FAIL;
     if (conv_result != CS_SUCCEED)
