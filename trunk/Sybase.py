@@ -133,11 +133,11 @@ def _cslib_cb(ctx, msg):
     raise Error(_fmt_client(msg))
 
 def _clientmsg_cb(ctx, conn, msg):
-    raise Error(_fmt_client(msg))
+    raise DatabaseError(_fmt_client(msg))
 
 def _servermsg_cb(ctx, conn, msg):
     if msg.msgnumber not in (5701,):
-        raise Error(_fmt_server(msg))
+        raise DatabaseError(_fmt_server(msg))
 
 def _row_bind(cmd, count = 1):
     '''Bind buffers for count rows of column data.
