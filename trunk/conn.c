@@ -412,6 +412,9 @@ static PyObject *CS_CONNECTION_ct_con_drop(CS_CONNECTIONObj *self, PyObject *arg
     if (self->debug)
 	debug_msg("ct_con_drop(conn%d) -> %s\n",
 		  self->serial, value_str(VAL_STATUS, status));
+    if (status == CS_SUCCEED)
+	self->conn = NULL;
+
     if (PyErr_Occurred())
 	return NULL;
 
