@@ -67,7 +67,7 @@ def single_row(cmd):
                      'pubs2.dbo.publishers2', sql) != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_cursor CS_CURSOR_UPDATE failed')
     # Set up the parameters for the update
-    buf = Buffer(state)
+    buf = DataBuf(state)
     buf.name = '@state'
     buf.status = CS_INPUTVALUE;
     # If an input value was entered, do the update.

@@ -137,7 +137,7 @@ def open_cursor(cmd):
   	if cmd.ct_cursor(CS_CURSOR_OPEN) != CS_SUCCEED:
             raise CTError(cmd.conn, 'ct_cursor CS_CURSOR_OPEN failed')
 	# Define the input parameter
-        buf = Buffer(title_id)
+        buf = DataBuf(title_id)
     	buf.status = CS_INPUTVALUE
         if cmd.ct_param(buf) != CS_SUCCEED:
             raise CTError(cmd.conn, 'ct_param failed') 

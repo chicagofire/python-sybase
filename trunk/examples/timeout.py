@@ -26,7 +26,7 @@ def ctlib_client_msg_handler(ctx, conn, msg):
         print "Waiting for another timeout period .."
     return CS_SUCCEED
 
-def ctlib_server_msg_handler(conn, cmd, msg):
+def ctlib_server_msg_handler(ctx, conn, msg):
     # Suppress informational messages
     if msg.msgnumber not in (5701, 5703):
 	print "\nSERVER MESSAGE"

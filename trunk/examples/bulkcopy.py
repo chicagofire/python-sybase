@@ -139,29 +139,29 @@ def write_to_table(conn, data):
     for row in data:
         fmt.datatype = CS_INT_TYPE
         fmt.maxlength = sizeof_type(CS_INT_TYPE)
-        buf1 = Buffer(fmt)
+        buf1 = DataBuf(fmt)
         buf1[0] = row[0]
         if blk.blk_bind(1, buf1) != CS_SUCCEED:
             raise CSError(conn.ctx, 'blk_bind failed')
         fmt.datatype = CS_CHAR_TYPE
         fmt.maxlength = MAX_PUBNAME - 1
-        buf2 = Buffer(fmt)
+        buf2 = DataBuf(fmt)
         buf2[0] = row[1]
         if blk.blk_bind(2, buf2) != CS_SUCCEED:
             raise CSError(conn.ctx, 'blk_bind failed')
         fmt.datatype = CS_CHAR_TYPE
         fmt.maxlength = MAX_PUBCITY - 1
-        buf3 = Buffer(fmt)
+        buf3 = DataBuf(fmt)
         buf3[0] = row[2]
         if blk.blk_bind(3, buf3) != CS_SUCCEED:
             raise CSError(conn.ctx, 'blk_bind failed')
         fmt.maxlength = MAX_PUBST - 1
-        buf4 = Buffer(fmt)
+        buf4 = DataBuf(fmt)
         buf4[0] = row[3]
         if blk.blk_bind(4, buf4) != CS_SUCCEED:
             raise CSError(conn.ctx, 'blk_bind failed')
         fmt.maxlength = MAX_BIO - 1
-        buf5 = Buffer(fmt)
+        buf5 = DataBuf(fmt)
         buf5[0] = row[4]
         if blk.blk_bind(5, buf5) != CS_SUCCEED:
             raise CSError(conn.ctx, 'blk_bind failed')

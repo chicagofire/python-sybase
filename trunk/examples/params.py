@@ -54,14 +54,14 @@ def send_sql(cmd, sql):
     print 'UNDECIDED'
     type = raw_input('\nPlease choose one of the book types listed above: ')
     # Define the first input parameter of type character.
-    buf1 = Buffer(type)
+    buf1 = DataBuf(type)
     buf1.name = '@type'
     buf1.status = CS_INPUTVALUE
     if cmd.ct_param(buf1)  != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_param failed')
     # Define the second input parameter which is of type integer. 
     price = float(raw_input('Enter the cut-off price for the books: '))
-    buf2 = Buffer(price)
+    buf2 = DataBuf(price)
     buf2.name = '@price'
     buf2.status = CS_INPUTVALUE
     if cmd.ct_param(buf2) != CS_SUCCEED:

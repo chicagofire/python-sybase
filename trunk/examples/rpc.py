@@ -43,20 +43,20 @@ def send_sql(cmd, sql):
         raise CTError(cmd.conn, 'ct_connect failed')
     type = raw_input('Please enter the type of book: ')
     # Define the first input parameter of type character.
-    buf1 = Buffer(type)
+    buf1 = DataBuf(type)
     buf1.name = '@type'
     buf1.status = CS_INPUTVALUE
     if cmd.ct_param(buf1)  != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_param failed')
     # Define the second input parameter which is of type integer. 
     tot_sales = raw_input('Enter the cut-off sales value: ')
-    buf2 = Buffer(int(tot_sales))
+    buf2 = DataBuf(int(tot_sales))
     buf2.name = '@tot_sales'
     buf2.status = CS_INPUTVALUE
     if cmd.ct_param(buf2) != CS_SUCCEED:
         raise CTError(cmd.conn, 'ct_param failed')
     # Define the output parameter now.
-    buf3 = Buffer(1)
+    buf3 = DataBuf(1)
     buf3.name = '@num_books'
     buf3.status = CS_RETURN
     if cmd.ct_param(buf3) != CS_SUCCEED:

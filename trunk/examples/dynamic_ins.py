@@ -79,13 +79,13 @@ def do_dynamic_insert(cmd, insert_statement, repeat_count):
         if cmd.ct_dynamic(CS_EXECUTE, 'd_insert') != CS_SUCCEED:
             raise CTError(cmd.conn, 'ct_dynamic CS_EXECUTE failed')
         # prepare the first parameter description
-        buf1 = Buffer(int(col1))
+        buf1 = DataBuf(int(col1))
         buf1.status = CS_INPUTVALUE
         # set up the first paramenter
         if cmd.ct_param(buf1) != CS_SUCCEED:
             raise CTError(cmd.conn, 'ct_param failed')
         # prepare the second parameter description
-        buf2 = Buffer(col2)
+        buf2 = DataBuf(col2)
         buf2.status = CS_INPUTVALUE
         # set up the second paramenter
         if cmd.ct_param(buf2) != CS_SUCCEED:

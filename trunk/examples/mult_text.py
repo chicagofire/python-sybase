@@ -85,7 +85,7 @@ def updatetextdata(textdata, iodesc, newdata):
     # ct_send_data() can handle arbitrary amounts of data.
     fmt = CS_DATAFMT()
     fmt.maxlength = 1
-    buf = Buffer(fmt)
+    buf = DataBuf(fmt)
     for c in newdata:
         buf[0] = c
         if cmd.ct_send_data(buf) != CS_SUCCEED:
@@ -156,7 +156,7 @@ def fetch_n_print(cmd):
             continue
         fmt = CS_DATAFMT()
         fmt.maxlength = 5
-        buf = Buffer(fmt)
+        buf = DataBuf(fmt)
         parts = []
         while 1:
             status, count = cmd.ct_get_data(2, buf)
