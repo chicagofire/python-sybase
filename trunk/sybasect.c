@@ -1555,7 +1555,7 @@ void initsybasect(void)
 #endif
 
 
-    if ((rev = PyString_FromString("0.37pre2")) == NULL)
+    if ((rev = PyString_FromString("0.37pre3")) == NULL)
 	goto error;
     if (PyDict_SetItemString(d, "__version__", rev) < 0)
 	goto error;
