@@ -198,10 +198,10 @@ static PyObject *DataBuf_item(DataBufObj *self, int i)
 	return PyFloat_FromDouble(*(CS_FLOAT*)item);
 
     case CS_DATETIME4_TYPE:
-        return datetime_alloc(self->buff, CS_DATETIME4_TYPE);
+        return datetime_alloc(item, CS_DATETIME4_TYPE);
 
     case CS_DATETIME_TYPE:
-        return datetime_alloc(self->buff, CS_DATETIME_TYPE);
+        return datetime_alloc(item, CS_DATETIME_TYPE);
 
     case CS_DECIMAL_TYPE:
     case CS_NUMERIC_TYPE:

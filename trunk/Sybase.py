@@ -8,29 +8,6 @@ from sybasect import *
 
 __version__ = '0.30'
 
-# _sybase is a thin wrapper on top of the Sybase CT library.  The
-# objects in _sybase perform some CT functions automatically:
-#
-# _sybase.ctx_alloc()          returns CS_CONTEXT object
-# _sybase.ctx_global()         returns CS_CONTEXT object
-# CS_CONTEXT.ct_con_alloc()    returns CS_CONNECTION object
-# CS_CONNECTION.__init__()     executes ct_con_alloc()
-# CS_CONNECTION.__del__()      executes ct_con_drop()
-# CS_CONNECTION.ct_cmd_alloc() returns CS_COMMAND object
-# CS_COMMAND.__init__()        executes ct_cmd_alloc()
-# CS_COMMAND.__del__()         executes ct_cmd_drop()
-
-# Setup global library context
-status, _ctx = cs_ctx_global()
-if status != CS_SUCCEED:
-    raise InternalError('cs_ctx_alloc failed')
-if _ctx.cs_diag(CS_INIT) != CS_SUCCEED:
-    raise InternalError('cs_diag failed')
-if _ctx.ct_init() != CS_SUCCEED:
-    raise InternalError(_build_cs_except(_ctx, 'ct_init'))
-if _ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
-    raise InternalError(_build_cs_except(_ctx, 'ct_config'))
-
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
 
@@ -168,6 +145,29 @@ def _extract_row(bufs, n):
             row.append(col)
     return tuple(row)
         
+# _sybase is a thin wrapper on top of the Sybase CT library.  The
+# objects in _sybase perform some CT functions automatically:
+#
+# _sybase.ctx_alloc()          returns CS_CONTEXT object
+# _sybase.ctx_global()         returns CS_CONTEXT object
+# CS_CONTEXT.ct_con_alloc()    returns CS_CONNECTION object
+# CS_CONNECTION.__init__()     executes ct_con_alloc()
+# CS_CONNECTION.__del__()      executes ct_con_drop()
+# CS_CONNECTION.ct_cmd_alloc() returns CS_COMMAND object
+# CS_COMMAND.__init__()        executes ct_cmd_alloc()
+# CS_COMMAND.__del__()         executes ct_cmd_drop()
+
+# Setup global library context
+status, _ctx = cs_ctx_global()
+if status != CS_SUCCEED:
+    raise InternalError('cs_ctx_alloc failed')
+if _ctx.cs_diag(CS_INIT) != CS_SUCCEED:
+    raise InternalError('cs_diag failed')
+if _ctx.ct_init() != CS_SUCCEED:
+    raise InternalError(_build_cs_except(_ctx, 'ct_init'))
+if _ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
+    raise InternalError(_build_cs_except(_ctx, 'ct_config'))
+
 class _Cmd:
     def __init__(self, conn):
         self._cmd = None
