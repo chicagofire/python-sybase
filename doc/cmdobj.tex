@@ -31,11 +31,12 @@ command is created.
 \end{memberdesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_bind}{num, datafmt}
-Calls the Sybase-CT \function{ct_bind()} function passing the \var{num}
-and \var{datafmt} arguments.  It returns a tuple containing the Sybase
-result code and a \class{DataBuf} object which is used to retrieve
-data from the column identified by \var{num}.  The Sybase-CT
-\function{ct_bind()} function is called like this:
+Calls the Sybase-CT \function{ct_bind()} function and returns a tuple
+containing the Sybase result code and a \class{DataBuf} object which
+is used to retrieve data from the column identified by \var{num}.
+\code{None} is returned as the \class{DataBuf} object when the result
+code is not \code{CS_SUCCEED}.  The Sybase-CT \function{ct_bind()}
+function is called like this:
 
 \begin{verbatim}
 status = ct_bind(cmd, num, &datafmt, databuf->buff, databuf->copied, databuf->indicator);
@@ -139,8 +140,8 @@ Sybase documentation.
 
 \begin{methoddesc}[CS_COMMAND]{ct_cursor}{type \optional{, \ldots}}
 Calls the Sybase \function{ct_cursor()} function and returns the
-result code.  The \var{type} argument controls determines the type and
-number of additional arguments.
+result code.  The \var{type} argument determines the type and number
+of additional arguments.
 
 When \var{type} is \code{CS_CURSOR_DECLARE} the method must be called like
 this:
@@ -283,11 +284,10 @@ function.
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_describe}{num}
-Calls the Sybase \function{ct_describe()} function passing the
-\var{num} argument and returns a tuple containing the Sybase result
-code and a \class{CS_DATAFMT} object which describes the column
-identified by \var{num}. \code{None} is returned as the
-\class{CS_DATAFMT} object when the result code is not
+Calls the Sybase \function{ct_describe()} function and returns a tuple
+containing the Sybase result code and a \class{CS_DATAFMT} object
+which describes the column identified by \var{num}. \code{None} is
+returned as the \class{CS_DATAFMT} object when the result code is not
 \code{CS_SUCCEED}.
 
 The Sybase-CT \function{ct_describe()} function is called like this:
@@ -303,16 +303,16 @@ rows from a command object.
 def row_bind(cmd, count = 1):
     status, num_cols = cmd.ct_res_info(CS_NUMDATA)
     if status != CS_SUCCEED:
-        raise CTError(cmd.conn, 'ct_res_info')
+        raise 'ct_res_info'
     bufs = []
     for i in range(num_cols):
         status, fmt = cmd.ct_describe(i + 1)
         if status != CS_SUCCEED:
-            raise CTError(cmd.conn, 'ct_describe')
+            raise 'ct_describe'
         fmt.count = count
         status, buf = cmd.ct_bind(i + 1, fmt)
         if status != CS_SUCCEED:
-            raise CTError(cmd.conn, 'ct_bind')
+            raise 'ct_bind'
         bufs.append(buf)
     return bufs
 \end{verbatim}
@@ -320,8 +320,8 @@ def row_bind(cmd, count = 1):
 
 \begin{methoddesc}[CS_COMMAND]{ct_dynamic}{type, \ldots}
 Calls the Sybase \function{ct_dynamic()} function and returns the
-result code.  The \var{type} argument controls determines the type and
-number of additional arguments.
+result code.  The \var{type} argument determines the type and number
+of additional arguments.
 
 When \var{type} is \code{CS_CURSOR_DECLARE} the method must be called
 like this:
@@ -412,32 +412,6 @@ Sybase documentation.
 
 The \texttt{dynamic_cur.py}, and \texttt{dynamic_ins.py} example
 programs contain examples of this function.
-
-Modified from the \texttt{dynamic_ins.py} program:
-\begin{verbatim}
-def do_dynamic_insert(cmd, insert_statement, repeat_count):
-    if cmd.ct_dynamic(CS_PREPARE, 'd_insert', insert_statement) != CS_SUCCEED:
-        raise CTError(cmd.conn, 'ct_dynamic CS_PREPARE failed')
-    if cmd.ct_send() != CS_SUCCEED:
-        raise CTError(cmd.conn, 'ct_send failed')
-    handle_returns(cmd)
-    for i in range(repeat_count):
-        col = raw_input('Enter value for col ( int ) ')
-        if cmd.ct_dynamic(CS_EXECUTE, 'd_insert') != CS_SUCCEED:
-            raise CTError(cmd.conn, 'ct_dynamic CS_EXECUTE failed')
-        buf = DataBuf(int(col))
-        buf.status = CS_INPUTVALUE
-        if cmd.ct_param(buf) != CS_SUCCEED:
-            raise CTError(cmd.conn, 'ct_param failed')
-        if cmd.ct_send() != CS_SUCCEED:
-            raise CTError(cmd.conn, 'ct_send failed')
-        handle_returns(cmd)
-    if cmd.ct_dynamic(CS_DEALLOC, 'd_insert') != CS_SUCCEED:
-        raise CTError(cmd.conn, 'ct_dynamic CS_DEALLOC failed')
-    if cmd.ct_send() != CS_SUCCEED:
-        raise CTError(cmd.conn, 'ct_send failed')
-    handle_returns(cmd)
-\end{verbatim}
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_fetch}{}
@@ -504,7 +478,7 @@ When \var{param} is a \class{CS_DATAFMT} the Sybase-CT
 status = ct_param(cmd, &datafmt, NULL, CS_UNUSED, CS_UNUSED);
 \end{verbatim}
 
-The sematics of the \class{CS_DATAFMT} attributes are quite complex.
+The semantics of the \class{CS_DATAFMT} attributes are quite complex.
 Please refer to the Sybase documentation.
 \end{methoddesc}
 

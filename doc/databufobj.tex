@@ -15,7 +15,7 @@ for array binding.  A \code{count} of zero is treated the same as
 
 The \class{DataBuf} objects have the same attributes as a
 \class{CS_DATAFMT} object but the attributes which describe the memory
-are readonly and cannot be modified.
+are read only and cannot be modified.
 
 \begin{tabular}{l|l|l}
 attribute & type & read only? \\
@@ -36,7 +36,7 @@ In addition the \class{DataBuf} object behaves like a fixed length
 mutable sequence.
 
 Adapted from \texttt{Sybase.py}, this is how you create a set of
-buffers suitable for retrieving a number of rows frmo the server:
+buffers suitable for retrieving a number of rows from the server:
 
 \begin{verbatim}
 def row_bind(cmd, count = 1):
@@ -87,6 +87,6 @@ if cmd.ct_send() != CS_SUCCEED:
     raise 'ct_send'
 \end{verbatim}
 
-Note that it is your resposibility to make sure that the buffers are
+Note that it is your responsibility to make sure that the buffers are
 not deallocated before you have finished using them.  If you are not
 careful you will get a segmentation fault.

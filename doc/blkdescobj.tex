@@ -8,9 +8,9 @@ object will create a \class{CS_BLKDESC} object.  When the
 \class{CS_BLKDESC} objects have the following interface:
 
 \begin{methoddesc}[CS_BLKDESC]{blk_bind}{num, databuf}
-Calls the Sybase \function{blk_bind()} function passing the \var{num}
-and \var{databuf} arguments.  It returns the Sybase result code.  The
-Sybase-CT \function{blk_bind()} function is called like this:
+Calls the Sybase \function{blk_bind()} function and returns the Sybase
+result code.  The Sybase-CT \function{blk_bind()} function is called
+like this:
 
 \begin{verbatim}
 status = blk_bind(blk, num, &datafmt, buffer->buff, buffer->copied, buffer->indicator);
@@ -18,12 +18,11 @@ status = blk_bind(blk, num, &datafmt, buffer->buff, buffer->copied, buffer->indi
 \end{methoddesc}
 
 \begin{methoddesc}[CS_BLKDESC]{blk_describe}{num}
-Calls the Sybase \function{blk_describe()} function passing the
-\var{num} argument and returns a tuple containing the Sybase result
-code and a \class{CS_DATAFMT} object which describes the column
-identified by \var{num}.  \code{None} is returned as the
-\class{CS_DATAFMT} object when the result code is not
-\code{CS_SUCCEED}.
+Calls the Sybase \function{blk_describe()} function and returns a
+tuple containing the Sybase result code and a \class{CS_DATAFMT}
+object which describes the column identified by \var{num}. \code{None}
+is returned as the \class{CS_DATAFMT} object when the result code is
+not \code{CS_SUCCEED}.
 
 The Sybase \function{blk_describe()} function is called like this:
 
@@ -33,9 +32,9 @@ status = blk_describe(blk, num, &datafmt);
 \end{methoddesc}
 
 \begin{methoddesc}[CS_BLKDESC]{blk_done}{type}
-Calls the Sybase \function{blk_done()} function passing the
-\var{type} argument and returns a tuple containing the Sybase result
-code and the number of rows copied in the current batch.
+Calls the Sybase \function{blk_done()} function and returns a tuple
+containing the Sybase result code and the number of rows copied in the
+current batch.
 
 The Sybase \function{blk_done()} function is called like this:
 
@@ -236,10 +235,10 @@ def connect_db(ctx, server, user, passwd):
 
 The next segment allocates bulkcopy descriptors, data buffers, and
 binds the data buffers to the bulk copy descriptors.  The same buffers
-are used for copying out and copyingin - not bad.  Note that for array
+are used for copying out and copying in - not bad.  Note that for array
 binding we need to use loose packing for copy in; hence the line
-setting the \code{format} member of \code{DatBuf} \code{CS_DATAFMT} to
-\code{CS_BLK_ARRAY_MAXLEN}.  Without this the bulkcopy opteration
+setting the \code{format} member of \code{Databuf} \code{CS_DATAFMT} to
+\code{CS_BLK_ARRAY_MAXLEN}.  Without this the bulkcopy operation
 assumes tight packing and the data is corrupted on input.
 
 \begin{verbatim}
