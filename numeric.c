@@ -609,6 +609,11 @@ static PyObject *numeric_constructor = NULL;
  */
 /* Numeric pickling function
  */
+char pickle_numeric__doc__[] =
+"pickle_numeric(n) -> numeric, (str(n), n.precision, n.scale)\n"
+"\n"
+"Used to pickle the numeric data type.";
+
 PyObject *pickle_numeric(PyObject *module, PyObject *args)
 {
     NumericObj *obj = NULL;
