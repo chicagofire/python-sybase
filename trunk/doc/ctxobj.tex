@@ -1,0 +1,200 @@
+\subsection{CS_CONTEXT Objects}
+
+Calling the \function{cs_ctx_alloc()} or \function{cs_ctx_global()}
+function will create a \class{CS_CONTEXT} object.  When the
+\class{CS_CONTEXT} object is deallocated the Sybase
+\function{cs_ctx_drop()} function will be called for the context.
+
+\class{CS_CONTEXT} objects have the following interface:
+
+\begin{memberdesc}[CS_CONTEXT]{debug}
+This is an integer which is used to control the output of debug
+messages.  If set non-zero the object will write debug messages to
+\code{stderr}.  The default value is zero.
+\end{memberdesc}
+
+\begin{methoddesc}[CS_CONTEXT]{ct_callback}{action, type \optional{, cb_func \code{= None}}}
+Installs, removes, or queries current Sybase callback function.  This
+is only available when the \module{sybasect} module has been compiled
+without the \code{WANT_THREADS} macro defined in \texttt{sybasect.h}.
+
+When the \var{action} argument is \code{CS_SET}, a callback function
+is installed.  If \var{cb_func} is \code{None} the callback identified
+by \var{type} will be removed.  The return value is the Sybase result
+code.
+
+When the \var{action} argument is \code{CS_GET}, the current callback
+function will be returned.  The \var{cb_func} must not be supplied in
+this case.  The return value is a two element tuple containing the
+Sybase result code and the current callback function.  When the Sybase
+result code is not \code{CS_SUCCEED} or there is no current callback,
+the returned function will be \code{None}.
+
+The \var{type} argument identifies the callback function type.
+Currently only the following callback functions are supported.
+
+\begin{longtable}{l|l}
+\var{type} & callback function arguments \\
+\hline
+\code{CS_CLIENTMSG_CB} & \code{ctx, conn, msg} \\
+\code{CS_SERVERMSG_CB} & \code{ctx, conn, msg} \\
+\end{longtable}
+
+\begin{verbatim}
+from sybasect import *
+
+def ctlib_server_msg_handler(conn, cmd, msg):
+    return CS_SUCCEED
+
+status, ctx = cs_ctx_alloc()
+if status != CS_SUCCEED:
+    raise CSError(ctx, 'cs_ctx_alloc')
+if ctx.ct_init(CS_VERSION_100):
+    raise CSError(ctx, 'ct_init')
+if ctx.ct_callback(CS_SET, CS_SERVERMSG_CB,
+                   ctlib_server_msg_handler) != CS_SUCCEED:
+    raise CSError(ctx, 'ct_callback')
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONTEXT]{ct_con_alloc}{}
+Allocates a new \class{CS_CONNECTION} object which is used to connect
+to a Sybase server.
+
+The result is a tuple containing the Sybase result code and a new
+instance of the \class{CS_CONNECTION} class. \code{None} is returned
+as the \class{CS_CONNECTION} object when the result code is not
+\code{CS_SUCCEED}.
+
+\begin{verbatim}
+from sybasect import *
+
+def init_db():
+    status, ctx = cs_ctx_alloc()
+    if status != CS_SUCCEED:
+        raise CSError(ctx, 'cs_ctx_alloc')
+    if ctx.ct_init() != CS_SUCCEED:
+        raise CSError(ctx, 'ct_init')
+    if ctx.cs_diag(CS_INIT) != CS_SUCCEED:
+        raise CSError(ctx, 'cs_diag')
+    if ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
+        raise CSError(ctx, 'ct_config')
+    return ctx
+
+status, conn = ctx.ct_con_alloc()
+if status != CS_SUCCEED:
+    raise CSError(ctx, 'ct_con_alloc')
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONTEXT]{ct_config}{action, property \optional{, value}}
+Sets and retrieves properties of the context object
+
+When \var{action} is \code{CS_SET} a compatible \var{value} argument
+must be supplied and the method returns the Sybase result code.
+
+When \var{action} is \code{CS_GET} the method returns a tuple
+containing the Sybase result code and the property value.
+
+When \var{action} is \code{CS_CLEAR} the method clears the property
+and returns the Sybase result code.
+
+The recognised properties are:
+
+\begin{longtable}{l|l}
+\var{property} & type \\
+\hline
+\code{CS_LOGIN_TIMEOUT} & \code{int} \\
+\code{CS_MAX_CONNECT}   & \code{int} \\
+\code{CS_NETIO}         & \code{int} \\
+\code{CS_NO_TRUNCATE}   & \code{int} \\
+\code{CS_TEXTLIMIT}     & \code{int} \\
+\code{CS_TIMEOUT}       & \code{int} \\
+\code{CS_VER_STRING}    & \code{string} \\
+\code{CS_VERSION}       & \code{string} \\
+\end{longtable}
+
+For an explanation of the property values and get/set/clear semantics
+please refer to the Sybase documentation.
+
+\begin{verbatim}
+from sybasect import *
+status, ctx = cs_ctx_alloc()
+if status != CS_SUCCEED:
+    raise CSError(ctx, 'cs_ctx_alloc')
+if ctx.ct_init() != CS_SUCCEED:
+    raise CSError(ctx, 'ct_init')
+if ctx.cs_diag(CS_INIT) != CS_SUCCEED:
+    raise CSError(ctx, 'cs_diag')
+if ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
+    raise CSError(ctx, 'ct_config')
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONTEXT]{ct_exit}{\optional{option}}
+Calls the Sybase \function{ct_exit()} function.  Returns the Sybase
+result code.
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONTEXT]{ct_init}{\optional{version \code{= CS_VERSION_100}}}
+Initialises the context object and tells the CT library which version
+of behaviour is expected.  Returns the Sybase result code.  This
+method must be called immediately after creating the context.
+
+\begin{verbatim}
+from sybasect import *
+status, ctx = cs_ctx_alloc()
+if status != CS_SUCCEED:
+    raise CSError(ctx, 'cs_ctx_alloc')
+if ctx.ct_init() != CS_SUCCEED:
+    raise CSError(ctx, 'ct_init')
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONTEXT]{cs_ctx_drop}{}
+Calls the Sybase \function{cs_ctx_drop()} function.  Returns the
+Sybase result code.
+
+This method will be automatically called when the \class{CS_CONTEXT}
+object is deleted.  Applications do not need to call the method.
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONTEXT]{cs_diag}{operation \optional{, \ldots}}
+Manage Open Client/Server error messages for the context.
+
+When \var{operation} is \code{CS_INIT} a single argument is accepted
+and the Sybase result code is returned.
+
+When \var{operation} is \code{CS_MSGLIMIT} two additional arguments
+are expected; \var{type} and \var{num}.  Currently Sybase expects
+\var{type} to be \code{CS_CLIENTMSG_TYPE}.  The Sybase result code is
+returned.
+
+When \var{operation} is \code{CS_CLEAR} an additional \var{type}
+argument is accepted and the Sybase result code is returned.
+
+When \var{operation} is \code{CS_GET} two additional arguments are
+expected; \var{type} which currently must be \code{CS_SERVERMSG_TYPE},
+and \var{index}.  A tuple is returned which contains the Sybase result
+code and the requested \class{CS_SERVERMSG} message.  \code{None} is
+returned as the message object when the result code is not
+\code{CS_SUCCEED}.
+
+When \var{operation} is \code{CS_STATUS} an additional \var{type}
+argument is accepted.  A tuple is returned which contains the Sybase
+result code and the number of messages available for retrieval.
+
+\begin{verbatim}
+def print_msgs(ctx):
+    status, num_msgs = ctx.cs_diag(CS_STATUS, CS_SERVERMSG_TYPE)
+    if status == CS_SUCCEED:
+        for i in range(num_msgs):
+            status, msg = ctx.cs_diag(CS_GET, CS_SERVERMSG_TYPE, i + 1)
+            if status != CS_SUCCEED:
+                continue
+            for attr in dir(msg):
+                print '%s: %s' % (attr, getattr(msg, attr))
+    ctx.cs_diag(CS_CLEAR, CS_SERVERMSG_TYPE)
+\end{verbatim}
+\end{methoddesc}
+
