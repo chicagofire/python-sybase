@@ -5,10 +5,7 @@
 import sys
 import string
 from sybasect import *
-from example import Error, SybaseError
-
-EX_USERNAME = "sa"
-EX_PASSWORD = ""
+from example import *
 
 def init_db():
     status, ctx = cs_ctx_alloc(CS_VERSION_100)
