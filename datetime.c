@@ -71,7 +71,7 @@ int datetime_assign(PyObject *obj, int type, void *buff)
     else
 	src_buff = &((DateTimeObj*)obj)->v.datetime4;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     ctx = global_ctx();
     if (ctx == NULL)
@@ -147,7 +147,7 @@ PyObject *DateTime_FromString(PyObject *obj)
     char_datafmt(&char_fmt);
     char_fmt.maxlength = strlen(str);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -176,7 +176,7 @@ static PyObject *DateTime_repr(DateTimeObj *self)
     char text[DATETIME_LEN + 2];
     CS_RETCODE conv_result;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     conv_result = datetime_as_string((PyObject*)self, text + 1);
     if (PyErr_Occurred())
 	return NULL;
@@ -208,7 +208,7 @@ static PyObject *DateTime_int(DateTimeObj *v)
     else
 	value = &v->v.datetime4;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -230,7 +230,7 @@ static PyObject *DateTime_long(DateTimeObj *v)
     char text[DATETIME_LEN];
     CS_RETCODE conv_result;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     conv_result = datetime_as_string((PyObject*)v, text);
     if (PyErr_Occurred())
 	return NULL;
@@ -260,7 +260,7 @@ static PyObject *DateTime_float(DateTimeObj *v)
     else
 	value = &v->v.datetime4;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -326,7 +326,7 @@ static PyObject *DateTime_getattr(DateTimeObj *self, char *name)
     if (!self->cracked && strcmp(name, "type") != 0) {
 	CS_RETCODE crack_result;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 	crack_result = datetime_crack(self);
 	if (PyErr_Occurred())
 	    return NULL;
@@ -405,7 +405,7 @@ PyObject *DateTimeType_new(PyObject *module, PyObject *args)
     char_datafmt(&char_fmt);
     char_fmt.maxlength = strlen(str);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;

@@ -89,7 +89,7 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i", &operation))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
@@ -113,7 +113,7 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "iii", &operation, &type, &num))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
@@ -138,7 +138,7 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &operation, &type))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
@@ -174,7 +174,7 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	    return NULL;
 	}
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
@@ -205,7 +205,7 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	    return NULL;
 	num = 0;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
@@ -231,7 +231,7 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "iii", &operation, &type, &index))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 	SY_CONN_BEGIN_THREADS(self);
 	status = ct_diag(self->conn, operation, type, index, &eed);
@@ -280,7 +280,7 @@ static PyObject *CS_CONNECTION_ct_cancel(CS_CONNECTIONObj *self, PyObject *args)
 	return NULL;
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self);
     status = ct_cancel(self->conn, NULL, type);
@@ -312,7 +312,7 @@ static PyObject *CS_CONNECTION_ct_connect(CS_CONNECTIONObj *self, PyObject *args
 	return NULL;
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     if (dsn == NULL) {
 	SY_CONN_BEGIN_THREADS(self);
 	status = ct_connect(self->conn, NULL, 0);
@@ -388,7 +388,7 @@ static PyObject *CS_CONNECTION_ct_close(CS_CONNECTIONObj *self, PyObject *args)
 	return NULL;
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self);
     status = ct_close(self->conn, option);
@@ -419,7 +419,7 @@ static PyObject *CS_CONNECTION_ct_con_drop(CS_CONNECTIONObj *self, PyObject *arg
 	return NULL;
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self);
     status = ct_con_drop(self->conn);
@@ -657,7 +657,7 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_con_props(self->conn, CS_SET, property,
@@ -680,7 +680,7 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_con_props(self->conn, CS_SET, property,
@@ -703,7 +703,7 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_con_props(self->conn, CS_SET, property,
@@ -727,7 +727,7 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 		return NULL;
 	    }
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_con_props(self->conn, CS_SET, property,
@@ -758,7 +758,7 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 
 	switch (property_type(property)) {
 	case OPTION_BOOL:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_con_props(self->conn, CS_GET, property,
@@ -777,7 +777,7 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	    return Py_BuildValue("ii", status, bool_value);
 
 	case OPTION_INT:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_con_props(self->conn, CS_GET, property,
@@ -809,7 +809,7 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_STRING:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_con_props(self->conn, CS_GET, property,
@@ -853,7 +853,7 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	if (!PyArg_ParseTuple(args, "ii", &action, &property))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 	SY_CONN_BEGIN_THREADS(self);
 	status = ct_con_props(self->conn, CS_CLEAR, property,
@@ -1021,7 +1021,7 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_options(self->conn, CS_SET, option,
@@ -1044,7 +1044,7 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_options(self->conn, CS_SET, option,
@@ -1067,7 +1067,7 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_options(self->conn, CS_SET, option,
@@ -1098,7 +1098,7 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 
 	switch (option_type(option)) {
 	case OPTION_BOOL:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_options(self->conn, CS_GET, option,
@@ -1116,7 +1116,7 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	    return Py_BuildValue("ii", status, bool_value);
 
 	case OPTION_INT:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_options(self->conn, CS_GET, option,
@@ -1134,7 +1134,7 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_STRING:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self);
 	    status = ct_options(self->conn, CS_GET, option,
@@ -1170,7 +1170,7 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	if (!PyArg_ParseTuple(args, "ii", &action, &option))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 	SY_CONN_BEGIN_THREADS(self);
 	status = ct_options(self->conn, CS_CLEAR, option,
@@ -1234,7 +1234,7 @@ PyObject *conn_alloc(CS_CONTEXTObj *ctx, int enable_lock)
     }
     SY_THREAD_INIT(self);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CTX_BEGIN_THREADS(ctx);
     status = ct_con_alloc(ctx->ctx, &conn);

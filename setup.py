@@ -100,7 +100,7 @@ for api in ('cs_calc', 'cs_cmp',):
         syb_macros.append(('HAVE_' + string.upper(api), None))
 
 setup(name = "Sybase",
-      version = "0.34",
+      version = "0.35pre1",
       maintainer = "Dave Cole",
       maintainer_email = " djc@object-craft.com.au",
       description = "Sybase Extension to Python",

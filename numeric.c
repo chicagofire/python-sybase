@@ -75,7 +75,7 @@ static int numeric_from_int(CS_NUMERIC *num, int precision, int scale, CS_INT va
 	scale = 0;
     numeric_datafmt(&numeric_fmt, precision, scale);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -118,7 +118,7 @@ static int numeric_from_long(CS_NUMERIC *num, int precision, int scale, PyObject
 	scale = 0;
     numeric_datafmt(&numeric_fmt, precision, scale);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -149,7 +149,7 @@ static int numeric_from_float(CS_NUMERIC *num, int precision, int scale, CS_FLOA
 	scale = 12;
     numeric_datafmt(&numeric_fmt, precision, scale);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -192,7 +192,7 @@ static int numeric_from_string(CS_NUMERIC *num, int precision, int scale, char *
     }
     numeric_datafmt(&numeric_fmt, precision, scale);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -227,7 +227,7 @@ static int numeric_from_numeric(CS_NUMERIC *num, int precision, int scale, CS_NU
 	scale = value->scale;
     numeric_datafmt(&numeric_fmt, precision, scale);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -323,7 +323,7 @@ static int Numeric_compare(NumericObj *v, NumericObj *w)
     CS_CONTEXT *ctx;
     CS_RETCODE cmp_result;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -345,7 +345,7 @@ static PyObject *Numeric_repr(NumericObj *self)
     char text[NUMERIC_LEN];
     CS_RETCODE conv_result;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     conv_result = numeric_as_string((PyObject*)self, text);
     if (PyErr_Occurred())
 	return NULL;
@@ -396,7 +396,7 @@ static long Numeric_hash(NumericObj *self)
 			     &int_fmt, &int_value, &int_len);
     if (conv_result == CS_SUCCEED)
 	return (int_value == -1) ? -2 : int_value;
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     /* XXX clear_cs_messages(); */
     /* Try as long
      */
@@ -452,7 +452,7 @@ static PyObject *Numeric_add(NumericObj *v, NumericObj *w)
 	result.precision = CS_MAX_PREC;
     result.scale = maxv(v->num.scale, w->num.scale);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -479,7 +479,7 @@ static PyObject *Numeric_sub(NumericObj *v, NumericObj *w)
 	result.precision = CS_MAX_PREC;
     result.scale = maxv(v->num.scale, w->num.scale);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -508,7 +508,7 @@ static PyObject *Numeric_mul(NumericObj *v, NumericObj *w)
     if (result.scale > CS_MAX_SCALE)
 	result.scale = CS_MAX_SCALE;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -537,7 +537,7 @@ static PyObject *Numeric_div(NumericObj *v, NumericObj *w)
     if (result.scale > CS_MAX_SCALE)
 	result.scale = CS_MAX_SCALE;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -610,7 +610,7 @@ static PyObject *Numeric_int(NumericObj *v)
     numeric_datafmt(&numeric_fmt, CS_SRC_VALUE, CS_SRC_VALUE);
     int_datafmt(&int_fmt);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -632,7 +632,7 @@ static PyObject *Numeric_long(NumericObj *v)
     char text[NUMERIC_LEN];
     CS_RETCODE conv_result;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     conv_result = numeric_as_string((PyObject*)v, text);
     if (PyErr_Occurred())
 	return NULL;
@@ -656,7 +656,7 @@ static PyObject *Numeric_float(NumericObj *v)
     numeric_datafmt(&numeric_fmt, CS_SRC_VALUE, CS_SRC_VALUE);
     float_datafmt(&float_fmt);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -831,7 +831,7 @@ PyObject *pickle_numeric(PyObject *module, PyObject *args)
     if (!PyArg_ParseTuple(args, "O!", &NumericType, &obj))
 	goto error;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     conv_result = numeric_as_string((PyObject*)obj, text);
     if (PyErr_Occurred())
 	return NULL;

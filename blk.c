@@ -43,7 +43,7 @@ static PyObject *CS_BLKDESC_blk_bind(CS_BLKDESCObj *self, PyObject *args)
 	return NULL;
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self->conn);
     status = blk_bind(self->blk, colnum, &databuf->fmt,
@@ -87,7 +87,7 @@ static PyObject *CS_BLKDESC_blk_describe(CS_BLKDESCObj *self, PyObject *args)
 
     memset(&datafmt, 0, sizeof(datafmt));
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self->conn);
     status = blk_describe(self->blk, colnum, &datafmt);
@@ -142,7 +142,7 @@ static PyObject *CS_BLKDESC_blk_done(CS_BLKDESCObj *self, PyObject *args)
     }
 
     /* blk_done(type) -> status, outrow */
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self->conn);
     status = blk_done(self->blk, type, &outrow);
@@ -175,7 +175,7 @@ static PyObject *CS_BLKDESC_blk_drop(CS_BLKDESCObj *self, PyObject *args)
     }
 
     /* blk_drop() -> status */
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self->conn);
     status = blk_drop(self->blk);
@@ -209,7 +209,7 @@ static PyObject *CS_BLKDESC_blk_init(CS_BLKDESCObj *self, PyObject *args)
 	return NULL;
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self->conn);
     status = blk_init(self->blk, direction, table, CS_NULLTERM);
@@ -292,7 +292,7 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self->conn);
 	    status = blk_props(self->blk, CS_SET, property,
@@ -314,7 +314,7 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self->conn);
 	    status = blk_props(self->blk, CS_SET, property,
@@ -337,7 +337,7 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 		return NULL;
 	    }
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self->conn);
 	    status = blk_props(self->blk, CS_SET, property,
@@ -371,7 +371,7 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 
 	switch (property_type(property)) {
 	case OPTION_BOOL:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self->conn);
 	    status = blk_props(self->blk, CS_GET, property,
@@ -389,7 +389,7 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    return Py_BuildValue("ii", status, bool_value);
 
 	case OPTION_INT:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self->conn);
 	    status = blk_props(self->blk, CS_GET, property,
@@ -407,7 +407,7 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_NUMERIC:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CONN_BEGIN_THREADS(self->conn);
 	    status = blk_props(self->blk, CS_GET, property,
@@ -449,7 +449,7 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &action, &property))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 	SY_CONN_BEGIN_THREADS(self->conn);
 	status = blk_props(self->blk, CS_CLEAR, property,
@@ -488,7 +488,7 @@ static PyObject *CS_BLKDESC_blk_rowxfer(CS_BLKDESCObj *self, PyObject *args)
 	return NULL;
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self->conn);
     status = blk_rowxfer(self->blk);
@@ -522,7 +522,7 @@ static PyObject *CS_BLKDESC_blk_rowxfer_mult(CS_BLKDESCObj *self, PyObject *args
 	return NULL;
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self->conn);
     status = blk_rowxfer_mult(self->blk, &row_count);
@@ -560,7 +560,7 @@ static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s#", &buff, &buff_len))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 	SY_CONN_BEGIN_THREADS(self->conn);
 	status = blk_textxfer(self->blk, buff, buff_len, NULL);
@@ -582,7 +582,7 @@ static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 	    return NULL;
 
 	outlen = 0;
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 	SY_CONN_BEGIN_THREADS(self->conn);
 	status = blk_textxfer(self->blk, buff, sizeof(buff), &outlen);
@@ -642,7 +642,7 @@ PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version)
     self->serial = blk_serial++;
 
 #ifdef HAVE_BLK_ALLOC
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self->conn);
     status = blk_alloc(conn->conn, version, &blk);

@@ -16,7 +16,7 @@ from sybasect import *
 
 set_debug(sys.stderr)
 
-__version__ = '0.34'
+__version__ = '0.35pre1'
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
@@ -46,7 +46,8 @@ class Warning(StandardError):
     pass
 
 class Error(StandardError):
-    pass
+    def append(self, other):
+        self.args = (self.args[0] + other.args[0],)
 
 class InterfaceError(Error):
     pass
@@ -111,55 +112,48 @@ def TimestampFromTicks(ticks):
 def Binary(str):
     return str
 
-def _get_diag(err_list, func, type, formatter):
-    status, num_msgs = func(CS_STATUS, type)
-    if status != CS_SUCCEED:
-        return
-    for i in range(num_msgs):
-        status, msg = func(CS_GET, type, i + 1)
-        if status != CS_SUCCEED or msg.msgnumber in (5701, 5703):
-            continue
-        err_list.append(formatter(msg))
-
 def _fmt_server(msg):
-    return 'Msg %s, Level %s, State %s:\n' \
-           'Line %s:\n' \
-           '%s' % (msg.msgnumber, msg.severity, msg.state,
-                   msg.line, msg.text)
+    parts = []
+    for label, name in (('Msg', 'msgnumber'),
+                        ('Level', 'severity'),
+                        ('State', 'state'),
+                        ('Procedure', 'proc'),
+                        ('Line', 'line')):
+        value = getattr(msg, name)
+        if value:
+            parts.append('%s %s' % (label, value))
+    return '%s\n%s' % (string.join(parts, ', '), msg.text)
 
 def _fmt_client(msg):
     return 'Layer: %s, Origin: %s\n' \
            '%s' % (CS_LAYER(msg.msgnumber), CS_ORIGIN(msg.msgnumber),
                    msg.msgstring)
 
-def _cs_errors(ctx, msg):
-    err_list = [msg]
-    _get_diag(err_list, ctx.cs_diag, CS_CLIENTMSG_TYPE, _fmt_client)
-    ctx.cs_diag(CS_CLEAR, CS_CLIENTMSG_TYPE)
-    return string.join(err_list, '\n')
+def _cslib_cb(ctx, msg):
+    raise Error(_fmt_client(msg))
 
-def _ct_errors(conn, msg):
-    err_list = [msg]
-    _get_diag(err_list, conn.ct_diag, CS_SERVERMSG_TYPE, _fmt_server)
-    _get_diag(err_list, conn.ct_diag, CS_CLIENTMSG_TYPE, _fmt_client)
-    conn.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
-    return string.join(err_list, '\n')
+def _clientmsg_cb(ctx, conn, msg):
+    raise Error(_fmt_client(msg))
+
+def _servermsg_cb(ctx, conn, msg):
+    if msg.msgnumber not in (5701,):
+        raise Error(_fmt_server(msg))
 
 def _row_bind(cmd, count = 1):
     '''Bind buffers for count rows of column data.
     '''
     status, num_cols = cmd.ct_res_info(CS_NUMDATA)
     if status != CS_SUCCEED:
-        raise Error(_ct_errors(cmd.conn, 'ct_res_info'))
+        raise Error('ct_res_info')
     bufs = []
     for i in range(num_cols):
         status, fmt = cmd.ct_describe(i + 1)
         if status != CS_SUCCEED:
-            raise Error(_ct_errors(cmd.conn, 'ct_describe'))
+            raise Error('ct_describe')
         fmt.count = count
         status, buf = cmd.ct_bind(i + 1, fmt)
         if status != CS_SUCCEED:
-            raise Error(_ct_errors(cmd.conn, 'ct_bind'))
+            raise Error('ct_bind')
         bufs.append(buf)
     return bufs
 
@@ -191,7 +185,7 @@ def _fetch_rows(cmd, bufs):
         return None
     elif status in (CS_ROW_FAIL, CS_FAIL, CS_CANCELED,
                     CS_PENDING, CS_BUSY):
-        raise Error(_ct_errors(cmd.conn, 'ct_fetch'))
+        raise Error('ct_fetch')
     if bufs[0].count > 1:
         rows = []
         for i in xrange(rows_read):
@@ -204,12 +198,14 @@ def _fetch_rows(cmd, bufs):
 status, _ctx = cs_ctx_alloc()
 if status != CS_SUCCEED:
     raise InternalError('cs_ctx_alloc failed')
-if _ctx.cs_diag(CS_INIT) != CS_SUCCEED:
-    raise InternalError('cs_diag failed')
 if _ctx.ct_init() != CS_SUCCEED:
-    raise Error(_cs_errors(_ctx, 'ct_init'))
+    raise Error('ct_init')
+_ctx.cs_config(CS_SET, CS_MESSAGE_CB, _cslib_cb)
+_ctx.ct_callback(CS_SET, CS_CLIENTMSG_CB, _clientmsg_cb)
+_ctx.ct_callback(CS_SET, CS_SERVERMSG_CB, _servermsg_cb)
+set_global_ctx(_ctx)
 if _ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
-    raise Error(_cs_errors(_ctx, 'ct_config'))
+    raise Error('ct_config')
 
 _CUR_IDLE = 0                           # prepared command
 _CUR_FETCHING = 1                       # fetching rows
@@ -264,7 +260,6 @@ class Cursor:
         self._lock_count = self._lock_count - 1
 
     def _raise_error(self, exc, text):
-        text = _ct_errors(self._owner._conn, text)
         if self._state not in (_CUR_IDLE, _CUR_CLOSED):
             if self._owner._conn.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
                 self._state = _CUR_IDLE
@@ -505,11 +500,9 @@ class Connection:
 
         status, conn = _ctx.ct_con_alloc(0)
         if status != CS_SUCCEED:
-            raise Error(_cs_errors(_ctx, 'ct_con_alloc'))
+            raise Error('ct_con_alloc')
         self._conn = conn
         conn.strip = strip
-        if conn.ct_diag(CS_INIT) != CS_SUCCEED:
-            self._raise_error(Error, 'ct_diag')
         status = conn.ct_con_props(CS_SET, CS_USERNAME, user)
         if status != CS_SUCCEED:
             self._raise_error(Error, 'ct_con_props')
@@ -520,7 +513,6 @@ class Connection:
             self.connect()
 
     def _raise_error(self, exc, text):
-        text = _ct_errors(self._conn, text)
         self._conn.ct_cancel(CS_CANCEL_ALL)
         raise exc(text)
 

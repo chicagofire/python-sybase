@@ -212,13 +212,56 @@ PyObject *ctx_find_object(CS_CONTEXT *cs_ctx)
     return NULL;
 }
 
+static CS_RETCODE call_callback(PyObject *func, PyObject *args)
+{
+    PyObject *result;
+    PyObject *etype1, *evalue1, *etrace1;
+    CS_RETCODE retcode = CS_SUCCEED;
+
+    /* Might have multiple callbacks - let exception processing
+     * combine messages from callbacks other tan the first.
+     */
+    PyErr_Fetch(&etype1, &evalue1, &etrace1);
+    result = PyEval_CallObject(func, args);
+    if (etype1 != NULL) {
+	PyObject *etype2, *evalue2, *etrace2;
+
+	/* Had an exception coming into callback - check if callback
+	 * raised new exception.
+	 */
+	PyErr_Fetch(&etype2, &evalue2, &etrace2);
+	if (etype2 != NULL) {
+	    PyObject *res;
+
+	    /* Have new exception - allow old exception to combine new
+	     * then discard new exception.
+	     */
+	    res = PyObject_CallMethod(evalue1, "append", "O", evalue2);
+	    Py_XDECREF(res);
+	    Py_XDECREF(etype2);
+	    Py_XDECREF(evalue2);
+	    Py_XDECREF(etrace2);
+	}
+	/* Restore old exception. */
+	PyErr_Restore(etype1, evalue1, etrace1);
+    }
+
+    if (result != NULL) {
+	if (PyInt_Check(result))
+	    retcode = PyInt_AsLong(result);
+	Py_DECREF(result);
+    }
+
+    return retcode;
+}
+
 static CS_RETCODE clientmsg_cb(CS_CONTEXT *cs_ctx,
 			       CS_CONNECTION *cs_conn,
 			       CS_CLIENTMSG *cs_msg)
 {
     CS_CONTEXTObj *ctx;
     CS_CONNECTIONObj *conn;
-    PyObject *args = NULL, *result = NULL;
+    PyObject *args = NULL;
     CS_CLIENTMSGObj *client_msg = NULL;
     CS_RETCODE retcode = CS_SUCCEED;
     int acquire_gil;
@@ -246,14 +289,11 @@ static CS_RETCODE clientmsg_cb(CS_CONTEXT *cs_ctx,
     if (args == NULL)
 	goto error;
 
-    result = PyEval_CallObject(ctx->clientmsg_cb, args);
-    if (result != NULL && PyInt_Check(result))
-	retcode = PyInt_AsLong(result);
+    retcode = call_callback(ctx->clientmsg_cb, args);
 
 error:
     Py_XDECREF(client_msg);
     Py_XDECREF(args);
-    Py_XDECREF(result);
 
     if (acquire_gil)
 	conn_release_gil(conn);
@@ -266,7 +306,7 @@ static CS_RETCODE servermsg_cb(CS_CONTEXT *cs_ctx,
 {
     CS_CONTEXTObj *ctx;
     CS_CONNECTIONObj *conn;
-    PyObject *args = NULL, *result = NULL;
+    PyObject *args = NULL;
     CS_SERVERMSGObj *server_msg = NULL;
     CS_RETCODE retcode = CS_SUCCEED;
     int acquire_gil;
@@ -294,14 +334,11 @@ static CS_RETCODE servermsg_cb(CS_CONTEXT *cs_ctx,
     if (args == NULL)
 	goto error;
 
-    result = PyEval_CallObject(ctx->servermsg_cb, args);
-    if (result != NULL && PyInt_Check(result))
-	retcode = PyInt_AsLong(result);
+    retcode = call_callback(ctx->servermsg_cb, args);
 
 error:
     Py_XDECREF(server_msg);
     Py_XDECREF(args);
-    Py_XDECREF(result);
 
     if (acquire_gil)
 	conn_release_gil(conn);
@@ -386,7 +423,7 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 	    *ptr_func = func;
 	}
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 	status = ct_callback(self->ctx, NULL, CS_SET, type, cb_func);
 
@@ -440,7 +477,7 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 	    return NULL;
 	}
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 	status = ct_callback(self->ctx, NULL, CS_GET, type, &curr_cb_func);
 
@@ -464,7 +501,7 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 static CS_RETCODE cslib_cb(CS_CONTEXT *cs_ctx, CS_CLIENTMSG *cs_msg)
 {
     CS_CONTEXTObj *ctx;
-    PyObject *args = NULL, *result = NULL;
+    PyObject *args = NULL;
     CS_CLIENTMSGObj *client_msg = NULL;
     CS_RETCODE retcode = CS_SUCCEED;
     int acquire_gil;
@@ -489,14 +526,11 @@ static CS_RETCODE cslib_cb(CS_CONTEXT *cs_ctx, CS_CLIENTMSG *cs_msg)
     if (args == NULL)
 	goto error;
 
-    result = PyEval_CallObject(ctx->cslib_cb, args);
-    if (result != NULL && PyInt_Check(result))
-	retcode = PyInt_AsLong(result);
+    retcode = call_callback(ctx->cslib_cb, args);
 
 error:
     Py_XDECREF(client_msg);
     Py_XDECREF(args);
-    Py_XDECREF(result);
 
     if (acquire_gil)
 	ctx_release_gil(ctx);
@@ -576,7 +610,7 @@ static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = cs_config(self->ctx, CS_SET, property,
@@ -598,7 +632,7 @@ static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = cs_config(self->ctx, CS_SET, property,
@@ -621,7 +655,7 @@ static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = cs_config(self->ctx, CS_SET, property,
@@ -645,7 +679,7 @@ static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
 		return NULL;
 	    }
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = cs_config(self->ctx, CS_SET, property,
@@ -678,7 +712,7 @@ static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
 		self->cslib_cb = obj;
 	    }
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = cs_config(self->ctx, CS_SET, property,
@@ -708,7 +742,7 @@ static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
 
 	switch (cs_property_type(property)) {
 	case OPTION_BOOL:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = cs_config(self->ctx, CS_GET, property,
@@ -727,7 +761,7 @@ static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
 	    return Py_BuildValue("ii", status, bool_value);
 
 	case OPTION_INT:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = cs_config(self->ctx, CS_GET, property,
@@ -746,7 +780,7 @@ static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_STRING:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = cs_config(self->ctx, CS_GET, property,
@@ -786,7 +820,7 @@ static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &action, &property))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 	SY_CTX_BEGIN_THREADS(self);
 	status = cs_config(self->ctx, CS_CLEAR, property,
@@ -883,7 +917,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = ct_config(self->ctx, CS_SET, property,
@@ -906,7 +940,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = ct_config(self->ctx, CS_SET, property,
@@ -937,7 +971,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 
 	switch (ct_property_type(property)) {
 	case OPTION_INT:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = ct_config(self->ctx, CS_GET, property,
@@ -956,7 +990,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_STRING:
-	    PyErr_Clear();
+	    /* PyErr_Clear(); */
 
 	    SY_CTX_BEGIN_THREADS(self);
 	    status = ct_config(self->ctx, CS_GET, property,
@@ -988,7 +1022,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &action, &property))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 	SY_CTX_BEGIN_THREADS(self);
 	status = ct_config(self->ctx, CS_CLEAR, property,
@@ -1069,7 +1103,7 @@ static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "|i", &version))
 	return NULL;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     acquire_ctx_lock();
     status = ct_init(self->ctx, version);
@@ -1105,7 +1139,7 @@ static PyObject *CS_CONTEXT_ct_exit(CS_CONTEXTObj *self, PyObject *args)
 	return NULL;
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     acquire_ctx_lock();
     status = ct_exit(self->ctx, option);
@@ -1149,7 +1183,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i", &operation))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
@@ -1173,7 +1207,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "iii", &operation, &type, &num))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
@@ -1197,7 +1231,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &operation, &type))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
@@ -1229,7 +1263,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	    return NULL;
 	}
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
@@ -1260,7 +1294,7 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	    return NULL;
 	num = 0;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 #ifdef HAVE_FREETDS
 	status = CS_SUCCEED;
@@ -1306,7 +1340,7 @@ static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
 	return NULL;
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     acquire_ctx_lock();
     status = cs_ctx_drop(self->ctx);
@@ -1363,7 +1397,7 @@ PyObject *ctx_alloc(CS_INT version)
     SY_LOCK_ALLOC(self);
     SY_THREAD_INIT(self);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     acquire_ctx_lock();
     status = cs_ctx_alloc(version, &ctx);
