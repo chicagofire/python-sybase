@@ -29,6 +29,8 @@ CHANGES SINCE 0.35:
 
 * Removed references to CS_PENDING and CS_BUSY in Sybase.py.
 
+* Bind CS_VARBINARY_TYPE as CS_BINARY_TYPE.
+
 * Do not attempt to ct_cancel() when handling an exception if have not
   connected to the server.  Bug fix in Sybase.py.
 
