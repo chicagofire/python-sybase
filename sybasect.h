@@ -139,7 +139,9 @@ enum { CSVER, ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT,
 char *value_str(int type, int value);
 
 int Numeric_Check(PyObject *obj);
+int Buffer_Check(PyObject *obj);
 int CS_DATAFMT_Check(PyObject *obj);
+int CS_IODESC_Check(PyObject *obj);
 
 #define NUMERIC_LEN (CS_MAX_PREC + 1)
 
@@ -168,5 +170,6 @@ PyObject *iodesc_new(PyObject *module, PyObject *args);
 PyObject *iodesc_alloc(CS_IODESC *iodesc);
 PyObject *buffer_alloc(PyObject *obj);
 NumericObj *numeric_alloc(CS_NUMERIC *num);
+int numeric_as_string(PyObject *obj, char *text);
 extern char numeric_new__doc__[];
 PyObject *NumericType_new(PyObject *module, PyObject *args);

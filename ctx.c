@@ -380,6 +380,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	/* ct_config(CS_SET, property, value) -> status */
 	if (!PyArg_ParseTuple(args, "iiO", &action, &property, &obj))
 	    return NULL;
+
 	switch (property_type(property)) {
 	case OPTION_INT:
 	    int_value = PyInt_AsLong(obj);
@@ -389,6 +390,10 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    status = ct_config(self->ctx, CS_SET, property,
 			       &int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    if (self->debug)
+		fprintf(stderr, "ct_config(CS_SET, %s, %d) -> %s\n",
+			value_str(PROPS, property), int_value,
+			value_str(STATUS, status));
 	    return PyInt_FromLong(status);
 
 	case OPTION_STRING:
@@ -399,6 +404,10 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    status = ct_config(self->ctx, CS_SET, property,
 			       str_value, CS_NULLTERM, NULL);
 	    SY_END_THREADS;
+	    if (self->debug)
+		fprintf(stderr, "ct_config(CS_SET, %s, '%s') -> %s\n",
+			value_str(PROPS, property), str_value,
+			value_str(STATUS, status));
 	    return PyInt_FromLong(status);
 
 	default:
@@ -418,6 +427,10 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    status = ct_config(self->ctx, CS_GET, property,
 			       &int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    if (self->debug)
+		fprintf(stderr, "ct_config(CS_GET, %s) -> %s, %d\n",
+			value_str(PROPS, property),
+			value_str(STATUS, status), int_value);
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_STRING:
@@ -427,6 +440,10 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    SY_END_THREADS;
 	    if (buff_len > sizeof(str_buff))
 		buff_len = sizeof(str_buff);
+	    if (self->debug)
+		fprintf(stderr, "ct_config(CS_GET, %s) -> %s, '%.*s'\n",
+			value_str(PROPS, property),
+			value_str(STATUS, status), (int)buff_len, str_buff);
 	    return Py_BuildValue("is#", status, str_buff, buff_len);
 
 	default:
@@ -444,6 +461,9 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	status = ct_config(self->ctx, CS_CLEAR, property,
 			   NULL, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	if (self->debug)
+	    fprintf(stderr, "ct_config(CS_CLEAR, %s) -> %s\n",
+		    value_str(PROPS, property), value_str(STATUS, status));
 	return PyInt_FromLong(status);
 
     default:
@@ -488,6 +508,9 @@ static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
     SY_BEGIN_THREADS;
     status = ct_init(self->ctx, version);
     SY_END_THREADS;
+    if (self->debug)
+	fprintf(stderr, "ct_init(%s) -> %s\n",
+		value_str(CSVER, version), value_str(STATUS, status));
 
     return PyInt_FromLong(status);
 }
@@ -511,6 +534,9 @@ static PyObject *CS_CONTEXT_ct_exit(CS_CONTEXTObj *self, PyObject *args)
     SY_BEGIN_THREADS;
     status = ct_exit(self->ctx, option);
     SY_END_THREADS;
+    if (self->debug)
+	fprintf(stderr, "ct_exit(%s) -> %s\n",
+		value_str(OPTION, option), value_str(STATUS, status));
 
     return PyInt_FromLong(status);
 }
@@ -545,6 +571,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, CS_UNUSED, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	if (self->debug)
+	    fprintf(stderr, "cs_diag(CS_INIT) -> %s\n",
+		    value_str(STATUS, status));
 	return PyInt_FromLong(status);
 
     case CS_MSGLIMIT:
@@ -554,6 +583,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, &num);
 	SY_END_THREADS;
+	if (self->debug)
+	    fprintf(stderr, "cs_diag(CS_MSGLIMIT, %s, %d) -> %s\n",
+		    value_str(TYPE, type), num, value_str(STATUS, status));
 	return PyInt_FromLong(status);
 
     case CS_CLEAR:
@@ -563,6 +595,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	if (self->debug)
+	    fprintf(stderr, "cs_diag(CS_CLEAR, %s) -> %s\n",
+		    value_str(TYPE, type), value_str(STATUS, status));
 	return PyInt_FromLong(status);
 
     case CS_GET:
@@ -584,6 +619,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, index, buffer);
 	SY_END_THREADS;
+	if (self->debug)
+	    fprintf(stderr, "cs_diag(CS_GET, %s, %d) -> %s\n",
+		    value_str(TYPE, type), index, value_str(STATUS, status));
 	if (status != CS_SUCCEED)
 	    return Py_BuildValue("iO", status, Py_None);
 	return Py_BuildValue("iN", CS_SUCCEED, msg);
@@ -596,6 +634,9 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	SY_BEGIN_THREADS;
 	status = cs_diag(self->ctx, operation, type, CS_UNUSED, &num);
 	SY_END_THREADS;
+	if (self->debug)
+	    fprintf(stderr, "cs_diag(CS_STATUS, %s) -> %s, %d\n",
+		    value_str(TYPE, type), value_str(STATUS, status), num);
 	return Py_BuildValue("ii", status, num);
 
     default:
@@ -622,6 +663,8 @@ static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
     SY_BEGIN_THREADS;
     status = cs_ctx_drop(self->ctx);
     SY_END_THREADS;
+    if (self->debug)
+	fprintf(stderr, "cs_ctx_drop() -> %s\n", value_str(STATUS, status));
 
     if (status == CS_SUCCEED)
 	self->ctx = NULL;
@@ -659,6 +702,8 @@ PyObject *ctx_alloc(CS_INT version)
     SY_BEGIN_THREADS;
     status = cs_ctx_alloc(version, &ctx);
     SY_END_THREADS;
+    if (self->debug)
+	fprintf(stderr, "cs_ctx_alloc() -> %s\n", value_str(STATUS, status));
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
@@ -686,6 +731,8 @@ PyObject *ctx_global(CS_INT version)
     SY_BEGIN_THREADS;
     status = cs_ctx_global(version, &ctx);
     SY_END_THREADS;
+    if (self->debug)
+	fprintf(stderr, "cs_ctx_global() -> %s\n", value_str(STATUS, status));
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
@@ -699,11 +746,15 @@ PyObject *ctx_global(CS_INT version)
 static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
 {
     if (self->ctx) {
+	CS_RETCODE status;
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
 	SY_BEGIN_THREADS;
-	cs_ctx_drop(self->ctx);
+	status = cs_ctx_drop(self->ctx);
 	SY_END_THREADS;
+	if (self->debug)
+	    fprintf(stderr, "cs_ctx_drop() -> %s\n",
+		    value_str(STATUS, status));
     }
     Py_XDECREF(self->servermsg_cb);
     ctx_del_object(self);

@@ -46,7 +46,7 @@ int Numeric_Check(PyObject *obj)
     return obj->ob_type == &NumericType;
 }
 
-int numeric_as_string(NumericObj *obj, char *text)
+int numeric_as_string(PyObject *obj, char *text)
 {
     CS_DATAFMT numeric_fmt;
     CS_DATAFMT char_fmt;
@@ -54,7 +54,7 @@ int numeric_as_string(NumericObj *obj, char *text)
 
     numeric_datafmt(&numeric_fmt, CS_SRC_VALUE, CS_SRC_VALUE);
     char_datafmt(&char_fmt);
-    return cs_convert(global_ctx(), &numeric_fmt, &obj->num,
+    return cs_convert(global_ctx(), &numeric_fmt, &((NumericObj*)obj)->num,
 		      &char_fmt, text, &char_len);
 }
 
@@ -222,7 +222,7 @@ static int Numeric_print(NumericObj *self, FILE *fp, int flags)
 {
     char text[NUMERIC_LEN];
 
-    numeric_as_string(self, text);
+    numeric_as_string((PyObject*)self, text);
     fputs(text, fp);
     return 0;
 }
@@ -243,7 +243,7 @@ static PyObject *Numeric_repr(NumericObj *self)
 {
     char text[NUMERIC_LEN];
 
-    numeric_as_string(self, text);
+    numeric_as_string((PyObject*)self, text);
     return PyString_FromString(text);
 }
 
@@ -443,7 +443,7 @@ static PyObject *Numeric_long(NumericObj *v)
     char *end;
     char text[NUMERIC_LEN];
 
-    numeric_as_string(v, text);
+    numeric_as_string((PyObject*)v, text);
     return PyLong_FromString(text, &end, 10);
 }
 

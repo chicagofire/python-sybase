@@ -387,7 +387,7 @@ static PySequenceMethods Buffer_as_sequence = {
 #define OFF(x) offsetof(BufferObj, x)
 
 static struct memberlist Buffer_memberlist[] = {
-    { "name", T_STRING, OFF(fmt.name), RO }, /* faked */
+    { "name", T_STRING, OFF(fmt.name) }, /* faked */
     { "datatype", T_INT, OFF(fmt.datatype), RO },
     { "format", T_INT, OFF(fmt.format), RO },
     { "maxlength", T_INT, OFF(fmt.maxlength), RO },
@@ -420,6 +420,22 @@ static int Buffer_setattr(BufferObj *self, char *name, PyObject *v)
 	PyErr_SetString(PyExc_AttributeError, "Cannot delete attribute");
 	return -1;
     }
+    if (strcmp(name, "name") == 0) {
+	int size;
+
+	if (!PyString_Check(v)) {
+	    PyErr_BadArgument();
+	    return -1;
+	}
+	size = PyString_Size(v);
+	if (size > sizeof(self->fmt.name)) {
+	    PyErr_SetString(PyExc_TypeError, "name too long");
+	    return -1;
+	}
+	strncpy(self->fmt.name, PyString_AsString(v), sizeof(self->fmt.name));
+	self->fmt.namelen = size;
+	return 0;
+    }
     return PyMember_Set((char *)self, Buffer_memberlist, name, v);
 }
 
@@ -451,3 +467,7 @@ PyTypeObject BufferType = {
     BufferType__doc__		/* Documentation string */
 };
 
+int Buffer_Check(PyObject *obj)
+{
+    return obj->ob_type == &BufferType;
+}
