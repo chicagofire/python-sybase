@@ -43,7 +43,7 @@ static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
     return PyInt_FromLong(status);
 }
 
-static int property_type( int property )
+static int property_type(int property)
 {
     switch (property) {
     case CS_LOGIN_TIMEOUT:

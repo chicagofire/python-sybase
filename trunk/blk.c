@@ -128,7 +128,9 @@ static int property_type(int property)
 {
     switch (property) {
     case BLK_IDENTITY:
+#ifdef BLK_NOAPI_CHK
     case BLK_NOAPI_CHK:
+#endif
     case BLK_SENSITIVITY_LBL:
 
 #ifdef HAS_ARRAY_INSERT
@@ -136,10 +138,14 @@ static int property_type(int property)
 #endif
 
 	return OPTION_BOOL;
+#ifdef BLK_SLICENUM
     case BLK_SLICENUM:
 	return OPTION_INT;
+#endif
+#ifdef BLK_IDSTARTNUM
     case BLK_IDSTARTNUM:
 	return OPTION_NUMERIC;
+#endif
     default:
 	return OPTION_UNKNOWN;
     }
