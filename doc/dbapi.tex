@@ -284,6 +284,11 @@ db = Sybase.connect('SYBASE', 'sa', '', delay_connect = 1)
 db.set_property(Sybase.CS_HOSTNAME, 'secret')
 db.connect()
 \end{verbatim}
+
+\item{\var{locking \code{= 1}}}
+
+Controls whether or not thread locks will be used on the connection
+object.  When non-zero, the connection allows connections and cursors to be shared between threads.  If your program is not multi-threaded you can gain a slight performance improvement by passing zero in this argument.
 \end{description}
 \end{funcdesc}
 
