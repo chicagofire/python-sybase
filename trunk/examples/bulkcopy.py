@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# From orig/array_bind.c - sybase example program
+# From orig/bulkcopy.c - sybase example program
 #
 import sys
 import string
@@ -26,18 +26,18 @@ def connect_db(ctx, user_name, password):
     # Set the username and password properties
     status = conn.ct_con_props(CS_SET, CS_USERNAME, user_name)
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "ct_con_props CS_USERNAME failed")
+        raise CTError(conn, "ct_con_props CS_USERNAME failed")
     status = conn.ct_con_props(CS_SET, CS_PASSWORD, password)
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "ct_con_props CS_PASSWORD failed")
+        raise CTError(conn, "ct_con_props CS_PASSWORD failed")
     # enable bulk login property
     status = conn.ct_con_props(CS_SET, CS_BULK_LOGIN, CS_TRUE)
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "ct_con_props CS_BULK_LOGIN failed")
+        raise CTError(conn, "ct_con_props CS_BULK_LOGIN failed")
     # connect to the server
     status = conn.ct_connect()
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "ct_connect failed")
+        raise CTError(conn, "ct_connect failed")
     return conn
 
 def send_sql(cmd, sql):
@@ -45,15 +45,15 @@ def send_sql(cmd, sql):
     # Build and send the command to the server
     status = cmd.ct_command(CS_LANG_CMD, sql)
     if status != CS_SUCCEED:
-        raise SybaseError(cmd.conn, "ct_command failed")
+        raise CTError(cmd.conn, "ct_command failed")
     status = cmd.ct_send()
     if status != CS_SUCCEED:
-        raise SybaseError(cmd.conn, "ct_send failed")
+        raise CTError(cmd.conn, "ct_send failed")
 
 def bind_columns(cmd):
     status, num_cols = cmd.ct_res_info(CS_NUMDATA)
     if status != CS_SUCCEED:
-        raise SybaseError(cmd.conn, "ct_res_info failed")
+        raise CTError(cmd.conn, "ct_res_info failed")
 
     bufs = [None] * num_cols
     for i in range(num_cols):
@@ -65,14 +65,14 @@ def bind_columns(cmd):
         # Bind returned data to host variables
         status, buf = cmd.ct_bind(i + 1, fmt)
         if status != CS_SUCCEED:
-            raise SybaseError(cmd.conn, "ct_bind failed")
+            raise CTError(cmd.conn, "ct_bind failed")
         bufs[i] = buf
     return bufs
 
 def fetch_n_print(cmd, bufs):
     status, num_cols = cmd.ct_res_info(CS_NUMDATA)
     if status != CS_SUCCEED:
-        raise SybaseError(cmd.conn, "ct_res_info failed")
+        raise CTError(cmd.conn, "ct_res_info failed")
 
     # Fetch the bound data into host variables
     while 1:
@@ -86,7 +86,7 @@ def fetch_n_print(cmd, bufs):
             print " %s \t" % bufs[i][0],
         print
     if status != CS_END_DATA:
-        raise SybaseError(cmd.conn, "ct_fetch failed")
+        raise CTError(cmd.conn, "ct_fetch failed")
 
 def handle_returns(cmd):
     while 1:
@@ -117,7 +117,7 @@ def handle_returns(cmd):
             sys.stderr.write("unknown results\n")
             return
     if status != CS_END_RESULTS:
-        raise SybaseError(cmd.conn, "ct_results failed")
+        raise CTError(cmd.conn, "ct_results failed")
 
 MAX_PUBID   = 5
 MAX_PUBNAME = 41
@@ -134,10 +134,10 @@ def write_to_table(conn, data):
     # getting the bulk descriptor and initialize
     status, blk = conn.blk_alloc(EX_BLK_VERSION)
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "blk_alloc failed")
+        raise CTError(conn, "blk_alloc failed")
     status = blk.blk_init(CS_BLK_IN, "test_pubs")
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "blk_init failed")
+        raise CTError(conn, "blk_init failed")
 
     # Now bind the variables to the columns and transfer the data
     fmt = CS_DATAFMT()
@@ -148,37 +148,37 @@ def write_to_table(conn, data):
         buf1 = Buffer(fmt)
         buf1[0] = row[0]
         if blk.blk_bind(1, buf1) != CS_SUCCEED:
-            raise SybaseError(conn, "blk_bind failed")
+            raise CTError(conn, "blk_bind failed")
         fmt.datatype = CS_CHAR_TYPE
         fmt.maxlength = MAX_PUBNAME - 1
         buf2 = Buffer(fmt)
         buf2[0] = row[1]
         if blk.blk_bind(2, buf2) != CS_SUCCEED:
-            raise SybaseError(conn, "blk_bind failed")
+            raise CTError(conn, "blk_bind failed")
         fmt.datatype = CS_CHAR_TYPE
         fmt.maxlength = MAX_PUBCITY - 1
         buf3 = Buffer(fmt)
         buf3[0] = row[2]
         if blk.blk_bind(3, buf3) != CS_SUCCEED:
-            raise SybaseError(conn, "blk_bind failed")
+            raise CTError(conn, "blk_bind failed")
         fmt.maxlength = MAX_PUBST - 1
         buf4 = Buffer(fmt)
         buf4[0] = row[3]
         if blk.blk_bind(4, buf4) != CS_SUCCEED:
-            raise SybaseError(conn, "blk_bind failed")
+            raise CTError(conn, "blk_bind failed")
         fmt.maxlength = MAX_BIO - 1
         buf5 = Buffer(fmt)
         buf5[0] = row[4]
         if blk.blk_bind(5, buf5) != CS_SUCCEED:
-            raise SybaseError(conn, "blk_bind failed")
+            raise CTError(conn, "blk_bind failed")
         if blk.blk_rowxfer() == CS_FAIL:
-            raise SybaseError(conn, "blk_rowxfer failed")
+            raise CTError(conn, "blk_rowxfer failed")
     status, num_rows = blk.blk_done(CS_BLK_ALL)
     if status == CS_FAIL:
-        raise SybaseError(conn, "blk_done failed")
+        raise CTError(conn, "blk_done failed")
     print "Number of data rows transferred = %d" % num_rows
     if blk.blk_drop() == CS_FAIL:
-        raise SybaseError(conn, "blk_drop failed")
+        raise CTError(conn, "blk_drop failed")
 
 def cleanup_db(ctx, status):
     if status != CS_SUCCEED:
@@ -203,7 +203,7 @@ conn = connect_db(ctx, EX_USERNAME, EX_PASSWORD)
 # Allocate a command structure
 status, cmd = conn.ct_cmd_alloc()
 if status != CS_SUCCEED:
-    raise SybaseError(conn, "ct_cmd_alloc failed")
+    raise CTError(conn, "ct_cmd_alloc failed")
 # Send a command to set the database context
 send_sql(cmd, "use tempdb")
 # handle results from the current command

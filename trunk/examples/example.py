@@ -1,36 +1,57 @@
+import string
 from sybasect import *
 
 class Error(Exception):
     pass
 
-def get_diag(func, type):
-    status, num_msgs = func(CS_STATUS, type)
+def get_client_msgs(err, func):
+    status, num_msgs = func(CS_STATUS, CS_CLIENTMSG_TYPE)
     if status != CS_SUCCEED:
-        return []
-    err = []
+        return
     for i in range(num_msgs):
-        status, msg = func(CS_GET, type, i + 1)
+        status, msg = func(CS_GET, CS_CLIENTMSG_TYPE, i + 1)
         if status != CS_SUCCEED:
             continue
-        dict = {}
-        for attr in dir(msg):
-            dict[attr] = getattr(msg, attr)
-        err.append(dict)
-    return err
+        err.append('layer (%s), origin (%s)' \
+                   % (CS_LAYER(msg.msgnumber), CS_ORIGIN(msg.msgnumber)))
+        err.append('text:')
+        err.append(msg.msgstring)
+        if msg.osstring:
+            err.append('OS error: %s' % msg.osstring)
 
-def build_ct_except(conn, msg):
-    err = [msg]
-    err.extend(get_diag(conn.ct_diag, CS_SERVERMSG_TYPE))
-    err.extend(get_diag(conn.ct_diag, CS_CLIENTMSG_TYPE))
-    conn.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
-    return err
+def get_server_msgs(err, func):
+    status, num_msgs = func(CS_STATUS, CS_SERVERMSG_TYPE)
+    if status != CS_SUCCEED:
+        return
+    for i in range(num_msgs):
+        status, msg = func(CS_GET, CS_SERVERMSG_TYPE, i + 1)
+        if status != CS_SUCCEED:
+            continue
+        err.append('number (%s), severity (%s)' \
+                   % (msg.msgnumber, msg.severity))
+        err.append('state (%s), line (%s)' % (msg.state, msg.line))
+        err.append('text:')
+        err.append(msg.text)
 
-class SybaseError:
-    def __init__(self, conn, msg):
-        self.err = build_ct_except(conn, msg)
+class SyError:
+    def __init__(self, msg):
+        self.err = [msg]
 
     def __str__(self):
         return string.join(self.err, '\n')
+
+class CTError(SyError):
+    def __init__(self, conn, msg):
+        SyError.__init__(self, msg)
+        get_server_msgs(self.err, conn.ct_diag)
+        get_client_msgs(self.err, conn.ct_diag)
+        conn.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
+
+class CSError(SyError):
+    def __init__(self, ctx, msg):
+        SyError.__init__(self, msg)
+        get_client_msgs(self.err, ctx.cs_diag)
+        ctx.cs_diag(CS_CLEAR, CS_CLIENTMSG_TYPE)
 
 EX_USERNAME = "sa"
 EX_PASSWORD = ""

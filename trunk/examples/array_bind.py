@@ -24,31 +24,31 @@ def connect_db(ctx, user_name, password):
         raise Error("ct_con_alloc failed")
     status = conn.ct_con_props(CS_SET, CS_USERNAME, user_name)
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "ct_con_props CS_USERNAME failed")
+        raise CTError(conn, "ct_con_props CS_USERNAME failed")
     status = conn.ct_con_props(CS_SET, CS_PASSWORD, password)
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "ct_con_props CS_PASSWORD failed")
+        raise CTError(conn, "ct_con_props CS_PASSWORD failed")
     status = conn.ct_con_props(CS_SET, CS_BULK_LOGIN, CS_TRUE)
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "ct_con_props CS_BULK_LOGIN failed")
+        raise CTError(conn, "ct_con_props CS_BULK_LOGIN failed")
     status = conn.ct_connect()
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "ct_connect failed")
+        raise CTError(conn, "ct_connect failed")
     return conn
 
 def send_sql(cmd, sql):
     print "sql = %s" % sql
     status = cmd.ct_command(CS_LANG_CMD, sql)
     if status != CS_SUCCEED:
-        raise SybaseError(cmd.conn, "ct_command failed")
+        raise CTError(cmd.conn, "ct_command failed")
     status = cmd.ct_send()
     if status != CS_SUCCEED:
-        raise SybaseError(cmd.conn, "ct_send failed")
+        raise CTError(cmd.conn, "ct_send failed")
 
 def bind_columns(cmd):
     status, num_cols = cmd.ct_res_info(CS_NUMDATA)
     if status != CS_SUCCEED:
-        raise SybaseError(cmd.conn, "ct_res_info failed")
+        raise CTError(cmd.conn, "ct_res_info failed")
 
     bufs = [None] * num_cols
     for i in range(num_cols):
@@ -59,14 +59,14 @@ def bind_columns(cmd):
         fmt.format = CS_FMT_NULLTERM
         status, buf = cmd.ct_bind(i + 1, fmt)
         if status != CS_SUCCEED:
-            raise SybaseError(cmd.conn, "ct_bind failed")
+            raise CTError(cmd.conn, "ct_bind failed")
         bufs[i] = buf
     return bufs
 
 def fetch_n_print(cmd, bufs):
     status, num_cols = cmd.ct_res_info(CS_NUMDATA)
     if status != CS_SUCCEED:
-        raise SybaseError(cmd.conn, "ct_res_info failed")
+        raise CTError(cmd.conn, "ct_res_info failed")
 
     while 1:
         status, rows_read = cmd.ct_fetch()
@@ -79,7 +79,7 @@ def fetch_n_print(cmd, bufs):
             print " %s \t" % bufs[i][0],
         print
     if status != CS_END_DATA:
-        raise SybaseError(cmd.conn, "ct_fetch failed")
+        raise CTError(cmd.conn, "ct_fetch failed")
 
 def handle_returns(cmd):
     while 1:
@@ -101,15 +101,15 @@ def handle_returns(cmd):
             return
     if status == CS_END_RESULTS:
         return CS_SUCCEED
-    raise SybaseError(cmd.conn, "ct_results failed")
+    raise CTError(cmd.conn, "ct_results failed")
 
 def write_to_table(conn, data):
     status, blk = conn.blk_alloc(BLK_VERSION_110)
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "blk_alloc failed")
+        raise CTError(conn, "blk_alloc failed")
     status = blk.blk_init(CS_BLK_IN, "test_bcp")
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "blk_init failed")
+        raise CTError(conn, "blk_init failed")
 
     int_fmt = CS_DATAFMT()
     int_fmt.count = len(data[0])
@@ -121,7 +121,7 @@ def write_to_table(conn, data):
         int_buf[i] = data[0][i]
     status = blk.blk_bind(1, int_buf)
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "blk_bind failed")
+        raise CTError(conn, "blk_bind failed")
     # Initialize and describe the data format structure for the second
     # column of type 'char'. It is recommended that different data
     # format structures be used for different datatypes.
@@ -137,15 +137,15 @@ def write_to_table(conn, data):
         char_buf[i] = data[1][i]
     status = blk.blk_bind(2, char_buf)
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "blk_bind failed")
+        raise CTError(conn, "blk_bind failed")
     # transfer the rows to be copied to the server
     status, row_count = blk.blk_rowxfer_mult(len(data[0]))
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "blk_rowxfer_mult failed")
+        raise CTError(conn, "blk_rowxfer_mult failed")
     # Commit transactions to the database 
     status, num_rows = blk.blk_done(CS_BLK_ALL)
     if status != CS_SUCCEED:
-        raise SybaseError(conn, "blk_done failed")
+        raise CTError(conn, "blk_done failed")
     print "Bulk copied %d rows successfully." % num_rows
     # Drop the bulk descriptor
     blk = None
@@ -157,7 +157,7 @@ ctx = init_db()
 conn = connect_db(ctx, EX_USERNAME, EX_PASSWORD)
 status, cmd = conn.ct_cmd_alloc()
 if status != CS_SUCCEED:
-    raise SybaseError(conn, "ct_cmd_alloc failed")
+    raise CTError(conn, "ct_cmd_alloc failed")
 send_sql(cmd, "use tempdb")
 handle_returns(cmd)
 write_to_table(conn, data)
@@ -165,7 +165,7 @@ write_to_table(conn, data)
 # inserted.
 send_sql(cmd, "select * from test_bcp ")
 if status != CS_SUCCEED:
-    raise SybaseError(conn, "ct_cmd_alloc failed")
+    raise CTError(conn, "ct_cmd_alloc failed")
 # handle results from the current command
 handle_returns(cmd)
 # Drop the command structure 
