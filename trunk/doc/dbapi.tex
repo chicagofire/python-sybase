@@ -1,8 +1,4 @@
-\chapter{DB-API 2.0 Interface}
-
-\localmoduletable
-
-\section{\module{Sybase} --- Provide interface to Sybase relational database}
+\section{\module{Sybase} --- Provides interface to Sybase relational database}
 
 \declaremodule{standard}{Sybase}
 
@@ -12,6 +8,19 @@ The \module{Sybase} module contains the following:
 
 \begin{datadesc}{__version__}
 A string which specifies the version of the Sybase module.
+\end{datadesc}
+
+\begin{datadesc}{use_datetime}
+When you import the \module{Sybase} module it will try to import the
+\module{mxDateTime} module.  If the \module{mxDateTime} module is
+successfully imported then this variable will be set to \code{1}.  All
+\code{datetime} columns will then be returned as
+\class{mxDateTime.DateTime} objects.
+
+If you do not wish to use \class{mxDateTime.DateTime} objects, set
+this to \code{0} immediately after importing the \module{Sybase}
+module.  All \code{datetime} columns will then be returned as
+\class{sybasect.DateTime} objects.
 \end{datadesc}
 
 \begin{datadesc}{apilevel}
@@ -33,6 +42,9 @@ question marks as parameter place holders.
 Return a new instance of the \class{Cursor} class which implements the
 DB-API 2.0 cursor functionality.
 
+\class{Cursor} objects are usually created via the
+\method{cursor()} method of the \class{Connection} object.
+
 The \var{owner} argument must be an instance of the \class{Connection}
 class.
 \end{classdesc}
@@ -44,7 +56,13 @@ The \var{owner} argument must be an instance of the \class{Connection}
 class.  A bulk copy context will be established for the table named in
 the \var{table} argument, the bulkcopy direction must be either
 \code{CS_BLK_IN} or \code{CS_BLK_OUT} as defined in the
-\module{_sybase} module.
+\module{Sybase} module.
+
+The \var{owner} argument must be an instance of the \class{Connection}
+class.
+
+\class{Bulkcopy} objects are usually created via the
+\method{bulkcopy()} method of the \class{Connection} object.
 
 This is an extension of the DB-API 2.0 specification.
 \end{classdesc}
@@ -112,6 +130,56 @@ db.set_property(Sybase.CS_HOSTNAME, 'secret')
 db.connect()
 \end{verbatim}
 \end{description}
+\end{funcdesc}
+
+The \module{Sybase} module imports the low level \module{sybasect}
+extension module via
+
+\begin{verbatim}
+from sybasect import *}
+\end{verbatim}
+
+which means that the \module{Sybase} module inherits all of the
+objects defined in that module.
+
+Some of the functions will be useful in your programs.
+
+\begin{funcdesc}{datetime}{str \optional{, type \code{= Sybase.CS_DATETIME_TYPE}}}
+Creates a new instance of the \class{DateTime} class.  This is used to
+handle native Sybase \code{datetime} and \code{smalldatetime} values.
+
+The string passed in the \var{str} argument is converted to a datetime
+value of the type specifed in the optional \var{type} argument.
+
+\code{Sybase.CS_DATETIME_TYPE} represents the \code{datetime} Sybase
+type and \code{Sybase.CS_DATETIME4_TYPE} represents
+\code{smalldatetime}.
+
+The \class{DateTime} class is described in the \module{sybasect}
+module.
+\end{funcdesc}
+
+\begin{funcdesc}{money}{num}
+Creates a new instance of the \class{Money} class.  This is
+used to handle native Sybase \code{money} values.
+
+The value passed in the \var{num} argument is converted to a native
+Sybase money value.
+
+The \class{DateTime} class is described in the \module{sybasect}
+module.
+\end{funcdesc}
+
+\begin{funcdesc}{numeric}{num, \optional{precision \code{= -1} \optional{, scale \code{= -1}}}}
+Creates a new instance of the \class{Numeric} class.  This is used to
+handle native Sybase \code{numeric} and \code{decimal} values.
+
+Converts the value passed in the \var{num} argument to a native Sybase
+numeric value.  The \var{precision} and \var{scale} arguments control
+the precision and scale of the returned value.
+
+The \class{Numeric} class is described in the \module{sybasect}
+module.
 \end{funcdesc}
 
 \subsection{Connection Objects}
@@ -222,16 +290,16 @@ binary parameters to the command, you must format the parameters as
 part of the SQL string in the \var{sql} argument.
 \end{methoddesc}
 
-\begin{methoddesc}[Connection]{bulkcopy}{table \optional{, copy_out\code{ = 0}}}
+\begin{methoddesc}[Connection]{bulkcopy}{table, direction}
 This is an extension of the DB-API 2.0 specification.
 
 Returns a new \class{Bulkcopy} object using the connection.  The
 \var{table} argument identifies the table which you wish to perform
 bulkcopy operations upon.
 
-By default the bulkcopy object will be created to copy data into the
-table.  To copy data out pass a TRUE value as the \var{copy_out}
-argument.
+The \var{direction} argument controls the direction of the bulkcopy
+operation.  Specify \code{Sybase.CS_BLK_IN} to copy data in, or
+\code{Sybase.CS_BLK_OUT} to copy data out.
 \end{methoddesc}
 
 \subsection{Cursor Objects}
@@ -388,3 +456,22 @@ This method does nothing -- it is provided for DB-API compliance.
 
 This is an extension of the DB-API 2.0 specification.
 
+This object provides an interface to the Sybase bulkcopy
+functionality.
+
+\begin{methoddesc}[Bulkcopy]{rowxfer}{\optional{data}}
+If the \class{Bulkcopy} object direction is \code{CS_BLK_IN} then the
+sequence passed as the \var{data} argument is sent as one row to the
+server.  If the direction is \code{CS_BLK_OUT} thenone row will be
+returned from the server.
+\end{methoddesc}
+
+\begin{methoddesc}[Bulkcopy]{batch}{}
+Marks a complete bulkcopy batch.  The number of rows transferred in
+the batch is returned.
+\end{methoddesc}
+
+\begin{methoddesc}[Bulkcopy]{done}{}
+Marks a complete bulkcopy operation.  The number of rows transferred
+in the batch is returned.
+\end{methoddesc}
