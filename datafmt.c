@@ -136,12 +136,13 @@ static void CS_DATAFMT_dealloc(CS_DATAFMTObj *self)
 
 void datafmt_debug(CS_DATAFMT *fmt)
 {
-    debug_msg("[name:\"%.*s\" type:%s status:%s format:%s count:%d maxlength:%d]",
+    debug_msg("[name:\"%.*s\" type:%s status:%s format:%s count:%d"
+	      " maxlength:%d scale:%d precision:%d]",
 	      fmt->namelen, fmt->name,
 	      value_str(VAL_TYPE, fmt->datatype),
 	      value_str(VAL_STATUSFMT, fmt->status),
 	      value_str(VAL_DATAFMT, fmt->format),
-	      fmt->count, fmt->maxlength);
+	      fmt->count, fmt->maxlength, fmt->scale, fmt->precision);
 }
 
 /* Code to access structure members by accessing attributes */
