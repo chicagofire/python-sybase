@@ -47,7 +47,7 @@ integer \var{type} argument and returns the Sybase result code.
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_cmd_drop}{}
-Calls the Sybase \function{ct_cmd_drop()} function.  Returns the
+Calls the Sybase \function{ct_cmd_drop()} function and returns the
 Sybase result code.
 
 This method will be automatically called when the \class{CS_COMMAND}
@@ -55,12 +55,83 @@ object is deleted.  Applications do not need to call the method.
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_command}{type \optional{, \ldots}}
+Calls the Sybase \function{ct_command()} function and returns the
+result code.
+
+The \var{type} argument controls determines the type and number of
+additional arguments.
+
+\code{ct_command(CS_LANG_CMD, \var{sql_text} \optional{, \var{options}})}
+
+\code{ct_command(CS_RPC_CMD, \var{proc_name} \optional{, \var{options}})}
+
+\code{ct_command(CS_MSG_CMD, \var{msg_num})}
+
+\code{ct_command(CS_PACKAGE_CMD, \var{pkg_name})}
+
+\code{ct_command(CS_SEND_DATA_CMD)}
+
+For an explanation of the argument semantics please refer to the
+Sybase documentation.
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_cursor}{type \optional{, \ldots}}
+Calls the Sybase \function{ct_cursor()} function and returns the
+result code.
+
+The \var{type} argument controls determines the type and number of
+additional arguments.
+
+\code{ct_cursor(CS_CURSOR_DECLARE, \var{cursor_id}, \var{sql_text} \optional{, \var{options}})}
+
+\code{ct_cursor(CS_CURSOR_UPDATE, \var{table_name}, \var{sql_text} \optional{, \var{options}})}
+
+\code{ct_cursor(CS_CURSOR_OPTION \optional{, \var{options}})}
+
+\code{ct_cursor(CS_CURSOR_OPEN \optional{, \var{options}})}
+
+\code{ct_cursor(CS_CURSOR_CLOSE \optional{, \var{options}})}
+
+\code{ct_cursor(CS_CURSOR_ROWS, \var{num_rows})}
+
+\code{ct_cursor(CS_CURSOR_DELETE, \var{table_name})}
+
+\code{ct_cursor(CS_CURSOR_DEALLOC)}
+
+For an explanation of the argument semantics please refer to the
+Sybase documentation.
+
+The \texttt{cursor_sel.py}, \texttt{cursor_upd.py}, and
+\texttt{dynamic_cur.py} example programs contain examples of this
+function.
 \end{methoddesc}
 
-\begin{methoddesc}[CS_COMMAND]{ct_data_info}{actio, num \optional{, iodesc}}
+\begin{methoddesc}[CS_COMMAND]{ct_data_info}{action, num \optional{, iodesc}}
+Sets and retrieves column IO descriptors.
+
+When \var{action} is \code{CS_SET} the \var{iodesc} argument
+must be supplied and the method returns the Sybase result code.
+
+When \var{action} is \code{CS_GET} the method returns a tuple
+containing the Sybase result code and an \code{CS_IODESC} object.
+
+For an explanation of the argument semantics please refer to the
+Sybase documentation.
+
+\begin{verbatim}
+    status, iodesc = cmd.ct_data_info(CS_GET, 2)
+    if status != CS_SUCCEED:
+        raise CTError(cmd.conn, 'ct_data_info failed')
+    if cmd.ct_command(CS_SEND_DATA_CMD) != CS_SUCCEED:
+        raise CTError(cmd.conn, 'ct_command failed')
+    iodesc.total_txtlen = len(newdata)
+    iodesc.log_on_update = CS_TRUE
+    if cmd.ct_data_info(CS_SET, iodesc) != CS_SUCCEED:
+        raise CTError(cmd.conn, 'ct_data_info failed')
+\end{verbatim}
+
+The \texttt{mult_text.py} example program contains examples of this
+function.
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_describe}{num}
@@ -74,34 +145,146 @@ when the result code is not \code{CS_SUCCEED}.
 def row_bind(cmd, count = 1):
     status, num_cols = cmd.ct_res_info(CS_NUMDATA)
     if status != CS_SUCCEED:
-        raise StandardError(build_ct_exception(con, 'ct_res_info'))
+        raise CTError(cmd.conn, 'ct_res_info')
     bufs = []
     for i in range(num_cols):
         status, fmt = cmd.ct_describe(i + 1)
         if status != CS_SUCCEED:
-            raise StandardError(build_ct_exception(con, 'ct_describe'))
+            raise CTError(cmd.conn, 'ct_describe')
         fmt.count = count
         status, buf = cmd.ct_bind(i + 1, fmt)
         if status != CS_SUCCEED:
-            raise StandardError(build_ct_exception(con, 'ct_bind'))
+            raise CTError(cmd.conn, 'ct_bind')
         bufs.append(buf)
     return bufs
 \end{verbatim}
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_dynamic}{type \optional{, \ldots}}
+Calls the Sybase \function{ct_dynamic()} function and returns the
+result code.
+
+The \var{type} argument controls determines the type and number of
+additional arguments.
+
+\code{ct_dynamic(CS_CURSOR_DECLARE, \var{dynamic_id}, \var{cursor_id})}
+
+\code{ct_dynamic(CS_DEALLOC, \var{dynamic_id})}
+
+\code{ct_dynamic(CS_DESCRIBE_INPUT, \var{dynamic_id})}
+
+\code{ct_dynamic(CS_DESCRIBE_OUTPUT, \var{dynamic_id})}
+
+\code{ct_dynamic(CS_EXECUTE, \var{dynamic_id})}
+
+\code{ct_dynamic(CS_EXEC_IMMEDIATE, \var{sql_text})}
+
+\code{ct_dynamic(CS_PREPARE, \var{dynamic_id}, \var{sql_text})}
+
+For an explanation of the argument semantics please refer to the
+Sybase documentation.
+
+The \texttt{dynamic_cur.py}, and \texttt{dynamic_ins.py} example
+programs contain examples of this function.
+
+Modified from the \texttt{dynamic_ins.py} program:
+\begin{verbatim}
+def do_dynamic_insert(cmd, insert_statement, repeat_count):
+    if cmd.ct_dynamic(CS_PREPARE, 'd_insert', insert_statement) != CS_SUCCEED:
+        raise CTError(cmd.conn, 'ct_dynamic CS_PREPARE failed')
+    if cmd.ct_send() != CS_SUCCEED:
+        raise CTError(cmd.conn, 'ct_send failed')
+    handle_returns(cmd)
+    for i in range(repeat_count):
+        col = raw_input('Enter value for col ( int ) ')
+        if cmd.ct_dynamic(CS_EXECUTE, 'd_insert') != CS_SUCCEED:
+            raise CTError(cmd.conn, 'ct_dynamic CS_EXECUTE failed')
+        buf = DataBuf(int(col))
+        buf.status = CS_INPUTVALUE
+        if cmd.ct_param(buf) != CS_SUCCEED:
+            raise CTError(cmd.conn, 'ct_param failed')
+        if cmd.ct_send() != CS_SUCCEED:
+            raise CTError(cmd.conn, 'ct_send failed')
+        handle_returns(cmd)
+    if cmd.ct_dynamic(CS_DEALLOC, 'd_insert') != CS_SUCCEED:
+        raise CTError(cmd.conn, 'ct_dynamic CS_DEALLOC failed')
+    if cmd.ct_send() != CS_SUCCEED:
+        raise CTError(cmd.conn, 'ct_send failed')
+    handle_returns(cmd)
+\end{verbatim}
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_fetch}{}
+Calls the Sybase \function{ct_fetch()} function and returns a tuple
+containing the Sybase result code and the number of rows read (for
+array binding).
+
+From the \texttt{Sybase.py} module:
+\begin{verbatim}
+    def fetch_rows(self, bufs):
+        '''Fetch rows into bufs.
+
+        When bound to buffers for a single row, return a row tuple.
+        When bound to multiple row buffers, return a list of row
+        tuples.
+        '''
+        cmd = self._cmd
+        status, rows_read = cmd.ct_fetch()
+        if status == CS_SUCCEED:
+            pass
+        elif status == CS_END_DATA:
+            return None
+        elif status in (CS_ROW_FAIL, CS_FAIL, CS_CANCELED,
+                        CS_PENDING, CS_BUSY):
+            err = _build_ct_except(cmd.conn, 'ct_fetch')
+            self.abort_quietly()
+            raise InternalError(err)
+        if bufs[0].count > 1:
+            rows = []
+            for i in xrange(rows_read):
+                rows.append(_extract_row(bufs, i))
+            return rows
+        else:
+            return _extract_row(bufs, 0)
+\end{verbatim}
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_get_data}{num, buf}
+Calls the Sybase \function{ct_get_data()} function and returns a tuple
+containing the Sybase result code and the length of the data for item
+number \var{num} which was read into the \class{DataBuf} object in the
+\var{buf} argument.
 \end{methoddesc}
 
-\begin{methoddesc}[CS_COMMAND]{ct_param}{buffer}
+\begin{methoddesc}[CS_COMMAND]{ct_param}{buf}
+Calls the Sybase \function{ct_param()} function and returns the Sybase
+result code.
+
+The \var{buf} argument is usually an instance of the \class{DataBuf}
+class.  A \class{CS_DATAFMT} object can be used in a cursor declare
+context to define the format of the host variable.
+
+The sematics of the \class{CS_DATAFMT} attributes are quite complex.
+Please refer to the Sybase documentation.
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_res_info}{type}
+Calls the Sybase \function{ct_res_info()} function.  The return result
+depends upon the value of the \var{type} argument.
+
+\begin{longtable}{l|l}
+\var{type} & return values \\
+\hline
+\code{CS_BROWSE_INFO}   & \code{status, bool} \\
+\code{CS_CMD_NUMBER}    & \code{status, int} \\
+\code{CS_MSGTYPE}       & \code{status, int} \\
+\code{CS_NUM_COMPUTES}  & \code{status, int} \\
+\code{CS_NUMDATA}       & \code{status, int} \\
+\code{CS_NUMORDER_COLS} & \code{status, int} \\
+\code{CS_ORDERBY_COLS}  & \code{status, list of int} \\
+\code{CS_ROW_COUNT}     & \code{status, int} \\
+\code{CS_TRANS_STATE}   & \code{status, int} \\
+\end{longtable}
 \end{methoddesc}
 
 \begin{methoddesc}[CS_COMMAND]{ct_results}{}
@@ -111,21 +294,21 @@ Sybase function.
 
 \begin{verbatim}
 if cmd.ct_command(CS_LANG_CMD, 'select * from pubs..titles') != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_command'))
+    raise CTError(cmd.conn, 'ct_command')
 if cmd.ct_send() != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_send'))
+    raise CTError(cmd.conn, 'ct_send')
 while 1:
     status, result = cmd.ct_results()
     if status == CS_END_RESULTS:
         break
     elif status != CS_SUCCEED:
-        raise StandardError(build_ct_exception(con, 'ct_results'))
+        raise CTError(cmd.conn, 'ct_results')
     if result in (CS_COMPUTE_RESULT, CS_CURSOR_RESULT,
                   CS_PARAM_RESULT, CS_ROW_RESULT, CS_STATUS_RESULT):
         bufs = row_bind(cmd, 16)
-	fetch_logical_result(bufs)
+        fetch_logical_result(bufs)
     elif result not in (CS_CMD_DONE, CS_CMD_SUCCEED):
-        raise StandardError(build_ct_exception(con, 'ct_results'))
+        raise CTError(cmd.conn, 'ct_results')
 \end{verbatim}
 \end{methoddesc}
 
@@ -134,20 +317,20 @@ Calls the Sybase \function{ct_send()} function and returns the Sybase
 result code.
 
 \begin{verbatim}
-status, cmd = con.ct_cmd_alloc()
+status, cmd = conn.ct_cmd_alloc()
 if status != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_cmd_alloc'))
+    raise CTError(cmd.conn, 'ct_cmd_alloc')
 if cmd.ct_command(CS_LANG_CMD, 'select * from pubs..titles') != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_command'))
+    raise CTError(cmd.conn, 'ct_command')
 if cmd.ct_send() != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_send'))
+    raise CTError(cmd.conn, 'ct_send')
 \end{verbatim}
 \end{methoddesc}
 
-\begin{methoddesc}[CS_COMMAND]{ct_send_data}{string}
+\begin{methoddesc}[CS_COMMAND]{ct_send_data}{buf}
 Calls the Sybase \function{ct_send_data()} function and returns the
 Sybase result code.
 \end{methoddesc}
 
-\begin{methoddesc}[CS_COMMAND]{ct_setparam}{buffer}
+\begin{methoddesc}[CS_COMMAND]{ct_setparam}{buf}
 \end{methoddesc}
