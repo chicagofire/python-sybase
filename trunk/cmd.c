@@ -882,6 +882,7 @@ PyObject *cmd_alloc(CS_CONNECTIONObj *conn)
     self = PyObject_NEW(CS_COMMANDObj, &CS_COMMANDType);
     if (self == NULL)
 	return NULL;
+    SY_LEAK_REG(self);
     self->is_eed = 0;
     self->cmd = NULL;
     self->conn = NULL;
@@ -912,6 +913,7 @@ PyObject *cmd_eed(CS_CONNECTIONObj *conn, CS_COMMAND *eed)
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     self->is_eed = 1;
     self->cmd = eed;
     self->conn = conn;
@@ -922,6 +924,7 @@ PyObject *cmd_eed(CS_CONNECTIONObj *conn, CS_COMMAND *eed)
 
 static void CS_COMMAND_dealloc(CS_COMMANDObj *self)
 {
+    SY_LEAK_UNREG(self);
     if (!self->is_eed && self->cmd) {
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */

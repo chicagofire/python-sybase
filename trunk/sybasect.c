@@ -24,6 +24,52 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
+#ifdef FIND_LEAKS
+typedef struct LeakReg {
+    PyObject *obj;
+    struct LeakReg *next;
+} LeakReg;
+
+static LeakReg *all_objs;
+static int num_objs;
+
+void leak_reg(PyObject *obj)
+{
+    LeakReg *reg = malloc(sizeof(*reg));
+    reg->obj = obj;
+    reg->next = all_objs;
+    all_objs = reg;
+    num_objs++;
+}
+
+void leak_unreg(PyObject *obj)
+{
+    LeakReg *reg, *prev;
+
+    for (reg = all_objs, prev = NULL; reg; prev = reg, reg = reg->next)
+	if (reg->obj == obj) {
+	    if (prev == NULL)
+		all_objs = reg->next;
+	    else
+		prev->next = reg->next;
+	    free(reg);
+	    num_objs--;
+	    return;
+	}
+    fprintf(stderr, "%s not registered!\n", obj->ob_type->tp_name);
+}
+
+static PyObject *report_leaks(PyObject *module, PyObject *args)
+{
+    LeakReg *reg;
+
+    for (reg = all_objs; reg; reg = reg->next)
+	fprintf(stderr, "%s\n", reg->obj->ob_type->tp_name);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+#endif
+
 int first_tuple_int(PyObject *args, int *int_arg)
 {
     PyObject *obj;
@@ -244,6 +290,9 @@ static PyObject *sybasect_sizeof_type(PyObject *module, PyObject *args)
 /* List of methods defined in the module */
 
 static struct PyMethodDef sybasect_methods[] = {
+#ifdef FIND_LEAKS
+    { "leaks", (PyCFunction)report_leaks, METH_VARARGS, "" },
+#endif
     { "cs_ctx_alloc", (PyCFunction)sybasect_cs_ctx_alloc, METH_VARARGS, sybasect_cs_ctx_alloc__doc__ },
     { "cs_ctx_global", (PyCFunction)sybasect_cs_ctx_global, METH_VARARGS, sybasect_cs_ctx_global__doc__ },
     { "DataBuf", (PyCFunction)sybasect_DataBuf, METH_VARARGS, sybasect_DataBuf__doc__ },
@@ -969,8 +1018,70 @@ static value_desc sybase_args[] = {
     SYVAL(RESULT, CS_TRUE),
     SYVAL(RESULT, CS_FALSE),
     SYVAL(RESULT, CS_MAX_PREC),
+
+#ifdef CS_CONSTAT_CONNECTED
+    SYVAL(CONSTAT, CS_CONSTAT_CONNECTED),
+#endif
+#ifdef CS_CONSTAT_DEAD
+    SYVAL(CONSTAT, CS_CONSTAT_DEAD),
+#endif
+
+#ifdef CS_CURSTAT_NONE
+    SYVAL(CURSTAT, CS_CURSTAT_NONE),
+#endif
+#ifdef CS_CURSTAT_DECLARED
+    SYVAL(CURSTAT, CS_CURSTAT_DECLARED),
+#endif
+#ifdef CS_CURSTAT_OPEN
+    SYVAL(CURSTAT, CS_CURSTAT_OPEN),
+#endif
+#ifdef CS_CURSTAT_CLOSED
+    SYVAL(CURSTAT, CS_CURSTAT_CLOSED),
+#endif
+#ifdef CS_CURSTAT_RDONLY
+    SYVAL(CURSTAT, CS_CURSTAT_RDONLY),
+#endif
+#ifdef CS_CURSTAT_UPDATABLE
+    SYVAL(CURSTAT, CS_CURSTAT_UPDATABLE),
+#endif
+#ifdef CS_CURSTAT_ROWCOUNT
+    SYVAL(CURSTAT, CS_CURSTAT_ROWCOUNT),
+#endif
+#ifdef CS_CURSTAT_DEALLOC
+    SYVAL(CURSTAT, CS_CURSTAT_DEALLOC),
+#endif
+
     {0,0,0}
 };
+
+char *mask_str(int type, int value)
+{
+    value_desc *desc;
+    static char str[1024];
+    int i;
+
+    i = 0;
+    for (desc = sybase_args; desc->name != NULL; desc++)
+	if (desc->type == type) {
+	    int match = 0;
+
+	    if (value == 0) {
+		if (desc->value == 0)
+		    match = 1;
+	    } else if ((value & desc->value) != 0)
+		match = 1;
+	    if (match) {
+		if (i > 0)
+		    str[i++] = '+';
+		strcpy(str + i, desc->name);
+		i += strlen(str);
+	    }
+	}
+    if (i == 0)
+	str[i++] = '0';
+    str[i] = '\0';
+    return str;
+}
 
 char *value_str(int type, int value)
 {

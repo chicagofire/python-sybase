@@ -38,12 +38,17 @@ PERFORMANCE OF THIS SOFTWARE.
 #define SY_END_THREADS }
 #endif
 
-/* 
-Need to turn this on for sybase v>12. Don't know to detected this
-from the sybase includes.
+#undef FIND_LEAKS
 
-#define HAS_ARRAY_INSERT
-*/
+#ifdef FIND_LEAKS
+void leak_reg(PyObject *obj);
+void leak_unreg(PyObject *obj);
+#define SY_LEAK_REG(o) leak_reg((PyObject*)o)
+#define SY_LEAK_UNREG(o) leak_unreg((PyObject*)o)
+#else
+#define SY_LEAK_REG(o)
+#define SY_LEAK_UNREG(o)
+#endif
 
 enum { OPTION_BOOL, OPTION_INT, OPTION_STRING, OPTION_CMD,
        OPTION_NUMERIC, OPTION_UNKNOWN };
@@ -53,6 +58,7 @@ typedef struct CS_CONTEXTObj {
     CS_CONTEXT *ctx;
     PyObject *servermsg_cb;
     PyObject *clientmsg_cb;
+    int is_global;
     int debug;
     struct CS_CONTEXTObj *next;
 } CS_CONTEXTObj;
@@ -191,9 +197,10 @@ int first_tuple_int(PyObject *args, int *int_arg);
 enum { CSVER, ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT,
        BULK, BULKDIR, BULKPROPS, DYNAMIC, PROPS, DIRSERV, SECURITY, NETIO,
        OPTION, DATEDAY, DATEFMT, DATAFMT, LEVEL, TYPE, STATUS, STATUSFMT,
-       CBTYPE, };
+       CBTYPE, CONSTAT, CURSTAT, };
 
 char *value_str(int type, int value);
+char *mask_str(int type, int value);
 
 #define NUMERIC_LEN (CS_MAX_PREC + 1)
 #define MONEY_LEN   NUMERIC_LEN

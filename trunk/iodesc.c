@@ -35,6 +35,8 @@ PyObject *iodesc_alloc(CS_IODESC *iodesc)
     self = PyObject_NEW(CS_IODESCObj, &CS_IODESCType);
     if (self == NULL)
 	return NULL;
+
+    SY_LEAK_REG(self);
     self->iodesc = *iodesc;
     return (PyObject*)self;
 }
@@ -55,12 +57,14 @@ PyObject *iodesc_new(PyObject *module, PyObject *args)
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     memset(&self->iodesc, 0, sizeof(self->iodesc));
     return (PyObject*)self;
 }
 
 static void CS_IODESC_dealloc(CS_IODESCObj *self)
 {
+    SY_LEAK_UNREG(self);
     PyMem_DEL(self);
 }
 

@@ -60,6 +60,7 @@ PyObject *databuf_alloc(PyObject *obj)
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     self->buff = NULL;
     self->copied = NULL;
     self->indicator = NULL;
@@ -106,6 +107,8 @@ PyObject *databuf_alloc(PyObject *obj)
 
 static void DataBuf_dealloc(DataBufObj *self)
 {
+    SY_LEAK_UNREG(self);
+
     if (self->buff != NULL)
 	free(self->buff);
     if (self->copied != NULL)

@@ -32,12 +32,14 @@ PyObject *clientmsg_alloc()
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     memset(&self->msg, 0, sizeof(self->msg));
     return (PyObject*)self;
 }
 
 static void CS_CLIENTMSG_dealloc(CS_CLIENTMSGObj *self)
 {
+    SY_LEAK_UNREG(self);
     PyMem_DEL(self);
 }
 
@@ -120,12 +122,14 @@ PyObject *servermsg_alloc()
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     memset(&self->msg, 0, sizeof(self->msg));
     return (PyObject*)self;
 }
 
 static void CS_SERVERMSG_dealloc(CS_SERVERMSGObj *self)
 {
+    SY_LEAK_UNREG(self);
     PyMem_DEL(self);
 }
 
