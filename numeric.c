@@ -22,9 +22,9 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
-#define max(a,b) ((a) > (b) ? (a) : (b))
+#define maxv(a,b) ((a) > (b) ? (a) : (b))
 
-staticforward PyTypeObject NumericType;
+PyTypeObject NumericType;
 
 static struct PyMethodDef Numeric_methods[] = {
     { NULL }			/* sentinel */
@@ -77,7 +77,6 @@ NumericObj *numeric_from_int(long num, int precision, int scale)
     CS_DATAFMT numeric_fmt;
     CS_NUMERIC numeric_value;
     CS_INT numeric_len;
-    CS_RETCODE conv_result;
 
     int_datafmt(&int_fmt);
     if (precision < 0)
@@ -299,10 +298,10 @@ static PyObject * Numeric_add(NumericObj *v, NumericObj *w)
 {
     CS_NUMERIC result;
 
-    result.precision = max(v->num.precision, w->num.precision) + 1;
+    result.precision = maxv(v->num.precision, w->num.precision) + 1;
     if (result.precision > CS_MAX_PREC)
 	result.precision = CS_MAX_PREC;
-    result.scale = max(v->num.scale, w->num.scale);
+    result.scale = maxv(v->num.scale, w->num.scale);
     if (cs_calc(global_ctx(), CS_ADD, CS_NUMERIC_TYPE,
 		&v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric add failed");
@@ -315,10 +314,10 @@ static PyObject *Numeric_sub(NumericObj *v, NumericObj *w)
 {
     CS_NUMERIC result;
 
-    result.precision = max(v->num.precision, w->num.precision) + 1;
+    result.precision = maxv(v->num.precision, w->num.precision) + 1;
     if (result.precision > CS_MAX_PREC)
 	result.precision = CS_MAX_PREC;
-    result.scale = max(v->num.scale, w->num.scale);
+    result.scale = maxv(v->num.scale, w->num.scale);
     if (cs_calc(global_ctx(), CS_SUB, CS_NUMERIC_TYPE,
 		&v->num, &w->num, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric sub failed");
@@ -522,8 +521,8 @@ static int Numeric_setattr(NumericObj *self, char *name, PyObject *v)
 static char NumericType__doc__[] = 
 "";
 
-static PyTypeObject NumericType = {
-    PyObject_HEAD_INIT(&PyType_Type)
+PyTypeObject NumericType = {
+    PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
     "Numeric",			/*tp_name*/
     sizeof(NumericObj),		/*tp_basicsize*/

@@ -95,7 +95,7 @@ static PyObject *CS_BLKDESC_blk_done(CS_BLKDESCObj *self, PyObject *args)
     Py_END_ALLOW_THREADS;
     if (self->debug)
 	fprintf(stderr, "blk_done(%s) -> %s, %d\n",
-		value_str(BULK, type), value_str(STATUS, status), outrow);
+		value_str(BULK, type), value_str(STATUS, status), (int)outrow);
 
     return Py_BuildValue("ii", status, outrow);
 }
@@ -109,7 +109,7 @@ static PyObject *CS_BLKDESC_blk_init(CS_BLKDESCObj *self, PyObject *args)
     char *table;
     CS_RETCODE status;
 
-    if (!PyArg_ParseTuple(args, "is", &direction, table))
+    if (!PyArg_ParseTuple(args, "is", &direction, &table))
 	return NULL;
 
     Py_BEGIN_ALLOW_THREADS;
@@ -130,7 +130,11 @@ static int property_type(int property)
     case BLK_IDENTITY:
     case BLK_NOAPI_CHK:
     case BLK_SENSITIVITY_LBL:
+
+#ifdef HAS_ARRAY_INSERT
     case ARRAY_INSERT:
+#endif
+
 	return OPTION_BOOL;
     case BLK_SLICENUM:
 	return OPTION_INT;
@@ -235,6 +239,10 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	case OPTION_UNKNOWN:
 	    PyErr_SetString(PyExc_TypeError, "unknown property value");
 	    return NULL;
+
+	default:
+	    PyErr_SetString(PyExc_TypeError, "unhandled property value");
+	    return NULL;
 	}
 	break;
 
@@ -292,7 +300,7 @@ static PyObject *CS_BLKDESC_blk_rowxfer_mult(CS_BLKDESCObj *self, PyObject *args
     Py_END_ALLOW_THREADS;
     if (self->debug)
 	fprintf(stderr, "blk_rowxfer_mult(%d) -> %s, %d\n",
-		orig_count, value_str(STATUS, status), row_count);
+		orig_count, value_str(STATUS, status), (int)row_count);
 
     return Py_BuildValue("ii", status, row_count);
 }
@@ -333,7 +341,7 @@ static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 	Py_END_ALLOW_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "blk_textxfer() -> %s, %d\n",
-		    value_str(STATUS, status), outlen);
+		    value_str(STATUS, status), (int)outlen);
 
 	return Py_BuildValue("is#", status, buff, outlen);
     }
@@ -403,7 +411,7 @@ static char CS_BLKDESCType__doc__[] =
 "Wrap the Sybase CS_BLKDESC structure and associated functionality.";
 
 PyTypeObject CS_BLKDESCType = {
-    PyObject_HEAD_INIT(&PyType_Type)
+    PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
     "CS_BLKDESC",		/*tp_name*/
     sizeof(CS_BLKDESCObj),	/*tp_basicsize*/

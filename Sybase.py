@@ -1,6 +1,6 @@
 from sybasect import *
 
-__version__ = '0.23'
+__version__ = '0.24'
 
 # _sybase is a thin wrapper on top of the Sybase CT library.  The
 # objects in _sybase perform some CT functions automatically:

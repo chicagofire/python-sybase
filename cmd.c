@@ -230,7 +230,7 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 	Py_END_ALLOW_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_res_info(CS_BROWSE_INFO) -> %s, %d\n",
-		    value_str(STATUS, status), bool_val);
+		    value_str(STATUS, status), (int)bool_val);
 	return Py_BuildValue("ii", status, bool_val);
 
     case CS_MSGTYPE:
@@ -271,7 +271,7 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 	Py_END_ALLOW_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_res_info(%s) -> %s, %d\n",
-		    type_str, value_str(STATUS, status), int_val);
+		    type_str, value_str(STATUS, status), (int)int_val);
 	return Py_BuildValue("ii", status, int_val);
 
     case CS_ORDERBY_COLS:
@@ -281,7 +281,7 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 	Py_END_ALLOW_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_res_info(CS_NUMORDERCOLS) -> %s, %d\n",
-		    value_str(STATUS, status), int_val);
+		    value_str(STATUS, status), (int)int_val);
 	if (status != CS_SUCCEED)
 	    return Py_BuildValue("iO", status, Py_None);
 
@@ -304,7 +304,7 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 	    for (i = 0; i < int_val; i++) {
 		if (i > 0)
 		    fprintf(stderr, ",");
-		fprintf(stderr, "%d", col_nums[i]);
+		fprintf(stderr, "%d", (int)col_nums[i]);
 	    }
 	    fprintf(stderr, "]\n");
 	}
@@ -337,7 +337,7 @@ static PyObject *CS_COMMAND_ct_describe(CS_COMMANDObj *self, PyObject *args)
     Py_END_ALLOW_THREADS;
     if (self->debug)
 	fprintf(stderr, "ct_describe(%d) -> %s\n",
-		num, value_str(STATUS, status));
+		(int)num, value_str(STATUS, status));
 
     if (status != CS_SUCCEED)
 	return Py_BuildValue("iO", status, Py_None);
@@ -506,7 +506,7 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
 		     buffer->buff, buffer->copied, buffer->indicator);
     Py_END_ALLOW_THREADS;
     if (self->debug)
-	fprintf(stderr, "ct_bind(%d) -> %s\n", item, value_str(STATUS, status));
+	fprintf(stderr, "ct_bind(%d) -> %s\n", (int)item, value_str(STATUS, status));
     return Py_BuildValue("iN", status, buffer);
 }
 
@@ -526,7 +526,7 @@ static PyObject *CS_COMMAND_ct_fetch(CS_COMMANDObj *self, PyObject *args)
     Py_END_ALLOW_THREADS;
     if (self->debug)
 	fprintf(stderr, "ct_fetch() -> %s, %d\n",
-		value_str(STATUS, status), rows_read);
+		value_str(STATUS, status), (int)rows_read);
 
     return Py_BuildValue("ii", status, rows_read);
 }
@@ -536,7 +536,6 @@ static char CS_COMMAND_ct_param__doc__[] =
 
 static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 {
-    CS_DATAFMTObj *datafmt;
     BufferObj *buffer;
     CS_RETCODE status;
 
@@ -557,7 +556,6 @@ static char CS_COMMAND_ct_setparam__doc__[] =
 
 static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
 {
-    CS_DATAFMTObj *datafmt;
     BufferObj *buffer;
     CS_RETCODE status;
 
@@ -622,7 +620,7 @@ static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
 	Py_END_ALLOW_THREADS;
 	if (self->debug)
 	    fprintf(stderr, "ct_command(CS_MSG_CMD, %d) -> %s\n",
-		    num, value_str(STATUS, status));
+		    (int)num, value_str(STATUS, status));
 	return PyInt_FromLong(status);
 
     case CS_PACKAGE_CMD:
@@ -766,7 +764,7 @@ static char CS_COMMANDType__doc__[] =
 "";
 
 PyTypeObject CS_COMMANDType = {
-    PyObject_HEAD_INIT(&PyType_Type)
+    PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
     "CS_COMMAND",		/*tp_name*/
     sizeof(CS_COMMANDObj),	/*tp_basicsize*/
