@@ -26,7 +26,7 @@ html:	$(DOCFILES) version
 	$(MKHOWTO) --html sybase.tex
 	mkdir -p sybase/icons
 	cp $(PYTHON_SRC)/Doc/html/icons/* sybase/icons/
-	rm sybase/sybase.how
+	-rm sybase/sybase.how
 # the iconserver option of mkhowto is broken since it writes
 # it to the end if the init_file where they aren't useful anymore,
 # so we work around it:
@@ -34,8 +34,8 @@ html:	$(DOCFILES) version
 	  cat $$f | sed s/\.\.\\/icons/icons/g > $${f}2; \
 	  mv $${f}2 $$f; \
 	done
-	rm sybase/sybase2
-	rm sybase/icons/icons2
+	-rm sybase/sybase2
+	-rm sybase/icons/icons2
 
 world:	booklet pdf html
 
