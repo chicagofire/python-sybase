@@ -784,7 +784,7 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 
 	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_param(self->cmd, &datafmt->fmt,
-			  NULL, CS_UNUSED, CS_UNUSED);
+			  NULL, CS_UNUSED, (CS_SMALLINT)CS_UNUSED);
 	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug) {

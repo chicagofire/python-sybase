@@ -86,6 +86,7 @@ typedef unsigned char CS_TEXT;
 typedef unsigned char CS_IMAGE;
 typedef CS_NUMERIC CS_DECIMAL;
 #endif
+#define CS_INTERNAL
 
 /* Emulate Sybase inline error handling
  */
