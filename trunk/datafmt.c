@@ -150,6 +150,16 @@ static void CS_DATAFMT_dealloc(CS_DATAFMTObj *self)
     PyMem_DEL(self);
 }
 
+void datafmt_debug(CS_DATAFMT *fmt)
+{
+    debug_msg("[name:\"%.*s\" type:%s status:%s format:%s count:%d maxlength:%d]",
+	      fmt->namelen, fmt->name,
+	      value_str(VAL_TYPE, fmt->datatype),
+	      value_str(VAL_STATUSFMT, fmt->status),
+	      value_str(VAL_DATAFMT, fmt->format),
+	      fmt->count, fmt->maxlength);
+}
+
 /* Code to access structure members by accessing attributes */
 
 #define OFF(x) offsetof(CS_DATAFMTObj, x)
@@ -196,12 +206,13 @@ static int CS_DATAFMT_setattr(CS_DATAFMTObj *self, char *name, PyObject *v)
 	    return -1;
 	}
 	size = PyString_Size(v);
-	if (size > sizeof(self->fmt.name)) {
+	if (size > sizeof(self->fmt.name) - 1) {
 	    PyErr_SetString(PyExc_TypeError, "name too long");
 	    return -1;
 	}
 	strncpy(self->fmt.name, PyString_AsString(v), sizeof(self->fmt.name));
 	self->fmt.namelen = size;
+	self->fmt.name[size] = '\0';
 	return 0;
     }
     return PyMember_Set((char *)self, CS_DATAFMT_memberlist, name, v);
