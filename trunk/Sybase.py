@@ -130,43 +130,43 @@ class _Cmd:
     def ct_command(self, *args):
         cmd = self._cmd
         if apply(cmd.ct_command, args) != CS_SUCCEED:
-            raise InternalError(_build_ct_except(cmd.con, 'ct_command'))
+            raise InternalError(_build_ct_except(cmd.conn, 'ct_command'))
 
     def ct_dynamic(self, *args):
         cmd = self._cmd
         if apply(cmd.ct_dynamic, args) != CS_SUCCEED:
-            raise InternalError(_build_ct_except(cmd.con, 'ct_dynamic'))
+            raise InternalError(_build_ct_except(cmd.conn, 'ct_dynamic'))
 
     def ct_send(self):
         cmd = self._cmd
         if cmd.ct_send() != CS_SUCCEED:
-            raise InternalError(_build_ct_except(cmd.con, 'ct_send'))
+            raise InternalError(_build_ct_except(cmd.conn, 'ct_send'))
 
     def ct_res_info(self, option):
         cmd = self._cmd
         status, result = cmd.ct_res_info(option)
         if status != CS_SUCCEED:
-            raise InternalError(_build_ct_except(cmd.con, 'ct_res_info'))
+            raise InternalError(_build_ct_except(cmd.conn, 'ct_res_info'))
         return result
 
     def ct_describe(self, col_num):
         cmd = self._cmd
         status, fmt = cmd.ct_describe(col_num)
         if status != CS_SUCCEED:
-            raise InternalError(_build_ct_except(cmd.con, 'ct_describe'))
+            raise InternalError(_build_ct_except(cmd.conn, 'ct_describe'))
         return fmt
 
     def ct_bind(self, col_num, fmt):
         cmd = self._cmd
         status, buf = cmd.ct_bind(col_num, fmt)
         if status != CS_SUCCEED:
-            raise InternalError(_build_ct_except(cmd.con, 'ct_bind'))
+            raise InternalError(_build_ct_except(cmd.conn, 'ct_bind'))
         return buf
 
     def ct_param(self, buf):
         cmd = self._cmd
         if cmd.ct_param(buf) != CS_SUCCEED:
-            raise ProgrammingError(_build_ct_except(cmd.con, 'ct_param'))
+            raise ProgrammingError(_build_ct_except(cmd.conn, 'ct_param'))
 
     def ct_results(self):
         return self._cmd.ct_results()
@@ -174,7 +174,7 @@ class _Cmd:
     def ct_cancel(self, arg):
         cmd = self._cmd
         if cmd.ct_cancel(arg) != CS_SUCCEED:
-            raise ProgrammingError(_build_ct_except(cmd.con, 'ct_cancel'))
+            raise ProgrammingError(_build_ct_except(cmd.conn, 'ct_cancel'))
 
     def row_bind(self, count = 1):
         '''Bind buffers for count rows of column data.
@@ -203,7 +203,7 @@ class _Cmd:
             return None
         elif status in (CS_ROW_FAIL, CS_FAIL, CS_CANCELED,
                         CS_PENDING, CS_BUSY):
-            err = _build_ct_except(cmd.con, 'ct_fetch')
+            err = _build_ct_except(cmd.conn, 'ct_fetch')
 	    self.abort_quietly()
             raise InternalError(err)
         if bufs[0].count > 1:
