@@ -505,7 +505,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 }
 
 static char CS_CONTEXT_ct_con_alloc__doc__[] = 
-"";
+"ct_con_alloc() -> status, conn";
 
 static PyObject *CS_CONTEXT_ct_con_alloc(CS_CONTEXTObj *self, PyObject *args)
 {
