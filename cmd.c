@@ -37,6 +37,11 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "iO!", &item, &CS_DATAFMTType, &datafmt))
 	return NULL;
 
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
+
     buffer = (BufferObj *)buffer_alloc((PyObject*)datafmt);
     if (buffer == NULL)
 	return NULL;
@@ -61,12 +66,44 @@ static PyObject *CS_COMMAND_ct_cancel(CS_COMMANDObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i", &type))
 	return NULL;
 
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
+
     SY_BEGIN_THREADS;
     status = ct_cancel(NULL, self->cmd, type);
     SY_END_THREADS;
     if (self->debug)
 	fprintf(stderr, "ct_cancel(%s) -> %s\n",
 		value_str(CANCEL, type), value_str(STATUS, status));
+
+    return PyInt_FromLong(status);
+}
+
+static char CS_COMMAND_ct_cmd_drop__doc__[] = 
+"ct_cmd_drop() -> status";
+
+static PyObject *CS_COMMAND_ct_cmd_drop(CS_COMMANDObj *self, PyObject *args)
+{
+    CS_RETCODE status;
+
+    if (!PyArg_ParseTuple(args, ""))
+	return NULL;
+
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
+
+    SY_BEGIN_THREADS;
+    status = ct_cmd_drop(self->cmd);
+    SY_END_THREADS;
+    if (self->debug)
+	fprintf(stderr, "ct_cmd_drop() -> %s\n", value_str(STATUS, status));
+
+    if (status == CS_SUCCEED)
+	self->cmd = NULL;
 
     return PyInt_FromLong(status);
 }
@@ -89,6 +126,11 @@ static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
 
     if (!first_tuple_int(args, &type))
 	return NULL;
+
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
 
     switch (type) {
     case CS_LANG_CMD:
@@ -175,6 +217,11 @@ static PyObject *CS_COMMAND_ct_cursor(CS_COMMANDObj *self, PyObject *args)
 
     if (!first_tuple_int(args, &type))
 	return NULL;
+
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
 
     switch (type) {
     case CS_CURSOR_DECLARE:
@@ -284,6 +331,11 @@ static PyObject *CS_COMMAND_ct_data_info(CS_COMMANDObj *self, PyObject *args)
     if (!first_tuple_int(args, &action))
 	return NULL;
 
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
+
     switch (action) {
     case CS_SET:
 	/* ct_data_info(CS_SET, int, iodesc) -> status */
@@ -331,6 +383,11 @@ static PyObject *CS_COMMAND_ct_describe(CS_COMMANDObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i", &num))
 	return NULL;
 
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
+
     memset(&datafmt, 0, sizeof(datafmt));
     SY_BEGIN_THREADS;
     status = ct_describe(self->cmd, num, &datafmt);
@@ -367,6 +424,11 @@ static PyObject *CS_COMMAND_ct_dynamic(CS_COMMANDObj *self, PyObject *args)
 
     if (!first_tuple_int(args, &type))
 	return NULL;
+
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
 
     switch (type) {
     case CS_CURSOR_DECLARE:
@@ -446,6 +508,11 @@ static PyObject *CS_COMMAND_ct_fetch(CS_COMMANDObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
 
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
+
     SY_BEGIN_THREADS;
     status = ct_fetch(self->cmd, CS_UNUSED, CS_UNUSED, CS_UNUSED, &rows_read);
     SY_END_THREADS;
@@ -467,6 +534,11 @@ static PyObject *CS_COMMAND_ct_get_data(CS_COMMANDObj *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "iO!", &num, &BufferType, &buffer))
 	return NULL;
+
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
 
     SY_BEGIN_THREADS;
     status = ct_get_data(self->cmd, (CS_INT)num,
@@ -491,6 +563,11 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "O!", &BufferType, &buffer))
 	return NULL;
+
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
 
     SY_BEGIN_THREADS;
     status = ct_param(self->cmd, &buffer->fmt,
@@ -551,6 +628,11 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "i", &type))
 	return NULL;
+
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
 
     switch (type) {
     case CS_BROWSE_INFO:
@@ -659,6 +741,11 @@ static PyObject *CS_COMMAND_ct_results(CS_COMMANDObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
 
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
+
     SY_BEGIN_THREADS;
     status = ct_results(self->cmd, &result);
     SY_END_THREADS;
@@ -678,6 +765,11 @@ static PyObject *CS_COMMAND_ct_send(CS_COMMANDObj *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
+
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
 
     SY_BEGIN_THREADS;
     status = ct_send(self->cmd);
@@ -699,6 +791,11 @@ static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O!", &BufferType, &buffer))
 	return NULL;
 
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
+
     SY_BEGIN_THREADS;
     status = ct_send_data(self->cmd, buffer->buff, buffer->copied[0]);
     SY_END_THREADS;
@@ -719,6 +816,11 @@ static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O!", &BufferType, &buffer))
 	return NULL;
 
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
+
     SY_BEGIN_THREADS;
     status = ct_param(self->cmd, &buffer->fmt,
 		      buffer->buff, buffer->copied[0], buffer->indicator[0]);
@@ -732,6 +834,7 @@ static struct PyMethodDef CS_COMMAND_methods[] = {
     { "ct_bind", (PyCFunction)CS_COMMAND_ct_bind, METH_VARARGS, CS_COMMAND_ct_bind__doc__ },
     { "ct_cancel", (PyCFunction)CS_COMMAND_ct_cancel, METH_VARARGS, CS_COMMAND_ct_cancel__doc__ },
     { "ct_command", (PyCFunction)CS_COMMAND_ct_command, METH_VARARGS, CS_COMMAND_ct_command__doc__ },
+    { "ct_cmd_drop", (PyCFunction)CS_COMMAND_ct_cmd_drop, METH_VARARGS, CS_COMMAND_ct_cmd_drop__doc__ },
     { "ct_cursor", (PyCFunction)CS_COMMAND_ct_cursor, METH_VARARGS, CS_COMMAND_ct_cursor__doc__ },
     { "ct_data_info", (PyCFunction)CS_COMMAND_ct_data_info, METH_VARARGS, CS_COMMAND_ct_data_info__doc__ },
     { "ct_describe", (PyCFunction)CS_COMMAND_ct_describe, METH_VARARGS, CS_COMMAND_ct_describe__doc__ },

@@ -208,6 +208,11 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
     if (!first_tuple_int(args, &action))
 	return NULL;
 
+    if (self->ctx == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
+	return NULL;
+    }
+
     switch (action) {
     case CS_SET:
 	/* ct_callback(CS_SET, type, func) -> status */
@@ -365,6 +370,11 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
     if (!first_tuple_int(args, &action))
 	return NULL;
 
+    if (self->ctx == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
+	return NULL;
+    }
+
     switch (action) {
     case CS_SET:
 	/* ct_config(CS_SET, property, value) -> status */
@@ -449,7 +459,60 @@ static PyObject *CS_CONTEXT_ct_con_alloc(CS_CONTEXTObj *self, PyObject *args)
 {
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
+
+    if (self->ctx == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
+	return NULL;
+    }
+
     return conn_alloc(self);
+}
+
+static char CS_CONTEXT_ct_init__doc__[] = 
+"ct_init() -> status";
+
+static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
+{
+    int version;
+    CS_RETCODE status;
+
+    if (self->ctx == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
+	return NULL;
+    }
+
+    version = CS_VERSION_100;
+    if (!PyArg_ParseTuple(args, "|i", &version))
+	return NULL;
+
+    SY_BEGIN_THREADS;
+    status = ct_init(self->ctx, version);
+    SY_END_THREADS;
+
+    return PyInt_FromLong(status);
+}
+
+static char CS_CONTEXT_ct_exit__doc__[] = 
+"ct_exit(|option) -> status";
+
+static PyObject *CS_CONTEXT_ct_exit(CS_CONTEXTObj *self, PyObject *args)
+{
+    int option = CS_UNUSED;
+    CS_RETCODE status;
+
+    if (!PyArg_ParseTuple(args, "|i", &option))
+	return NULL;
+
+    if (self->ctx == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
+	return NULL;
+    }
+
+    SY_BEGIN_THREADS;
+    status = ct_exit(self->ctx, option);
+    SY_END_THREADS;
+
+    return PyInt_FromLong(status);
 }
 
 static char CS_CONTEXT_cs_diag__doc__[] = 
@@ -468,6 +531,11 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 
     if (!first_tuple_int(args, &operation))
 	return NULL;
+
+    if (self->ctx == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
+	return NULL;
+    }
 
     switch (operation) {
     case CS_INIT:
@@ -536,21 +604,27 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
     }
 }
 
-static char CS_CONTEXT_ct_init__doc__[] = 
-"ct_init() -> status";
+static char CS_CONTEXT_cs_ctx_drop__doc__[] = 
+"cs_ctx_drop() -> status";
 
-static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
+static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
 {
-    int version;
     CS_RETCODE status;
 
-    version = CS_VERSION_100;
-    if (!PyArg_ParseTuple(args, "|i", &version))
+    if (!PyArg_ParseTuple(args, ""))
 	return NULL;
 
+    if (self->ctx == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
+	return NULL;
+    }
+
     SY_BEGIN_THREADS;
-    status = ct_init(self->ctx, version);
+    status = cs_ctx_drop(self->ctx);
     SY_END_THREADS;
+
+    if (status == CS_SUCCEED)
+	self->ctx = NULL;
 
     return PyInt_FromLong(status);
 }
@@ -562,7 +636,9 @@ static struct PyMethodDef CS_CONTEXT_methods[] = {
 #ifndef WANT_THREADS
     { "ct_callback", (PyCFunction)CS_CONTEXT_ct_callback, METH_VARARGS, CS_CONTEXT_ct_callback__doc__ },
 #endif
+    { "cs_ctx_drop", (PyCFunction)CS_CONTEXT_cs_ctx_drop, METH_VARARGS, CS_CONTEXT_cs_ctx_drop__doc__ },
     { "cs_diag", (PyCFunction)CS_CONTEXT_cs_diag, METH_VARARGS, CS_CONTEXT_cs_diag__doc__ },
+    { "ct_exit", (PyCFunction)CS_CONTEXT_ct_exit, METH_VARARGS, CS_CONTEXT_ct_exit__doc__ },
     { NULL }			/* sentinel */
 };
 
