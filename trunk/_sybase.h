@@ -100,6 +100,15 @@ char *value_str(int type, int value);
 int Numeric_Check(PyObject *obj);
 int CS_DATAFMT_Check(PyObject *obj);
 
+#define NUMERIC_LEN (CS_MAX_PREC + 1)
+
+void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale);
+void char_datafmt(CS_DATAFMT *fmt);
+void int_datafmt(CS_DATAFMT *fmt);
+void float_datafmt(CS_DATAFMT *fmt);
+
+CS_CONTEXT *global_ctx();
+
 PyObject *ctx_alloc();
 PyObject *ctx_global();
 PyObject *con_alloc(CS_CONTEXTObj *ctx);

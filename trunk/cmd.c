@@ -321,56 +321,6 @@ static PyObject *CS_COMMAND_ct_describe(CS_COMMANDObj *self, PyObject *args)
     if (status != CS_SUCCEED)
 	return Py_BuildValue("iO", status, Py_None);
 
-    switch (datafmt.datatype) {
-    case CS_LONGCHAR_TYPE:
-    case CS_VARCHAR_TYPE:
-    case CS_TEXT_TYPE:
-	datafmt.datatype = CS_CHAR_TYPE;
-    case CS_CHAR_TYPE:
-	if (datafmt.maxlength > 64 * 1024)
-	    datafmt.maxlength = 64 * 1024;
-	break;
-
-    case CS_IMAGE_TYPE:
-    case CS_LONGBINARY_TYPE:
-    case CS_VARBINARY_TYPE:
-	datafmt.datatype = CS_BINARY_TYPE;
-    case CS_BINARY_TYPE:
-	if (datafmt.maxlength > 64 * 1024)
-	    datafmt.maxlength = 64 * 1024;
-	break;
-
-    case CS_BIT_TYPE:
-    case CS_TINYINT_TYPE:
-    case CS_SMALLINT_TYPE:
-	datafmt.datatype = CS_INT_TYPE;
-	datafmt.maxlength = 4;
-    case CS_INT_TYPE:
-	break;
-
-    case CS_DECIMAL_TYPE:
-	datafmt.datatype = CS_NUMERIC_TYPE;
-    case CS_NUMERIC_TYPE:
-	break;
-
-    case CS_MONEY_TYPE:
-    case CS_MONEY4_TYPE:
-    case CS_REAL_TYPE:
-	datafmt.datatype = CS_FLOAT_TYPE;
-	datafmt.maxlength = 8;
-    case CS_FLOAT_TYPE:
-	break;
-
-    case CS_DATETIME4_TYPE:
-	datafmt.datatype = CS_DATETIME_TYPE;
-	datafmt.maxlength = 8;
-    case CS_DATETIME_TYPE:
-	break;
-
-    default:
-	break;
-    }
-
     fmt = datafmt_alloc(&datafmt, self->strip);
     if (fmt == NULL)
 	return NULL;
