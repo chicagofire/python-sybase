@@ -33,7 +33,8 @@ static PyObject *allocate_buffers(DataBufObj *self)
 {
     int i;
 
-    self->buff = malloc(self->fmt.maxlength * self->fmt.count);
+    /* XXX: when FreeTDS fix their off-by-one error I can remove the +1 */
+    self->buff = malloc(self->fmt.maxlength * self->fmt.count + 1);
     if (self->buff == NULL)
 	return PyErr_NoMemory();
     self->copied = malloc(sizeof(*self->copied) * self->fmt.count);
