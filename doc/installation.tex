@@ -36,10 +36,55 @@ you need to do is type the following command as root:
 python setup.py install
 \end{verbatim}
 
-If you have problems with this step, edit the \texttt{setup.py} file
-to specify where Sybase is installed and the name of the client
-libraries.  Make sure that you contact the package author so that the
-installation process can be made more robust for other people.
+To disable bulkcopy support you should use the following commands:
+
+\begin{verbatim}
+python setup.py build_ext -U WANT_BULKCOPY
+python setup.py install
+\end{verbatim}
+
+The default build does not enable threading in the extension module so
+if you want threading enabled you will have to do this:
+
+\begin{verbatim}
+python setup.py build_ext -D WANT_THREADS
+python setup.py install
+\end{verbatim}
+
+There is some initial work to support FreeTDS.  One of the problems
+with FreeTDS is that it does not support inline error handling.  The
+callback error handling works well if you do not compile for threads
+support, but causes problems when compiled for threading.
+
+The problem occurs when the extension module releases the global
+interpreter lock when calling the Sybase CT library.  A Python
+callback causes the interpreter to be reentered by the callback which
+leads to bad things when the following warning from the Python include
+file \texttt{ceval.h} is violated:
+
+\begin{quote}
+\begin{verbatim}
+  WARNING: NEVER NEST CALLS TO Py_BEGIN_ALLOW_THREADS AND
+  Py_END_ALLOW_THREADS!!!
+\end{verbatim}
+\end{quote}
+
+At the moment the module will compile for FreeTDS (at least it does
+on my machine) and some things do work.  All you have to do is
+compile like this:
+
+\begin{verbatim}
+python setup.py build_ext -D HAVE_FREETDS -U WANT_BULKCOPY
+python setup.py install
+\end{verbatim}
+
+There is no error handling and reporting for FreeTDS yet.
+
+If you have problems with the installation step, edit the
+\texttt{setup.py} file to specify where Sybase is installed and the
+name of the client libraries.  Make sure that you contact the package
+author so that the installation process can be made more robust for
+other people.
 
 \subsection{Testing}
 
