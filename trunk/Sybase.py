@@ -262,7 +262,7 @@ class Cursor:
 
     def __del__(self):
         try:
-            self._dealloc()
+            self.close()
         except:
             pass
 
@@ -329,6 +329,8 @@ class Cursor:
             row = cmd.fetch_rows(self._bufs)
             if row:
                 return row
+            if row is None:
+                self._fetch_rowcount()
             self._state = CUR_END_RESULT
 
     def fetchmany(self, num = -1):
@@ -439,6 +441,20 @@ class Cursor:
             cmd.ct_param(buf)
         cmd.ct_send()
 
+    def _fetch_rowcount(self):
+        con = self._con
+        cmd = self._cmd
+        status, result = cmd.ct_results()
+        if status == CS_END_RESULTS:
+            self._state = CUR_IDLE
+            return
+        elif status != CS_SUCCEED:
+            raise InternalError(_build_ct_except(con, 'ct_results'))
+        elif result in (CS_CMD_DONE, CS_CMD_SUCCEED):
+            self.rowcount = cmd.ct_res_info(CS_ROW_COUNT)
+        else:
+            raise InternalError(_build_ct_except(con, 'ct_results'))
+        
     def _start_results(self):
         con = self._con
         cmd = self._cmd
