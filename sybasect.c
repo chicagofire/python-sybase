@@ -1546,8 +1546,14 @@ void initsybasect(void)
 	goto error;
 #endif
 
+#ifdef HAVE_FREETDS
     if (dict_add_int(d, "__have_freetds__", HAVE_FREETDS) < 0)
 	goto error;
+#else
+    if (dict_add_int(d, "__with_freetds__", 0) < 0)
+	goto error;
+#endif
+
 
     if ((rev = PyString_FromString("0.36pre5")) == NULL)
 	goto error;
