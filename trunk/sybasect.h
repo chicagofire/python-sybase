@@ -28,6 +28,16 @@ PERFORMANCE OF THIS SOFTWARE.
 #include "Python.h"
 #include "structmember.h"
 
+#define WANT_THREADS
+
+#ifdef WANT_THREADS
+#define SY_BEGIN_THREADS Py_BEGIN_ALLOW_THREADS
+#define SY_END_THREADS Py_END_ALLOW_THREADS
+#else
+#define SY_BEGIN_THREADS {
+#define SY_END_THREADS }
+#endif
+
 /* 
 Need to turn this on for sybase v>12. Don't know to detected this
 from the sybase includes.
