@@ -52,7 +52,7 @@ static PyObject *allocate_buffers(DataBufObj *self)
 
 static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v);
 
-PyObject *buffer_alloc(PyObject *obj)
+PyObject *databuf_alloc(PyObject *obj)
 {
     DataBufObj *self;
 
