@@ -33,7 +33,7 @@ static PyObject *CS_BLKDESC_blk_bind(CS_BLKDESCObj *self, PyObject *args)
     BufferObj *buffer;
     CS_RETCODE status;
 
-    if (!PyArg_ParseTuple(args, "iO!", &colnum, BufferType, &buffer))
+    if (!PyArg_ParseTuple(args, "iO!", &colnum, &BufferType, &buffer))
 	return NULL;
 
     SY_BEGIN_THREADS;
@@ -366,7 +366,7 @@ static struct PyMethodDef CS_BLKDESC_methods[] = {
     { NULL }			/* sentinel */
 };
 
-PyObject *bulk_alloc(CS_CONNECTIONObj *conn)
+PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version)
 {
     CS_BLKDESCObj *self;
     CS_RETCODE status;
@@ -382,7 +382,7 @@ PyObject *bulk_alloc(CS_CONNECTIONObj *conn)
     self->debug = conn->debug;
 
     SY_BEGIN_THREADS;
-    status = blk_alloc(conn->conn, BLK_VERSION_100, &blk);
+    status = blk_alloc(conn->conn, version, &blk);
     SY_END_THREADS;
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);

@@ -188,10 +188,12 @@ static char CS_CONNECTION_blk_alloc__doc__[] =
 
 static PyObject *CS_CONNECTION_blk_alloc(CS_CONNECTIONObj *self, PyObject *args)
 {
-    if (!PyArg_ParseTuple(args, ""))
+    int version = BLK_VERSION_100;
+
+    if (!PyArg_ParseTuple(args, "|i", &version))
 	return NULL;
 
-    return bulk_alloc(self);
+    return bulk_alloc(self, version);
 }
 
 static char CS_CONNECTION_ct_close__doc__[] = 
