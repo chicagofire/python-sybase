@@ -172,6 +172,32 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
     }
 }
 
+static char CS_CONNECTION_ct_cancel__doc__[] = 
+"ct_cancel(type) -> status";
+
+static PyObject *CS_CONNECTION_ct_cancel(CS_CONNECTIONObj *self, PyObject *args)
+{
+    int type;
+    CS_RETCODE status;
+
+    if (!PyArg_ParseTuple(args, "i", &type))
+	return NULL;
+
+    if (self->conn == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONNECTION has been dropped");
+	return NULL;
+    }
+
+    SY_BEGIN_THREADS;
+    status = ct_cancel(self->conn, NULL, type);
+    SY_END_THREADS;
+    if (self->debug)
+	fprintf(stderr, "ct_cancel(%s) -> %s\n",
+		value_str(CANCEL, type), value_str(STATUS, status));
+
+    return PyInt_FromLong(status);
+}
+
 static char CS_CONNECTION_ct_connect__doc__[] = 
 "ct_connect(str = None) - > status";
 
@@ -653,6 +679,7 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 
 static struct PyMethodDef CS_CONNECTION_methods[] = {
     { "ct_diag", (PyCFunction)CS_CONNECTION_ct_diag, METH_VARARGS, CS_CONNECTION_ct_diag__doc__ },
+    { "ct_cancel", (PyCFunction)CS_CONNECTION_ct_cancel, METH_VARARGS, CS_CONNECTION_ct_cancel__doc__ },
     { "ct_connect", (PyCFunction)CS_CONNECTION_ct_connect, METH_VARARGS, CS_CONNECTION_ct_connect__doc__ },
     { "ct_cmd_alloc", (PyCFunction)CS_CONNECTION_ct_cmd_alloc, METH_VARARGS, CS_CONNECTION_ct_cmd_alloc__doc__ },
     { "blk_alloc", (PyCFunction)CS_CONNECTION_blk_alloc, METH_VARARGS, CS_CONNECTION_blk_alloc__doc__ },
