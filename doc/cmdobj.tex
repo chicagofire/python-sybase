@@ -1,0 +1,153 @@
+\subsection{CS_COMMAND Objects}
+
+Calling the \method{ct_cmd_alloc()} method of a \class{CS_CONNECTION}
+object will create a \class{CS_COMMAND} object.  When the
+\class{CS_COMMAND} object is deallocated the Sybase
+\function{ct_cmd_drop()} function will be called for the command.
+
+\class{CS_COMMAND} objects have the following interface:
+
+\begin{memberdesc}[CS_COMMAND]{is_eed}
+A read only integer which indicates when the \class{CS_COMMAND} object
+is an extended error data command structure.
+\end{memberdesc}
+
+\begin{memberdesc}[CS_COMMAND]{conn}
+This is a read only reference to the parent \class{CS_CONNECTION}
+object.  This prevents the connection from being dropped while the
+command still exists.
+\end{memberdesc}
+
+\begin{memberdesc}[CS_COMMAND]{strip}
+An integer which controls right whitespace stripping of \code{char}
+columns.  The default value is inherited from the parent connection
+when the command is created.
+\end{memberdesc}
+
+\begin{memberdesc}[CS_COMMAND]{debug}
+An integer which controls printing of debug messages to \code{stderr}.
+The default value is inherited from the parent connection when the
+command is created.
+\end{memberdesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_bind}{num, datafmt}
+Calls the Sybase \function{ct_bind()} function passing the \var{num}
+and \var{datafmt} arguments.  It returns a tuple containing the Sybase
+result code and a \class{DataBuf} object which is used to retrieve data
+from the column identified by \var{num}.
+
+See the description of the \method{ct_describe()} method for an
+example.
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_cancel}{type}
+Calls the Sybase \function{ct_cancel()} function passing a \code{NULL}
+\code{CS_CONNECTION}, the wrapped \code{CS_COMMAND} pointer and the
+integer \var{type} argument and returns the Sybase result code.
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_cmd_drop}{}
+Calls the Sybase \function{ct_cmd_drop()} function.  Returns the
+Sybase result code.
+
+This method will be automatically called when the \class{CS_COMMAND}
+object is deleted.  Applications do not need to call the method.
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_command}{type \optional{, \ldots}}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_cursor}{type \optional{, \ldots}}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_data_info}{actio, num \optional{, iodesc}}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_describe}{num}
+Calls the Sybase \function{ct_describe()} function passing the
+\var{num} argument and a tuple containing the Sybase result code and
+a \class{CS_DATAFMT} object which describes the column identified by
+\var{num}. \code{None} is returned as the \class{CS_DATAFMT} object
+when the result code is not \code{CS_SUCCEED}.
+
+\begin{verbatim}
+def row_bind(cmd, count = 1):
+    status, num_cols = cmd.ct_res_info(CS_NUMDATA)
+    if status != CS_SUCCEED:
+        raise StandardError(build_ct_exception(con, 'ct_res_info'))
+    bufs = []
+    for i in range(num_cols):
+        status, fmt = cmd.ct_describe(i + 1)
+        if status != CS_SUCCEED:
+            raise StandardError(build_ct_exception(con, 'ct_describe'))
+        fmt.count = count
+        status, buf = cmd.ct_bind(i + 1, fmt)
+        if status != CS_SUCCEED:
+            raise StandardError(build_ct_exception(con, 'ct_bind'))
+        bufs.append(buf)
+    return bufs
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_dynamic}{type \optional{, \ldots}}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_fetch}{}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_get_data}{num, buf}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_param}{buffer}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_res_info}{type}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_results}{}
+Calls the Sybase \function{ct_results()} function and returns a tuple
+containing the Sybase result code and the result type returned by the
+Sybase function.
+
+\begin{verbatim}
+if cmd.ct_command(CS_LANG_CMD, 'select * from pubs..titles') != CS_SUCCEED:
+    raise StandardError(build_ct_exception(con, 'ct_command'))
+if cmd.ct_send() != CS_SUCCEED:
+    raise StandardError(build_ct_exception(con, 'ct_send'))
+while 1:
+    status, result = cmd.ct_results()
+    if status == CS_END_RESULTS:
+        break
+    elif status != CS_SUCCEED:
+        raise StandardError(build_ct_exception(con, 'ct_results'))
+    if result in (CS_COMPUTE_RESULT, CS_CURSOR_RESULT,
+                  CS_PARAM_RESULT, CS_ROW_RESULT, CS_STATUS_RESULT):
+        bufs = row_bind(cmd, 16)
+	fetch_logical_result(bufs)
+    elif result not in (CS_CMD_DONE, CS_CMD_SUCCEED):
+        raise StandardError(build_ct_exception(con, 'ct_results'))
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_send}{}
+Calls the Sybase \function{ct_send()} function and returns the Sybase
+result code.
+
+\begin{verbatim}
+status, cmd = con.ct_cmd_alloc()
+if status != CS_SUCCEED:
+    raise StandardError(build_ct_exception(con, 'ct_cmd_alloc'))
+if cmd.ct_command(CS_LANG_CMD, 'select * from pubs..titles') != CS_SUCCEED:
+    raise StandardError(build_ct_exception(con, 'ct_command'))
+if cmd.ct_send() != CS_SUCCEED:
+    raise StandardError(build_ct_exception(con, 'ct_send'))
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_send_data}{string}
+Calls the Sybase \function{ct_send_data()} function and returns the
+Sybase result code.
+\end{methoddesc}
+
+\begin{methoddesc}[CS_COMMAND]{ct_setparam}{buffer}
+\end{methoddesc}

@@ -1,0 +1,336 @@
+\subsection{CS_CONNECTION Objects}
+
+Calling the \method{ct_con_alloc()} method of a \class{CS_CONTEXT}
+object will create a \class{CS_CONNECTION} object.  When the
+\class{CS_CONNECTION} object is deallocated the Sybase
+\function{ct_con_drop()} function will be called for the connection.
+
+\class{CS_CONNECTION} objects have the following interface:
+
+\begin{memberdesc}[CS_CONNECTION]{ctx}
+This is a read only reference to the parent \class{CS_CONTEXT} object.
+This prevents the context from being dropped while the connection
+still exists.
+\end{memberdesc}
+
+\begin{memberdesc}[CS_CONNECTION]{strip}
+An integer which controls right whitespace stripping of \code{char}
+columns.  The default value is zero.
+\end{memberdesc}
+
+\begin{memberdesc}[CS_CONNECTION]{debug}
+An integer which controls printing of debug messages to \code{stderr}.
+The default value is inherited from the \code{CS_CONTEXT} object.
+\end{memberdesc}
+
+\begin{methoddesc}[CS_CONNECTION]{ct_diag}{operation \optional{, \ldots}}
+Manage Sybase error messages for the connection.
+
+When \var{operation} is \code{CS_INIT} a single argument is accepted
+and the Sybase result code is returned.
+
+When \var{operation} is \code{CS_MSGLIMIT} two additional arguments
+are expected; \var{type} and \var{num}.  The Sybase result code is
+returned.
+
+When \var{operation} is \code{CS_CLEAR} an additional \var{type}
+argument is accepted and the Sybase result code is returned.
+
+When \var{operation} is \code{CS_GET} two additional arguments are
+expected; \var{type} and \var{index}.  A tuple is returned which
+contains the Sybase result code and the requested \class{CS_SERVERMSG}
+or \class{CS_CLIENTMSG} message.  \code{None} is returned as the
+message object when the result code is not \code{CS_SUCCEED}.
+
+When \var{operation} is \code{CS_STATUS} an additional \var{type}
+argument is accepted.  A tuple is returned which contains the Sybase
+result code and the number of messages available for retrieval.
+
+When \var{operation} is \code{CS_EED_CMD} two additional arguments are
+expected; \var{type} and \var{index}.  A tuple is returned which
+contains the Sybase result code and a \class{CS_COMMAND} object which
+is used to retrieve extended error data.
+
+\begin{verbatim}
+def get_msgs(con, type):
+    status, num_msgs = conn.ct_diag(CS_STATUS, type)
+    if status != CS_SUCCEED:
+        return []
+    err = []
+    for i in range(num_msgs):
+        status, msg = conn.ct_diag(CS_GET, type, i + 1)
+        if status != CS_SUCCEED:
+            continue
+        dict = {}
+        for attr in dir(msg):
+            dict[attr] = getattr(msg, attr)
+        err.append(dict)
+    return err
+
+def build_ct_exception(con, msg):
+    err = [msg]
+    err.extend(get_msgs(con, CS_SERVERMSG_TYPE))
+    err.extend(get_msgs(con, CS_CLIENTMSG_TYPE))
+    conn.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
+    return err
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONNECTION]{ct_cancel}{type}
+Calls the Sybase \function{ct_cancel()} function passing the wrapped
+\code{CS_CONNECTION} pointer, a \code{NULL} \code{CS_COOMAND}, and the
+integer \var{type} argument and returns the Sybase result code.
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONNECTION]{ct_connect}{\optional{server \code{= None}}}
+Calls the Sybase \function{ct_connect()} function passing the
+\var{server} argument and returns the Sybase result code.
+
+Not passing a \var{server} argument is the same as passing \code{NULL}
+as the server to the Sybase \function{ct_connect()} function.
+
+\begin{verbatim}
+ctx = init_db()
+
+status, conn = ctx.ct_con_alloc()
+if status != CS_SUCCEED:
+    raise CSError(ctx, 'ct_con_alloc')
+if conn.ct_con_props(CS_SET, CS_USERNAME, user_name) != CS_SUCCEED:
+    raise CTError(conn, 'ct_con_props')
+if conn.ct_con_props(CS_SET, CS_PASSWORD, password) != CS_SUCCEED:
+    raise CTError(conn, 'ct_con_props')
+status = conn.ct_connect()
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONNECTION]{ct_cmd_alloc}{}
+Allocates and returns a new \class{CS_COMMAND} object which is used to
+send commands over the connection.
+
+The result is a tuple containing the Sybase result code and a new
+instance of the \class{CS_COMMAND} class. \code{None} is returned as
+the \class{CS_COMMAND} object when the result code is not
+\code{CS_SUCCEED}.
+
+\begin{verbatim}
+ctx = init_db()
+conn = connect_db(ctx, 'SYBASE', 'guest', '')
+
+status, cmd = conn.ct_cmd_alloc()
+if status != CS_SUCCEED:
+    raise CTError(conn, 'ct_cmd_alloc')
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONNECTION]{blk_alloc}{\optional{version \code{= BLK_VERSION_100}}}
+Allocates and returns a new \class{CS_BLKDESC} object which is used to
+perform bulkcopy over the connection.
+
+The result is a tuple containing the Sybase result code and a new
+instance of the \class{CS_BLKDESC} class. \code{None} is returned as
+the \class{CS_BLKDESC} object when the result code is not
+\code{CS_SUCCEED}.
+
+\begin{verbatim}
+ctx = init_db()
+conn = connect_db(ctx, 'SYBASE', 'guest', '')
+status, blk = conn.blk_alloc()
+if status != CS_SUCCEED:
+    raise CTError(conn, 'blk_alloc')
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONNECTION]{ct_close}{\optional{option \code{ = CS_UNUSED}}}
+Calls the Sybase \function{ct_close()} function and returns the Sybase
+result code.
+
+\begin{verbatim}
+status = conn.ct_close(CS_FORCE_CLOSE)
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONNECTION]{ct_con_drop}{}
+Calls the Sybase \function{ct_con_drop()} function.  Returns the
+Sybase result code.
+
+This method will be automatically called when the \class{CS_CONNECTION}
+object is deleted.  Applications do not need to call the method.
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONNECTION]{ct_con_props}{action, property \optional{, value}}
+Sets and retrieves properties of the connection object.
+
+When \var{action} is \code{CS_SET} a compatible \var{value} argument
+must be supplied and the method returns the Sybase result code.
+
+When \var{action} is \code{CS_GET} the method returns a tuple
+containing the Sybase result code and the property value.
+
+When \var{action} is \code{CS_CLEAR} the method returns the Sybase
+result code.
+
+The recognised properties are:
+
+\begin{longtable}{l|l}
+\var{property} & type \\
+\hline
+\code{CS_ANSI_BINDS}           & \code{bool} \\
+\code{CS_ASYNC_NOTIFS}         & \code{bool} \\
+\code{CS_BULK_LOGIN}           & \code{bool} \\
+\code{CS_CHARSETCNV}           & \code{bool} \\
+\code{CS_CONFIG_BY_SERVERNAME} & \code{bool} \\
+\code{CS_DIAG_TIMEOUT}         & \code{bool} \\
+\code{CS_DISABLE_POLL}         & \code{bool} \\
+\code{CS_DS_COPY}              & \code{bool} \\
+\code{CS_DS_EXPANDALIAS}       & \code{bool} \\
+\code{CS_DS_FAILOVER}          & \code{bool} \\
+\code{CS_EXPOSE_FMTS}          & \code{bool} \\
+\code{CS_EXTERNAL_CONFIG}      & \code{bool} \\
+\code{CS_EXTRA_INF}            & \code{bool} \\
+\code{CS_HIDDEN_KEYS}          & \code{bool} \\
+\code{CS_LOGIN_STATUS}         & \code{bool} \\
+\code{CS_NOCHARSETCNV_REQD}    & \code{bool} \\
+\code{CS_SEC_APPDEFINED}       & \code{bool} \\
+\code{CS_SEC_CHALLENGE}        & \code{bool} \\
+\code{CS_SEC_CHANBIND}         & \code{bool} \\
+\code{CS_SEC_CONFIDENTIALITY}  & \code{bool} \\
+\code{CS_SEC_DATAORIGIN}       & \code{bool} \\
+\code{CS_SEC_DELEGATION}       & \code{bool} \\
+\code{CS_SEC_DETECTREPLAY}     & \code{bool} \\
+\code{CS_SEC_DETECTSEQ}        & \code{bool} \\
+\code{CS_SEC_ENCRYPTION}       & \code{bool} \\
+\code{CS_SEC_INTEGRITY}        & \code{bool} \\
+\code{CS_SEC_MUTUALAUTH}       & \code{bool} \\
+\code{CS_SEC_NEGOTIATE}        & \code{bool} \\
+\code{CS_SEC_NETWORKAUTH}      & \code{bool} \\
+
+\code{CS_CON_STATUS}           & \code{int} \\
+\code{CS_LOOP_DELAY}           & \code{int} \\
+\code{CS_RETRY_COUNT}          & \code{int} \\
+\code{CS_NETIO}                & \code{int} \\
+\code{CS_TEXTLIMIT}            & \code{int} \\
+\code{CS_DS_SEARCH}            & \code{int} \\
+\code{CS_DS_SIZELIMIT}         & \code{int} \\
+\code{CS_DS_TIMELIMIT}         & \code{int} \\
+\code{CS_ENDPOINT}             & \code{int} \\
+\code{CS_PACKETSIZE}           & \code{int} \\
+\code{CS_SEC_CREDTIMEOUT}      & \code{int} \\
+\code{CS_SEC_SESSTIMEOUT}      & \code{int} \\
+
+\code{CS_APPNAME}              & \code{string} \\
+\code{CS_HOSTNAME}             & \code{string} \\
+\code{CS_PASSWORD}             & \code{string} \\
+\code{CS_SERVERNAME}           & \code{string} \\
+\code{CS_USERNAME}             & \code{string} \\
+\code{CS_TDS_VERSION}          & \code{string} \\
+\code{CS_DS_DITBASE}           & \code{string} \\
+\code{CS_DS_PASSWORD}          & \code{string} \\
+\code{CS_DS_PRINCIPAL}         & \code{string} \\
+\code{CS_DS_PROVIDER}          & \code{string} \\
+\code{CS_SEC_KEYTAB}           & \code{string} \\
+\code{CS_SEC_MECHANISM}        & \code{string} \\
+\code{CS_SEC_SERVERPRINCIPAL}  & \code{string} \\
+\code{CS_TRANSACTION_NAME}     & \code{string} \\
+
+\code{CS_EED_CMD}              & \code{CS_COMMAND} \\
+\end{longtable}
+
+For an explanation of the property values and get/set/clear semantics
+please refer to the Sybase documentation.
+
+\begin{verbatim}
+def connect_db(ctx, server, user, passwd):
+    status, conn = ctx.ct_con_alloc()
+    if status != CS_SUCCEED:
+        raise CSError(ctx, 'ct_con_alloc')
+    if conn.ct_diag(CS_INIT) != CS_SUCCEED:
+        raise CTError(conn, 'ct_diag')
+    if conn.ct_con_props(CS_SET, CS_USERNAME, user) != CS_SUCCEED:
+        raise CTError(conn, 'ct_con_props CS_USERNAME')
+    if conn.ct_con_props(CS_SET, CS_PASSWORD, passwd) != CS_SUCCEED:
+        raise CTError(conn, 'ct_con_props CS_PASSWORD')
+    if conn.ct_connect(server) != CS_SUCCEED:
+        raise CTError(conn, 'ct_connect')
+    return conn
+
+ctx = init_db()
+conn = connect_db(ctx, 'SYBASE', 'guest', '')
+\end{verbatim}
+\end{methoddesc}
+
+\begin{methoddesc}[CS_CONNECTION]{ct_options}{action, property \optional{, value}}
+Sets and retrieves server query processing options for connection.
+
+When \var{action} is \code{CS_SET} a compatible \var{value} argument
+must be supplied and the method returns the Sybase result code.
+
+When \var{action} is \code{CS_GET} the method returns a tuple
+containing the Sybase result code and the property value.
+
+When \var{action} is \code{CS_CLEAR} the method returns the Sybase
+result code.
+
+The recognised properties are:
+
+\begin{longtable}{l|l}
+\var{property} & type \\
+\hline
+\code{CS_OPT_ANSINULL}       & \code{bool} \\
+\code{CS_OPT_ANSIPERM}       & \code{bool} \\
+\code{CS_OPT_ARITHABORT}     & \code{bool} \\
+\code{CS_OPT_ARITHIGNORE}    & \code{bool} \\
+\code{CS_OPT_CHAINXACTS}     & \code{bool} \\
+\code{CS_OPT_CURCLOSEONXACT} & \code{bool} \\
+\code{CS_OPT_FIPSFLAG}       & \code{bool} \\
+\code{CS_OPT_FORCEPLAN}      & \code{bool} \\
+\code{CS_OPT_FORMATONLY}     & \code{bool} \\
+\code{CS_OPT_GETDATA}        & \code{bool} \\
+\code{CS_OPT_NOCOUNT}        & \code{bool} \\
+\code{CS_OPT_NOEXEC}         & \code{bool} \\
+\code{CS_OPT_PARSEONLY}      & \code{bool} \\
+\code{CS_OPT_QUOTED_IDENT}   & \code{bool} \\
+\code{CS_OPT_RESTREES}       & \code{bool} \\
+\code{CS_OPT_SHOWPLAN}       & \code{bool} \\
+\code{CS_OPT_STATS_IO}       & \code{bool} \\
+\code{CS_OPT_STATS_TIME}     & \code{bool} \\
+\code{CS_OPT_STR_RTRUNC}     & \code{bool} \\
+\code{CS_OPT_TRUNCIGNORE}    & \code{bool} \\
+
+\code{CS_OPT_DATEFIRST}      & \code{int} \\
+\code{CS_OPT_DATEFORMAT}     & \code{int} \\
+\code{CS_OPT_ISOLATION}      & \code{int} \\
+\code{CS_OPT_ROWCOUNT}       & \code{int} \\
+\code{CS_OPT_TEXTSIZE}       & \code{int} \\
+
+\code{CS_OPT_AUTHOFF}        & \code{string} \\
+\code{CS_OPT_AUTHON}         & \code{string} \\
+\code{CS_OPT_CURREAD}        & \code{string} \\
+\code{CS_OPT_CURWRITE}       & \code{string} \\
+\code{CS_OPT_IDENTITYOFF}    & \code{string} \\
+\code{CS_OPT_IDENTITYON}     & \code{string} \\
+\end{longtable}
+
+For an explanation of the property values and get/set/clear semantics
+please refer to the Sybase documentation.
+
+\begin{verbatim}
+def connect_db(ctx, server, user, passwd):
+    status, conn = ctx.ct_con_alloc()
+    if status != CS_SUCCEED:
+        raise CSError(ctx, 'ct_con_alloc')
+    if conn.ct_diag(CS_INIT) != CS_SUCCEED:
+        raise CTError(conn, 'ct_diag')
+    if conn.ct_con_props(CS_SET, CS_USERNAME, user) != CS_SUCCEED:
+        raise CTError(conn, 'ct_con_props CS_USERNAME')
+    if conn.ct_con_props(CS_SET, CS_PASSWORD, passwd) != CS_SUCCEED:
+        raise CTError(conn, 'ct_con_props CS_PASSWORD')
+    if conn.ct_connect(server) != CS_SUCCEED:
+        raise CTError(conn, 'ct_connect')
+    if conn.ct_options(CS_SET, CS_OPT_CHAINXACTS, 1) != CS_SUCCEED:
+        raise CTError(conn, 'ct_options')
+    return conn
+
+ctx = init_db()
+conn = connect_db(ctx, 'SYBASE', 'guest', '')
+\end{verbatim}
+\end{methoddesc}

@@ -10,10 +10,66 @@
 
 This is not a complete reference to the Sybase CT library.  Sybase
 produce excellent documentation which fully describes the use of the
-CT library.  This document describes how to access the Sybase CT
-library while using this module.
+CT library.
+
+This document describes how to access the Sybase CT library while
+using this module.
 
 The \module{sybasect} extension contains the following:
+
+\subsection{Types}
+
+\begin{datadesc}{ContextType}
+The type of \code{CS_CONTEXT} objects which wrap the Sybase
+\code{CS_CONTEXT} structure pointer.
+\end{datadesc}
+
+\begin{datadesc}{ConnectionType}
+The type of \code{CS_CONNECTION} objects which wrap the Sybase
+\code{CS_CONNECTION} structure pointer.
+\end{datadesc}
+
+\begin{datadesc}{CommandType}
+The type of \code{CS_COMMAND} objects which wrap the Sybase
+\code{CS_COMMAND} structure pointer.
+\end{datadesc}
+
+\begin{datadesc}{BlkDescType}
+The type of \code{CS_BLKDESC} objects which wrap the Sybase
+\code{CS_BLKDESC} structure pointer.
+\end{datadesc}
+
+\begin{datadesc}{DataFmtType}
+The type of \code{CS_DATAFMT} objects which wrap the Sybase
+\code{CS_DATAFMT} structure.
+\end{datadesc}
+
+\begin{datadesc}{IODescType}
+The type of \code{CS_IODESC} objects which wrap the Sybase
+\code{CS_IODESC} structure.
+\end{datadesc}
+
+\begin{datadesc}{ClientMsgType}
+The type of \code{CS_CLIENTMSG} objects which wrap the Sybase
+\code{CS_CLIENTMSG} structure.
+\end{datadesc}
+
+\begin{datadesc}{ServerMsgType}
+The type of \code{CS_SERVERMSG} objects which wrap the Sybase
+\code{CS_SERVERMSG} structure.
+\end{datadesc}
+
+\begin{datadesc}{DataBufType}
+The type of data buffers for sending and receiving data to and from
+Sybase.  The type of object returned by \code{DataBuf('hello')}.
+\end{datadesc}
+
+\begin{datadesc}{NumericType}
+The type used to store Sybase \code{CS_NUMERIC} and \code{CS_DECIMAL}
+data values.
+\end{datadesc}
+
+\subsection{Functions}
 
 \begin{funcdesc}{cs_ctx_alloc}{\optional{version \code{= CS_VERSION_100}}}
 Execute the Sybase-CT function \function{cs_ctx_alloc()}.  The result
@@ -45,15 +101,15 @@ if status != CS_SUCCEED:
 \end{verbatim}
 \end{funcdesc}
 
-\begin{funcdesc}{Buffer}{obj}
-Return a new instance of the \class{Buffer} class.  The \var{obj}
-argument is used to initialise the \class{Buffer} object.
+\begin{funcdesc}{DataBuf}{obj}
+Return a new instance of the \class{DataBuf} class.  The \var{obj}
+argument is used to initialise the \class{DataBuf} object.
 
 For all types of \var{obj} other than \class{CS_DATAFMT} a buffer will
 be initialised which contains a single value.
 
 \begin{verbatim}
-buf = Buffer('hello')
+buf = DataBuf('hello')
 if cmd.ct_param(buf) != CS_SUCCEED:
     raise 'ct_param'
 \end{verbatim}
@@ -86,675 +142,73 @@ for i in range(num_cols):
 \end{funcdesc}
 
 \begin{funcdesc}{numeric}{obj \optional{, precision \code{= -1}} \optional{, scale \code{= -1}}}
-Return a new instance of the \class{Numeric} class.
+Return a new instance of the \class{NumericType} class.
+
+The \var{obj} argument can accept any of the following types;
+\code{IntType}, \code{LongType}, \code{FloatType}, \code{StringType},
+or \code{NumericType}.
+
+If greater than or equal to zero the \var{precision} and \var{scale}
+arguments are used as the \member{precision} and \member{scale}
+attributes of the \code{CS_DATAFMT} which is used in the Sybase
+\function{cs_convert()} function to create the new \class{NumericType}
+object.  The default values for these arguments depends upon the type
+being converted to \class{NumericType}.
+
+\begin{longtable}{l|l|l}
+Type & \var{precision} & \var{scale} \\
+\hline
+\code{IntType}     & \code{16} & \code{0} \\
+\code{LongType}    & \# of digits in \code{str()} conversion & \code{0} \\
+\code{FloatType}   & \code{CS_MAX_PREC} & \code{12} \\
+\code{StringType}  & \# digits before decimal point & \# digits after decimal point \\
+\code{NumericType} & input precision & input scale \\
+\end{longtable}
 \end{funcdesc}
 
-\subsection{CS_CONTEXT Objects}
-
-Calling the \function{cs_ctx_alloc()} or \function{cs_ctx_global()}
-function will create a \class{CS_CONTEXT} object.  When the
-\class{CS_CONTEXT} object is deallocated the Sybase
-\function{cs_ctx_drop()} function will be called for the context.
-
-\class{CS_CONTEXT} objects have the following interface:
-
-\begin{methoddesc}[CS_CONTEXT]{ct_init}{\optional{version \code{= CS_VERSION_100}}}
-Initialises the context object and tells the CT library which version
-of behaviour is expected.  Returns the Sybase result code.  This
-method must be called immediately after creating the context.
-
-\begin{verbatim}
-from sybasect import *
-status, ctx = cs_ctx_alloc()
-if status != CS_SUCCEED:
-    raise 'cs_ctx_alloc'
-if ctx.ct_init() != CS_SUCCEED:
-    raise 'ct_init'
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_CONTEXT]{cs_diag}{operation \optional{, \ldots}}
-Manage Open Client/Server error messages for the context.
-
-When \var{operation} is \code{CS_INIT} a single argument is accepted
-and the Sybase result code is returned.
-
-When \var{operation} is \code{CS_MSGLIMIT} two additional arguments
-are expected; \var{type} and \var{num}.  Currently Sybase expects
-\var{type} to be \code{CS_CLIENTMSG_TYPE}.  The Sybase result code is
-returned.
-
-When \var{operation} is \code{CS_CLEAR} an additional \var{type}
-argument is accepted and the Sybase result code is returned.
-
-When \var{operation} is \code{CS_GET} two additional arguments are
-expected; \var{type} and \var{index}.  A tuple is returned which
-contains the Sybase result code and the requested \class{CS_SERVERMSG}
-or \class{CS_CLIENTMSG} message.  \code{None} is returned as the
-message object when the result code is not \code{CS_SUCCEED}.
-
-When \var{operation} is \code{CS_STATUS} an additional \var{type}
-argument is accepted.  A tuple is returned which contains the Sybase
-result code and the number of messages available for retrieval.
-
-\begin{verbatim}
-def print_msgs(ctx):
-    status, num_msgs = ctx.cs_diag(CS_STATUS, CS_CLIENTMSG_TYPE)
-    if status == CS_SUCCEED:
-    	for i in range(num_msgs):
-    	    status, msg = ctx.cs_diag(CS_GET, CS_CLIENTMSG_TYPE, i + 1)
-    	    if status != CS_SUCCEED:
-    		continue
-    	    for attr in dir(msg):
-    		print '%s: %s' % (attr, getattr(msg, attr))
-    ctx.cs_diag(CS_CLEAR, CS_CLIENTMSG_TYPE)
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_CONTEXT]{ct_config}{action, property \optional{, value}}
-Sets and retrieves properties of the context object
-
-The supported integer properties are \code{CS_LOGIN_TIMEOUT},
-\code{CS_MAX_CONNECT}, \code{CS_NETIO}, \code{CS_NO_TRUNCATE},
-\code{CS_TEXTLIMIT}, and \code{CS_TIMEOUT}.  The supported string
-properties are \code{CS_VER_STRING}, \code{CS_VERSION}.
-
-When \var{action} is \code{CS_SET} a compatible \var{value} argument
-must be supplied and the method returns the Sybase result code.
-
-When \var{action} is \code{CS_GET} the method returns a tuple
-containing the Sybase result code and the property value.
-
-When \var{action} is \code{CS_CLEAR} the method returns the Sybase
-result code.
-
-\begin{verbatim}
-from sybasect import *
-status, ctx = cs_ctx_alloc()
-if status != CS_SUCCEED:
-    raise 'cs_ctx_alloc'
-if ctx.ct_init() != CS_SUCCEED:
-    raise 'ct_init'
-if ctx.cs_diag(CS_INIT) != CS_SUCCEED:
-    raise 'cs_diag'
-if ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
-    raise 'ct_config'
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_CONTEXT]{ct_con_alloc}{}
-Allocates a new \class{CS_CONNECTION} object which is used to connect
-to a Sybase server.
-
-The result is a tuple containing the Sybase result code and a new
-instance of the \class{CS_CONNECTION} class. \code{None} is returned
-as the \class{CS_CONNECTION} object when the result code is not
-\code{CS_SUCCEED}.
-
-\begin{verbatim}
-from sybasect import *
-
-def init_db():
-    status, ctx = cs_ctx_alloc()
-    if status != CS_SUCCEED:
-    	raise 'cs_ctx_alloc'
-    if ctx.ct_init() != CS_SUCCEED:
-    	raise 'ct_init'
-    if ctx.cs_diag(CS_INIT) != CS_SUCCEED:
-    	raise 'cs_diag'
-    if ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
-    	raise 'ct_config'
-    return ctx
-
-status, con = ctx.ct_con_alloc()
-if status != CS_SUCCEED:
-    raise 'ct_con_alloc'
-\end{verbatim}
-\end{methoddesc}
-
-\subsection{CS_CONNECTION Objects}
-
-Calling the \method{ct_con_alloc()} method of a \class{CS_CONTEXT}
-object will create a \class{CS_CONNECTION} object.  When the
-\class{CS_CONNECTION} object is deallocated the Sybase
-\function{ct_con_drop()} function will be called for the connection.
-
-\class{CS_CONNECTION} objects have the following interface:
-
-\begin{memberdesc}[CS_CONNECTION]{ctx}
-This is a read only reference to the parent \class{CS_CONTEXT} object.
-This prevents the context from being dropped while the connection
-still exists.
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CONNECTION]{strip}
-An integer which controls right whitespace stripping of \code{char}
-columns.  The default value is zero.
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CONNECTION]{debug}
-An integer which controls printing of debug messages to \code{stderr}.
-The default value is zero.
-\end{memberdesc}
-
-\begin{methoddesc}[CS_CONNECTION]{ct_diag}{operation \optional{, \ldots}}
-Manage Sybase error messages for the connection.
-
-When \var{operation} is \code{CS_INIT} a single argument is accepted
-and the Sybase result code is returned.
-
-When \var{operation} is \code{CS_MSGLIMIT} two additional arguments
-are expected; \var{type} and \var{num}.  The Sybase result code is
-returned.
-
-When \var{operation} is \code{CS_CLEAR} an additional \var{type}
-argument is accepted and the Sybase result code is returned.
-
-When \var{operation} is \code{CS_GET} two additional arguments are
-expected; \var{type} and \var{index}.  A tuple is returned which
-contains the Sybase result code and the requested \class{CS_SERVERMSG}
-or \class{CS_CLIENTMSG} message.  \code{None} is returned as the
-message object when the result code is not \code{CS_SUCCEED}.
-
-When \var{operation} is \code{CS_STATUS} an additional \var{type}
-argument is accepted.  A tuple is returned which contains the Sybase
-result code and the number of messages available for retrieval.
-
-When \var{operation} is \code{CS_EED_CMD} two additional arguments are
-expected; \var{type} and \var{index}.  A tuple is returned which
-contains the Sybase result code and a \class{CS_COMMAND} object which
-is used to retrieve extended error data.
-
-\begin{verbatim}
-def get_msgs(con, type):
-    status, num_msgs = con.ct_diag(CS_STATUS, type)
-    if status != CS_SUCCEED:
-        return []
-    err = []
-    for i in range(num_msgs):
-        status, msg = con.ct_diag(CS_GET, type, i + 1)
-        if status != CS_SUCCEED:
-            continue
-        dict = {}
-        for attr in dir(msg):
-            dict[attr] = getattr(msg, attr)
-        err.append(dict)
-    return err
-
-def build_ct_exception(con, msg):
-    err = [msg]
-    err.extend(get_msgs(con, CS_SERVERMSG_TYPE))
-    err.extend(get_msgs(con, CS_CLIENTMSG_TYPE))
-    con.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
-    return err
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_CONNECTION]{ct_connect}{server}
-Calls the Sybase \function{ct_connect()} function passing the string
-\var{server} argument and returns the Sybase result code.
-
-\begin{verbatim}
-ctx = init_db()
-
-status, con = ctx.ct_con_alloc()
-if status != CS_SUCCEED:
-    raise 'ct_con_alloc'
-if con.ct_diag(CS_INIT) != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_diag'))
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_CONNECTION]{ct_cmd_alloc}{}
-Allocates and returns a new \class{CS_COMMAND} object which is used to
-send commands over the connection.
-
-The result is a tuple containing the Sybase result code and a new
-instance of the \class{CS_COMMAND} class. \code{None} is returned as
-the \class{CS_COMMAND} object when the result code is not
-\code{CS_SUCCEED}.
-
-\begin{verbatim}
-ctx = init_db()
-con = connect_db(ctx, 'SYBASE', 'guest', '')
-
-status, cmd = con.ct_cmd_alloc()
-if status != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_cmd_alloc'))
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_CONNECTION]{ct_close}{\optional{option \code{ = CS_UNUSED}}}
-Calls the Sybase \function{ct_close()} function and returns the Sybase
-result code.
-
-\begin{verbatim}
-status = con.ct_close(CS_FORCE_CLOSE)
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_CONNECTION]{ct_con_props}{action, property \optional{, value}}
-Sets and retrieves properties of the connection object
-
-The recognised boolean properties are \code{CS_ANSI_BINDS},
-\code{CS_ASYNC_NOTIFS}, \code{CS_BULK_LOGIN},
-\code{CS_CHARSETCNV}, \code{CS_CONFIG_BY_SERVERNAME},
-\code{CS_DIAG_TIMEOUT}, \code{CS_DISABLE_POLL}, \code{CS_DS_COPY},
-\code{CS_DS_EXPANDALIAS}, \code{CS_DS_FAILOVER},
-\code{CS_EXPOSE_FMTS}, \code{CS_EXTERNAL_CONFIG},
-\code{CS_EXTRA_INF}, \code{CS_HIDDEN_KEYS},
-\code{CS_LOGIN_STATUS}, \code{CS_NOCHARSETCNV_REQD},
-\code{CS_SEC_APPDEFINED}, \code{CS_SEC_CHALLENGE},
-\code{CS_SEC_CHANBIND}, \code{CS_SEC_CONFIDENTIALITY},
-\code{CS_SEC_DATAORIGIN}, \code{CS_SEC_DELEGATION},
-\code{CS_SEC_DETECTREPLAY}, \code{CS_SEC_DETECTSEQ},
-\code{CS_SEC_ENCRYPTION}, \code{CS_SEC_INTEGRITY},
-\code{CS_SEC_MUTUALAUTH}, \code{CS_SEC_NEGOTIATE},
-and \code{CS_SEC_NETWORKAUTH}.
-
-The recognised integer properties are \code{CS_CON_STATUS},
-\code{CS_LOOP_DELAY}, \code{CS_RETRY_COUNT}, \code{CS_NETIO},
-\code{CS_TEXTLIMIT}, \code{CS_DS_SEARCH}, \code{CS_DS_SIZELIMIT},
-\code{CS_DS_TIMELIMIT}, \code{CS_ENDPOINT}, \code{CS_PACKETSIZE},
-\code{CS_SEC_CREDTIMEOUT}, and \code{CS_SEC_SESSTIMEOUT}.
-
-The recognised string properties are \code{CS_APPNAME},
-\code{CS_HOSTNAME}, \code{CS_PASSWORD}, \code{CS_SERVERNAME},
-\code{CS_USERNAME}, \code{CS_TDS_VERSION}, \code{CS_DS_DITBASE},
-\code{CS_DS_PASSWORD}, \code{CS_DS_PRINCIPAL},
-\code{CS_DS_PROVIDER}, \code{CS_SEC_KEYTAB},
-\code{CS_SEC_MECHANISM}, \code{CS_SEC_SERVERPRINCIPAL}, and
-\code{CS_TRANSACTION_NAME}.
-
-The \class{CS_COMMAND} property \code{CS_EED_CMD} is recognised.
-
-When \var{action} is \code{CS_SET} a compatible \var{value} argument
-must be supplied and the method returns the Sybase result code.
-
-When \var{action} is \code{CS_GET} the method returns a tuple
-containing the Sybase result code and the property value.
-
-When \var{action} is \code{CS_CLEAR} the method returns the Sybase
-result code.
-
-\begin{verbatim}
-def connect_db(ctx, server, user, passwd):
-    status, con = ctx.ct_con_alloc()
-    if status != CS_SUCCEED:
-    	raise 'ct_con_alloc'
-    if con.ct_diag(CS_INIT) != CS_SUCCEED:
-    	raise StandardError(build_ct_exception(con, 'ct_diag'))
-    if con.ct_con_props(CS_SET, CS_USERNAME, user) != CS_SUCCEED:
-    	raise StandardError(build_ct_exception(con, 'ct_con_props CS_USERNAME'))
-    if con.ct_con_props(CS_SET, CS_PASSWORD, passwd) != CS_SUCCEED:
-    	raise StandardError(build_ct_exception(con, 'ct_con_props CS_PASSWORD'))
-    if con.ct_connect(server) != CS_SUCCEED:
-    	raise StandardError(build_ct_exception(con, 'ct_connect'))
-    return con
-
-ctx = init_db()
-con = connect_db(ctx, 'SYBASE', 'guest', '')
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_CONNECTION]{ct_options}{action, property \optional{, value}}
-Sets and retrieves server query processing options for connection.
-
-The recognised boolean options are \code{CS_OPT_ANSINULL},
-\code{CS_OPT_ANSIPERM}, \code{CS_OPT_ARITHABORT},
-\code{CS_OPT_ARITHIGNORE}, \code{CS_OPT_CHAINXACTS},
-\code{CS_OPT_CURCLOSEONXACT}, \code{CS_OPT_FIPSFLAG},
-\code{CS_OPT_FORCEPLAN}, \code{CS_OPT_FORMATONLY},
-\code{CS_OPT_GETDATA}, \code{CS_OPT_NOCOUNT},
-\code{CS_OPT_NOEXEC}, \code{CS_OPT_PARSEONLY},
-\code{CS_OPT_QUOTED_IDENT}, \code{CS_OPT_RESTREES},
-\code{CS_OPT_SHOWPLAN}, \code{CS_OPT_STATS_IO},
-\code{CS_OPT_STATS_TIME}, \code{CS_OPT_STR_RTRUNC}, and
-\code{CS_OPT_TRUNCIGNORE}.
-
-The recognised integer properties are \code{CS_OPT_DATEFIRST},
-\code{CS_OPT_DATEFORMAT}, \code{CS_OPT_ISOLATION},
-\code{CS_OPT_ROWCOUNT}, and \code{CS_OPT_TEXTSIZE}.
-
-The recognised string properties are \code{CS_OPT_AUTHOFF},
-\code{CS_OPT_AUTHON}, \code{CS_OPT_CURREAD},
-\code{CS_OPT_CURWRITE}, \code{CS_OPT_IDENTITYOFF}, and
-\code{CS_OPT_IDENTITYON}.
-
-When \var{action} is \code{CS_SET} a compatible \var{value} argument
-must be supplied and the method returns the Sybase result code.
-
-When \var{action} is \code{CS_GET} the method returns a tuple
-containing the Sybase result code and the property value.
-
-When \var{action} is \code{CS_CLEAR} the method returns the Sybase
-result code.
-
-\begin{verbatim}
-def connect_db(ctx, server, user, passwd):
-    status, con = ctx.ct_con_alloc()
-    if status != CS_SUCCEED:
-    	raise 'ct_con_alloc'
-    if con.ct_diag(CS_INIT) != CS_SUCCEED:
-    	raise StandardError(build_ct_exception(con, 'ct_diag'))
-    if con.ct_con_props(CS_SET, CS_USERNAME, user) != CS_SUCCEED:
-    	raise StandardError(build_ct_exception(con, 'ct_con_props CS_USERNAME'))
-    if con.ct_con_props(CS_SET, CS_PASSWORD, passwd) != CS_SUCCEED:
-    	raise StandardError(build_ct_exception(con, 'ct_con_props CS_PASSWORD'))
-    if con.ct_connect(server) != CS_SUCCEED:
-    	raise StandardError(build_ct_exception(con, 'ct_connect'))
-    if con.ct_options(CS_SET, CS_OPT_CHAINXACTS, 1) != CS_SUCCEED:
-        raise StandardError(build_ct_exception(con, 'ct_options'))
-    return con
-
-ctx = init_db()
-con = connect_db(ctx, 'SYBASE', 'guest', '')
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_CONNECTION]{blk_alloc}{}
-Allocates and returns a new \class{CS_BLKDESC} object which is used to
-perform bulkcopy over the connection.
-
-The result is a tuple containing the Sybase result code and a new
-instance of the \class{CS_BLKDESC} class. \code{None} is returned as
-the \class{CS_BLKDESC} object when the result code is not
-\code{CS_SUCCEED}.
-
-\begin{verbatim}
-ctx = init_db()
-con = connect_db(ctx, 'SYBASE', 'guest', '')
-status, blk = con.blk_alloc()
-if status != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'blk_alloc'))
-\end{verbatim}
-\end{methoddesc}
-
-\subsection{CS_COMMAND Objects}
-
-Calling the \method{ct_cmd_alloc()} method of a \class{CS_CONNECTION}
-object will create a \class{CS_COMMAND} object.  When the
-\class{CS_COMMAND} object is deallocated the Sybase
-\function{ct_cmd_drop()} function will be called for the command.
-
-\class{CS_COMMAND} objects have the following interface:
-
-\begin{memberdesc}[CS_COMMAND]{is_eed}
-A read only integer which indicates when the \class{CS_COMMAND} object
-is and extended error data command structure.
-\end{memberdesc}
-
-\begin{memberdesc}[CS_COMMAND]{con}
-This is a read only reference to the parent \class{CS_CONNECTION}
-object.  This prevents the connection from being dropped while the
-command still exists.
-\end{memberdesc}
-
-\begin{memberdesc}[CS_COMMAND]{strip}
-An integer which controls right whitespace stripping of \code{char}
-columns.  The default value is inherited from the parent connection
-when the command is created.
-\end{memberdesc}
-
-\begin{memberdesc}[CS_COMMAND]{debug}
-An integer which controls printing of debug messages to \code{stderr}.
-The default value is inherited from the parent connection when the
-command is created.
-\end{memberdesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_send}{}
-Calls the Sybase \function{ct_send()} function and returns the Sybase
-result code.
-
-\begin{verbatim}
-status, cmd = con.ct_cmd_alloc()
-if status != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_cmd_alloc'))
-if cmd.ct_command(CS_LANG_CMD, 'select * from pubs..titles') != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_command'))
-if cmd.ct_send() != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_send'))
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_send_data}{string}
-Calls the Sybase \function{ct_send_data()} function and returns the
-Sybase result code.
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_results}{}
-Calls the Sybase \function{ct_results()} function and returns a tuple
-containing the Sybase result code and the result type returned by the
-Sybase function.
-
-\begin{verbatim}
-if cmd.ct_command(CS_LANG_CMD, 'select * from pubs..titles') != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_command'))
-if cmd.ct_send() != CS_SUCCEED:
-    raise StandardError(build_ct_exception(con, 'ct_send'))
-while 1:
-    status, result = cmd.ct_results()
-    if status == CS_END_RESULTS:
-        break
-    elif status != CS_SUCCEED:
-        raise StandardError(build_ct_exception(con, 'ct_results'))
-    if result in (CS_COMPUTE_RESULT, CS_CURSOR_RESULT,
-                  CS_PARAM_RESULT, CS_ROW_RESULT, CS_STATUS_RESULT):
-        bufs = row_bind(cmd, 16)
-	fetch_logical_result(bufs)
-    elif result not in (CS_CMD_DONE, CS_CMD_SUCCEED):
-        raise StandardError(build_ct_exception(con, 'ct_results'))
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_describe}{num}
-Calls the Sybase \function{ct_describe()} function passing the
-\var{num} argument and a tuple containing the Sybase result code and
-a \class{CS_DATAFMT} object which describes the column identified by
-\var{num}. \code{None} is returned as the \class{CS_DATAFMT} object
-when the result code is not \code{CS_SUCCEED}.
-
-\begin{verbatim}
-def row_bind(cmd, count = 1):
-    status, num_cols = cmd.ct_res_info(CS_NUMDATA)
-    if status != CS_SUCCEED:
-        raise StandardError(build_ct_exception(con, 'ct_res_info'))
-    bufs = []
-    for i in range(num_cols):
-        status, fmt = cmd.ct_describe(i + 1)
-        if status != CS_SUCCEED:
-            raise StandardError(build_ct_exception(con, 'ct_describe'))
-        fmt.count = count
-        status, buf = cmd.ct_bind(i + 1, fmt)
-        if status != CS_SUCCEED:
-            raise StandardError(build_ct_exception(con, 'ct_bind'))
-        bufs.append(buf)
-    return bufs
-\end{verbatim}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_bind}{num, datafmt}
-Calls the Sybase \function{ct_bind()} function passing the \var{num}
-and \var{datafmt} arguments.  It returns a tuple containing the Sybase
-result code and a \class{Buffer} object which is used to retrieve data
-from the column identified by \var{num}.
-
-See the description of the \method{ct_describe()} method for an
-example.
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_res_info}{type}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_dynamic}{type \optional{, \ldots}}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_cancel}{type}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_cursor}{type \optional{, \ldots}}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_fetch}{}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_param}{buffer}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_setparam}{buffer}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_COMMAND]{ct_command}{type \optional{, \ldots}}
-\end{methoddesc}
-
-\subsection{CS_DATAFMT Objects}
-
-CS_DATAFMT objects have the following interface:
-
-\begin{memberdesc}[CS_DATAFMT]{name}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_DATAFMT]{datatype}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_DATAFMT]{format}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_DATAFMT]{maxlength}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_DATAFMT]{scale}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_DATAFMT]{precision}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_DATAFMT]{status}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_DATAFMT]{count}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_DATAFMT]{usertype}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_DATAFMT]{strip}
-\end{memberdesc}
-
-\subsection{Buffer Objects}
-
-Buffer objects have the following interface:
-
-\begin{memberdesc}[Buffer]{name}
-\end{memberdesc}
-
-\begin{memberdesc}[Buffer]{datatype}
-\end{memberdesc}
-
-\begin{memberdesc}[Buffer]{format}
-\end{memberdesc}
-
-\begin{memberdesc}[Buffer]{maxlength}
-\end{memberdesc}
-
-\begin{memberdesc}[Buffer]{scale}
-\end{memberdesc}
-
-\begin{memberdesc}[Buffer]{precision}
-\end{memberdesc}
-
-\begin{memberdesc}[Buffer]{status}
-\end{memberdesc}
-
-\begin{memberdesc}[Buffer]{count}
-\end{memberdesc}
-
-\begin{memberdesc}[Buffer]{usertype}
-\end{memberdesc}
-
-\begin{memberdesc}[Buffer]{strip}
-\end{memberdesc}
-
-\subsection{CS_BLKDESC Objects}
-
-CS_BLKDESC objects have the following interface:
-
-\begin{methoddesc}[CS_BLKDESC]{blk_bind}{num, buffer}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_BLKDESC]{blk_describe}{num}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_BLKDESC]{blk_done}{type}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_BLKDESC]{blk_init}{direction, table}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_BLKDESC]{blk_props}{action, property \optional{, value}}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_BLKDESC]{blk_rowxfer}{}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_BLKDESC]{blk_rowxfer_mult}{\optional{row_count}}
-\end{methoddesc}
-
-\begin{methoddesc}[CS_BLKDESC]{blk_textxfer}{\optional{string}}
-\end{methoddesc}
-
-\subsection{CS_CLIENTMSG Objects}
-
-CS_CLIENTMSG objects have the following interface:
-
-\begin{memberdesc}[CS_CLIENTMSG]{severity}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{msgnumber}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{msgstring}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{osnumber}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{osstring}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{status}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{sqlstate}
-\end{memberdesc}
-
-\subsection{CS_SERVERMSG Objects}
-
-CS_SERVERMSG objects have the following interface:
-
-\begin{memberdesc}[CS_SERVERMSG]{msgnumber}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{state}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{severity}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{text}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{svrname}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{proc}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{line}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{status}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{sqlstate}
-\end{memberdesc}
+\begin{funcdesc}{sizeof_type}{type_code}
+Returns the size of the type identified by the Sybase type code
+specified in the \var{type_code} argument.
+
+The values expected for the \var{type_code} argument things like;
+\code{CS_CHAR_TYPE}, \code{CS_TINYINT_TYPE}, etc.
+\end{funcdesc}
+
+\begin{funcdesc}{CS_DATAFMT}{}
+Return a new instance of the \class{DataFmtType} class.  This is used
+to wrap the Sybase \code{CS_DATAFMT} structure.
+\end{funcdesc}
+
+\begin{funcdesc}{CS_IODESC}{}
+Return a new instance of the \class{IODescType} class.  This is used
+to wrap the Sybase \code{CS_IODESC} structure.
+\end{funcdesc}
+
+\begin{funcdesc}{CS_LAYER}{msgnumber}
+Return the result of applying the Sybase \code{CS_LAYER} macro to the
+\var{msgnumber} argument.
+\end{funcdesc}
+
+\begin{funcdesc}{CS_ORIGIN}{msgnumber}
+Return the result of applying the Sybase \code{CS_ORIGIN} macro to the
+\var{msgnumber} argument.
+\end{funcdesc}
+
+\begin{funcdesc}{CS_SEVERITY}{msgnumber}
+Return the result of applying the Sybase \code{CS_SEVERITY} macro to the
+\var{msgnumber} argument.
+\end{funcdesc}
+
+\begin{funcdesc}{CS_NUMBER}{msgnumber}
+Return the result of applying the Sybase \code{CS_NUMBER} macro to the
+\var{msgnumber} argument.
+\end{funcdesc}
+
+\input{ctxobj}
+\input{connobj}
+\input{cmdobj}
+\input{msgsobj}
+\input{datafmtobj}
+\input{databufobj}
+\input{iodescobj}
+\input{blkdescobj}
