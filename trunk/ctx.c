@@ -1435,7 +1435,7 @@ static CS_CONTEXTObj *global_ctx_object;
 CS_CONTEXT *global_ctx()
 {
     if (global_ctx_object == NULL) {
-	PyErr_SetString(PyExc_ValueError, "no globla context defined");
+	PyErr_SetString(PyExc_ValueError, "no global context defined");
 	return NULL;
     }
     return global_ctx_object->ctx;

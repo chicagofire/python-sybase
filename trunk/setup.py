@@ -35,7 +35,7 @@ if os.name == 'posix':                  # unix
         if not os.access(sybase, os.F_OK):
             sys.stderr.write(
                 'Please define the Sybase installation directory in'
-                'the SYBASE environment variable.\n')
+                ' the SYBASE environment variable.\n')
             sys.exit(1)
     # On Linux the Sybase tcl library is distributed as sybtcl
     syb_libs = []
