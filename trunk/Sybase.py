@@ -197,9 +197,6 @@ class _Cmd:
         bufs = []
         for i in range(num_cols):
             fmt = self.ct_describe(i + 1)
-            #print '--- fmt ---'
-            #for name in dir(fmt):
-            #    print '%-12s: %s' % (name, getattr(fmt, name))
             fmt.count = count
             buf = self.ct_bind(i + 1, fmt)
             bufs.append(buf)
