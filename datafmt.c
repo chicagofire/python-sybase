@@ -29,7 +29,20 @@ void money_datafmt(CS_DATAFMT *fmt)
     fmt->datatype = CS_MONEY_TYPE;
     fmt->maxlength = sizeof(CS_MONEY);
     fmt->locale = NULL;
-    fmt->format = CS_FMT_NULLTERM;
+    fmt->format = CS_FMT_UNUSED;
+    fmt->precision = 0;
+    fmt->scale = 0;
+}
+
+void datetime_datafmt(int type, CS_DATAFMT *fmt)
+{
+    fmt->datatype = type;
+    if (type == CS_DATETIME_TYPE)
+	fmt->maxlength = sizeof(CS_DATETIME);
+    else
+	fmt->maxlength = sizeof(CS_DATETIME4);
+    fmt->locale = NULL;
+    fmt->format = CS_FMT_UNUSED;
     fmt->precision = 0;
     fmt->scale = 0;
 }

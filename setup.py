@@ -9,12 +9,9 @@ from distutils.core import setup, Extension
 if os.name == 'posix':
     sybase = '/opt/sybase'
     syb_libs = [ 'blk', 'ct', 'cs', 'sybtcl', 'comn', 'intl' ]
-    mxdatetime_incdir = os.path.join(os.environ['HOME'],
-                                     'download/DateTime/mxDateTime')
 elif os.name == 'nt':
     sybase = 'i:\\sybase\\sql11.5'
     syb_libs = [ 'libblk', 'libct', 'libcs' ]
-    mxdatetime_incdir = 'i:\\download\\DateTime\\mxDateTime'
 else:
     import sys
     sys.stderr.write(
@@ -37,7 +34,7 @@ setup (name = "Sybase",
        description = "Sybase Extension to Python",
        url = "http://www.object-craft.com.au/projects/sybase/",
        py_modules = ['Sybase'],
-       include_dirs = [syb_incdir, mxdatetime_incdir],
+       include_dirs = [syb_incdir],
        ext_modules = [
            Extension('sybasect',
                      ['blk.c', 'databuf.c', 'cmd.c', 'conn.c', 'ctx.c',

@@ -24,7 +24,6 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 #include "time.h"
-#include "mxDateTime.h"
 
 static struct PyMethodDef DataBuf_methods[] = {
     { NULL }			/* sentinel */
@@ -86,6 +85,8 @@ PyObject *databuf_alloc(PyObject *obj)
 	    float_datafmt(&self->fmt);
 	else if (Numeric_Check(obj))
 	    numeric_datafmt(&self->fmt, CS_SRC_VALUE, CS_SRC_VALUE);
+	else if (DateTime_Check(obj))
+	    datetime_datafmt(((DateTimeObj*)obj)->type, &self->fmt);
 	else if (PyString_Check(obj)) {
 	    char_datafmt(&self->fmt);
 	    self->fmt.maxlength = PyString_Size(obj) + 1;
@@ -137,24 +138,9 @@ static PyObject *DataBuf_repeat(DataBufObj *self, int n)
     return NULL;
 }
 
-static PyObject *mx_datetime(CS_DATEREC *date_rec)
-{
-    if (mxDateTime.DateTime_FromDateAndTime == NULL) {
-	if (mxDateTime_ImportModuleAndAPI() != 0)
-	    return NULL;
-    }
-    return mxDateTime.DateTime_FromDateAndTime(date_rec->dateyear,
-					       date_rec->datemonth + 1,
-					       date_rec->datedmonth,
-					       date_rec->datehour,
-					       date_rec->dateminute,
-					       (double)date_rec->datesecond + (double)date_rec->datemsecond / 1000.0);
-}
-
 static PyObject *DataBuf_item(DataBufObj *self, int i)
 {
     void *item;
-    CS_DATEREC date_rec;
 
     if (i < 0 || i >= self->fmt.count)
 	PyErr_SetString(PyExc_IndexError, "buffer index out of range");
@@ -210,12 +196,10 @@ static PyObject *DataBuf_item(DataBufObj *self, int i)
 	return PyFloat_FromDouble(*(CS_FLOAT*)item);
 
     case CS_DATETIME4_TYPE:
+        return datetime_alloc(CS_DATETIME4_TYPE, self->buff);
+
     case CS_DATETIME_TYPE:
-	PyErr_Clear();
-	cs_dt_crack(global_ctx(), self->fmt.datatype, item, &date_rec);
-	if (PyErr_Occurred())
-	    return NULL;
-	return mx_datetime(&date_rec);
+        return datetime_alloc(CS_DATETIME_TYPE, self->buff);
 
     case CS_DECIMAL_TYPE:
     case CS_NUMERIC_TYPE:
@@ -348,10 +332,23 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
-    case CS_DATETIME4_TYPE:
     case CS_DATETIME_TYPE:
-	PyErr_SetString(PyExc_TypeError, "datetime not handled yet");
-	return -1;
+        if (!DateTime_Check(v)) {
+            PyErr_SetString(PyExc_TypeError, "datetime expected");
+            return -1;
+        }
+        *(CS_DATETIME*)self->buff = ((DateTimeObj*)v)->v.datetime;
+	self->copied[i] = self->fmt.maxlength;
+        break;
+
+    case CS_DATETIME4_TYPE:
+        if (!DateTime_Check(v)) {
+            PyErr_SetString(PyExc_TypeError, "datetime expected");
+            return -1;
+        }
+        *(CS_DATETIME4*)self->buff = ((DateTimeObj*)v)->v.datetime4;
+	self->copied[i] = self->fmt.maxlength;
+        break;
 
     case CS_DECIMAL_TYPE:
     case CS_NUMERIC_TYPE:

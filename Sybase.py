@@ -1,3 +1,8 @@
+try:
+    import DateTime
+    have_datetime = 1
+except:
+    have_datetime = 0
 from sybasect import *
 
 __version__ = '0.29'
@@ -114,7 +119,13 @@ def _extract_row(bufs, n):
     '''
     row = []
     for buf in bufs:
-        row.append(buf[n])
+        col = buf[n]
+        if have_datetime and type(col) is DateTimeType:
+            row.append(DateTime.DateTime(col.year, col.month + 1, col.day,
+                                         col.hour, col.minute,
+                                         col.second + col.msecond / 1000.0))
+        else:
+            row.append(col)
     return tuple(row)
         
 class _Cmd:
@@ -365,6 +376,19 @@ class Cursor:
         '''DB-API Cursor.setoutputsize()
         '''
         pass
+
+    def _new_cmd(self, sql):
+        if self._dyn_name:
+            self._teardown()
+        self._dyn_name = 'dyn%s' % self._owner._next_dyn()
+        self._sql = sql
+        self._prepare()
+
+    def _discard_results(self):
+        '''Discard all pending results and prepare to execute again.
+        '''
+        while self._state != CMD_END_RESULTS:
+            self.nextset()
 
     def _prepare(self, sql):
         '''Prepare the statement to be executed for this cursor.
