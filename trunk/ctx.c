@@ -239,9 +239,9 @@ static CS_RETCODE call_callback(PyObject *func, PyObject *args)
     return retcode;
 }
 
-static CS_RETCODE clientmsg_cb(CS_CONTEXT *cs_ctx,
-			       CS_CONNECTION *cs_conn,
-			       CS_CLIENTMSG *cs_msg)
+static CS_RETCODE CS_INTERNAL clientmsg_cb(CS_CONTEXT *cs_ctx,
+					   CS_CONNECTION *cs_conn,
+					   CS_CLIENTMSG *cs_msg)
 {
     CS_CONTEXTObj *ctx;
     CS_CONNECTIONObj *conn;
@@ -284,9 +284,9 @@ error:
     return retcode;
 }
 
-static CS_RETCODE servermsg_cb(CS_CONTEXT *cs_ctx,
-			       CS_CONNECTION *cs_conn,
-			       CS_SERVERMSG *cs_msg)
+static CS_RETCODE CS_INTERNAL servermsg_cb(CS_CONTEXT *cs_ctx,
+					   CS_CONNECTION *cs_conn,
+					   CS_SERVERMSG *cs_msg)
 {
     CS_CONTEXTObj *ctx;
     CS_CONNECTIONObj *conn;
