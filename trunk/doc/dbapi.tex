@@ -34,8 +34,120 @@ threads to share the module, connections and cursors.
 \end{datadesc}
 
 \begin{datadesc}{paramstyle}
-Specifies the DB-API parameter style.  The \module{Sybase} module uses
-question marks as parameter place holders.
+Specifies the DB-API parameter style.  This variable is set to the
+value \code{'qmark'} which indicates that the \module{Sybase} module
+uses question marks as parameter place holders.
+\end{datadesc}
+
+\begin{excdesc}{Warning}
+Exception raised for important warnings like data truncations while
+inserting, etc.  It is a subclass of the Python \class{StandardError}
+(defined in the module exceptions).
+\end{excdesc}
+
+\begin{excdesc}{Error}
+Exception that is the base class of all other error exceptions.  You
+can use this to catch all errors with one single \code{except}
+statement.  It is a subclass of the Python \class{StandardError}
+(defined in the module exceptions).
+\end{excdesc}
+
+\begin{excdesc}{InterfaceError}
+Exception raised for errors that are related to the database interface
+rather than the database itself.  It is a subclass of \class{Error}.
+\end{excdesc}
+
+\begin{excdesc}{DatabaseError}
+Exception raised for errors that are related to the database.  It is a
+subclass of \class{Error}.
+\end{excdesc}
+
+\begin{excdesc}{DataError}
+Exception raised for errors that are due to problems with the
+processed data like division by zero, numeric value out of range,
+etc.  It is a subclass of \class{DatabaseError}.
+\end{excdesc}
+
+\begin{excdesc}{OperationalError}
+Exception raised for errors that are related to the database's
+operation and not necessarily under the control of the programmer,
+e.g. an unexpected disconnect occurs, the data source name is not
+found, a transaction could not be processed, a memory allocation error
+occurred during processing, etc.  It is a subclass of
+\class{DatabaseError}.
+\end{excdesc}
+
+\begin{excdesc}{IntegrityError}
+Exception raised when the relational integrity of the database is
+affected, e.g. a foreign key check fails.  It is a subclass of
+\class{DatabaseError}.
+\end{excdesc}
+
+\begin{excdesc}{InternalError}
+Exception raised when the database encounters an internal error,
+e.g. the cursor is not valid anymore, the transaction is out of sync,
+etc.  It is a subclass of \class{DatabaseError}.
+\end{excdesc}
+
+\begin{excdesc}{ProgrammingError}
+Exception raised for programming errors, e.g. table not found or
+already exists, syntax error in the SQL statement, wrong number of
+parameters specified, etc.  It is a subclass of \class{DatabaseError}.
+\end{excdesc}
+
+\begin{excdesc}{NotSupportedError}
+Exception raised in case a method or database API was used which is
+not supported by the database, e.g. requesting a \method{rollback()}
+on a connection that does not support transaction or has transactions
+turned off.  It is a subclass of \class{DatabaseError}.
+\end{excdesc}
+
+This is the exception inheritance layout:
+
+\begin{verbatim}
+StandardError
+|__Warning
+|__Error
+   |__InterfaceError
+   |__DatabaseError
+      |__DataError
+      |__OperationalError
+      |__IntegrityError
+      |__InternalError
+      |__ProgrammingError
+      |__NotSupportedError
+\end{verbatim}
+
+\begin{datadesc}{STRING}
+An instance of the \class{DBAPITypeObject} class which compares equal
+to all Sybase type codes for string-based column types (\code{char},
+\code{varchar}, \code{text}).
+\end{datadesc}
+
+\begin{datadesc}{BINARY}
+An instance of the \class{DBAPITypeObject} class which compares equal
+to all Sybase type codes which describe binary columns (\code{image},
+\code{binary}, \code{varbinary}).
+\end{datadesc}
+
+\begin{datadesc}{NUMBER}
+An instance of the \class{DBAPITypeObject} class which compares equal
+to all Sybase type codes which describe numeric columns (\code{bit},
+\code{tinyint}, \code{smallint}, \code{int}, \code{decimal},
+\code{numeric}, \code{float}, \code{real}, \code{money},
+\code{smallmoney}).
+\end{datadesc}
+
+\begin{datadesc}{DATETIME}
+An instance of the \class{DBAPITypeObject} class which compares equal
+to all Sybase type codes which describe date/time columns
+(\code{datetime}, \code{smalldatetime}).
+\end{datadesc}
+
+\begin{datadesc}{ROWID}
+An instance of the \class{DBAPITypeObject} class which compares equal
+to all Sybase type codes which describe date/time columns
+(\code{decimal}, \code{numeric}).
 \end{datadesc}
 
 \begin{classdesc}{Cursor}{owner}
@@ -317,8 +429,9 @@ precision, scale, null_ok)}.  This attribute will be \code{None} for
 operations which do not return rows or if the cursor has not had an
 operation invoked via \method{execute()} or \method{executemany()}.
 
-The \code{type_code} can be interpreted by comparing it to the Type
-Objects specified in the section below.
+The \code{type_code} can be interpreted by comparing it to the
+\class{DBAPITypeObject} objects \code{STRING}, \code{BINARY},
+\code{NUMBER}, \code{DATETIME}, or \code{ROWID}.
 \end{memberdesc}
 
 \begin{memberdesc}[Cursor]{rowcount}
