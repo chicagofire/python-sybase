@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# From orig/cursor_sel.c - sybase example program
+# From orig/cursor_upd.c - sybase example program
 #
 import sys
 from sybasect import *
