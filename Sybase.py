@@ -244,25 +244,26 @@ class Cursor:
         self.arraysize = 1              # DB-API
         self._owner = owner
         self._con = owner._con
-        self._cmd = None
+        self._cmd = _Cmd(self._con)
         self._sql = None
         self._state = CUR_IDLE
         self._dyn_name = None
 
     def __del__(self):
         try:
-            self._teardown()
+            self._dealloc()
         except:
             pass
 
     def callproc(self, name, params = []):
         '''DB-API Cursor.callproc()
         '''
-        if self_state == CUR_CLOSED:
-            raise ProgrammerError('cursor is closed')
+        cmd = self._cmd
+        if self._state == CUR_CLOSED:
+            raise ProgrammingError('cursor is closed')
         if self._state in (CUR_FETCHING, CUR_END_RESULT):
             while self._state != CUR_IDLE:
-                self._cancel_current()
+                self._cancel_all()
         if self._state == CUR_IDLE:
             self._sql = -1
             cmd.ct_command(CS_RPC_CMD, name)
@@ -276,8 +277,8 @@ class Cursor:
     def close(self):
         '''DB-API Cursor.close()
         '''
-        if self_state == CUR_CLOSED:
-            raise ProgrammerError('cursor is closed')
+        if self._state == CUR_CLOSED:
+            raise ProgrammingError('cursor is closed')
         if self._state == CUR_IDLE:
             self._state = CUR_CLOSED
         elif self._state in (CUR_FETCHING, CUR_END_RESULT, CUR_END_SET):
@@ -289,16 +290,16 @@ class Cursor:
     def execute(self, sql, params = []):
         '''DB-API Cursor.execute()
         '''
-        if self_state == CUR_CLOSED:
-            raise ProgrammerError('cursor is closed')
+        if self._state == CUR_CLOSED:
+            raise ProgrammingError('cursor is closed')
         if self._state in (CUR_FETCHING, CUR_END_RESULT):
             while self._state != CUR_IDLE:
-                self._cancel_current()
+                self._cancel_all()
         if self._state == CUR_IDLE:
             if self._sql != sql:
                 self._dealloc()
                 self._prepare(sql)
-            self._send_params()
+            self._send_params(params)
             self._start_results()
 
     def executemany(self, sql, params_seq = []):
@@ -310,8 +311,8 @@ class Cursor:
     def fetchone(self):
         '''DB-API Cursor.fetchone()
         '''
-        if self_state == CUR_CLOSED:
-            raise ProgrammerError('cursor is closed')
+        if self._state == CUR_CLOSED:
+            raise ProgrammingError('cursor is closed')
         cmd = self._cmd
         if self._state == CUR_FETCHING:
             row = cmd.fetch_rows(self._bufs)
@@ -346,11 +347,11 @@ class Cursor:
     def nextset(self):
         '''DB-API Cursor.nextset()
         '''
-        if self_state == CUR_CLOSED:
-            raise ProgrammerError('cursor is closed')
-        if self._state == CUR_IDLE
+        if self._state == CUR_CLOSED:
+            raise ProgrammingError('cursor is closed')
+        if self._state == CUR_IDLE:
             return
-        if self._state == CUR_END_RESULT:
+        if self._state == CUR_FETCHING:
             self._cancel_current()
         self._start_results()
         return self._state != CUR_IDLE or None
@@ -369,6 +370,7 @@ class Cursor:
         '''Prepare the statement to be executed for this cursor.
         '''
         con = self._con
+        cmd = self._cmd
         self._dyn_name = 'dyn%s' % self._owner._next_dyn()
         self._sql = sql
         dyn_name = self._dyn_name
@@ -432,7 +434,7 @@ class Cursor:
                                  buf.maxlength, buf.precision, buf.scale,
                                  buf.status & CS_CANBENULL))
                 self.description = desc
-                self._state = CMD_FETCHING
+                self._state = CUR_FETCHING
                 return
             elif result in (CS_CMD_DONE, CS_CMD_SUCCEED):
                 self.rowcount = cmd.ct_res_info(CS_ROW_COUNT)
@@ -446,6 +448,7 @@ class Cursor:
     def _cancel_all(self):
         cmd = self._cmd
         cmd.ct_cancel(CS_CANCEL_ALL)
+        self._state = CUR_IDLE
 
     def _dealloc(self):
         if not self._dyn_name:
