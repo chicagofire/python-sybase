@@ -1550,7 +1550,7 @@ void initsybasect(void)
     if (dict_add_int(d, "__have_freetds__", HAVE_FREETDS) < 0)
 	goto error;
 #else
-    if (dict_add_int(d, "__with_freetds__", 0) < 0)
+    if (dict_add_int(d, "__have_freetds__", 0) < 0)
 	goto error;
 #endif
 
