@@ -140,6 +140,11 @@ class _Cmd:
         if cmd.ct_send() != CS_SUCCEED:
             raise InternalError(_build_ct_except(cmd.conn, 'ct_send'))
 
+    def ct_cmd_drop(self):
+        cmd = self._cmd
+        if cmd.ct_cmd_drop() != CS_SUCCEED:
+            raise InternalError(_build_ct_except(cmd.conn, 'ct_cmd_drop'))
+
     def ct_res_info(self, option):
         cmd = self._cmd
         status, result = cmd.ct_res_info(option)
@@ -172,7 +177,7 @@ class _Cmd:
     def ct_cancel(self, arg):
         cmd = self._cmd
         if cmd.ct_cancel(arg) != CS_SUCCEED:
-            raise ProgrammingError(_build_ct_except(cmd.conn, 'ct_cancel'))
+            raise OperationalError(_build_ct_except(cmd.conn, 'ct_cancel'))
 
     def row_bind(self, count = 1):
         '''Bind buffers for count rows of column data.
@@ -235,12 +240,15 @@ class Cursor:
         self._dyn_name = None
 
     def __del__(self):
-        self._cancel()
+        try:
+            self._teardown()
+        except:
+            pass
 
     def callproc(self, name, params = []):
         '''DB-API Cursor.callproc()
         '''
-        self._cancel()
+        self._teardown()
         cmd = self._cmd = _Cmd(self._con)
         self._sql = -1
         cmd.ct_command(CS_RPC_CMD, name)
@@ -254,14 +262,14 @@ class Cursor:
     def close(self):
         '''DB-API Cursor.close()
         '''
-        self._cancel()
+        self._teardown()
 
     def execute(self, sql, params = []):
         '''DB-API Cursor.execute()
         '''
         if self._sql:
             if self._sql != sql:
-                self._cancel()
+                self._teardown()
                 self._sql = None
             else:
                 self._discard_results()
@@ -331,14 +339,10 @@ class Cursor:
 
     def _new_cmd(self, sql):
         if self._dyn_name:
-            cmd.ct_dynamic(CS_DEALLOC, self._dyn_name)
+            self._teardown()
         self._dyn_name = 'dyn%s' % self._owner._next_dyn()
         self._sql = sql
         self._prepare()
-
-    def _cancel(self):
-        if self._cmd:
-            self._cmd.ct_cancel(CS_CANCEL_ALL)
 
     def _discard_results(self):
         '''Discard all pending results and prepare to execute again.
@@ -350,6 +354,9 @@ class Cursor:
         '''Prepare the statement to be executed for this cursor.
         '''
         con = self._con
+        if self._cmd:
+            self._cmd.ct_cancel(CS_CANCEL_ALL)
+            self._cmd.ct_cmd_drop()
         cmd = self._cmd = _Cmd(con)
         dyn_name = self._dyn_name
         # send command to server
@@ -380,6 +387,21 @@ class Cursor:
         if status != CS_END_RESULTS:
             raise InternalError(_build_ct_except(con, 'ct_results'))
         self._state = CMD_PREPARED
+
+    def _teardown(self):
+        cmd = self._cmd
+        if not cmd or not self._dyn_name:
+            return
+        cmd.ct_cancel(CS_CANCEL_ALL)
+        cmd.ct_dynamic(CS_DEALLOC, self._dyn_name)
+        cmd.ct_send()
+        while 1:
+            status, result = cmd.ct_results()
+            if status != CS_SUCCEED:
+                break
+        if status != CS_END_RESULTS:
+            raise InternalError(_build_ct_except(con, 'ct_results'))
+        self._dyn_name = None
 
     def _send_params(self, params):
         '''Execute prepared statement, send parameters and prepare
@@ -479,7 +501,7 @@ class Connection:
         self._con = con
         con.strip = strip
         if con.ct_diag(CS_INIT) != CS_SUCCEED:
-            raise InternalError(_build_ct_except(con, 'ct_diag'))
+            raise OperationalError(_build_ct_except(con, 'ct_diag'))
         if con.ct_con_props(CS_SET, CS_USERNAME, user) != CS_SUCCEED:
             raise DatabaseError(_build_ct_except(con, 'ct_con_props CS_USERNAME'))
         if con.ct_con_props(CS_SET, CS_PASSWORD, passwd) != CS_SUCCEED:
@@ -492,12 +514,11 @@ class Connection:
     def connect(self):
         con = self._con
         if con.ct_connect(self.dsn) != CS_SUCCEED:
-            raise DatabaseError(_build_ct_except(con, 'ct_connect'))
+            raise InternalError(_build_ct_except(con, 'ct_connect'))
         if con.ct_options(CS_SET, CS_OPT_CHAINXACTS,
                           not self.auto_commit) != CS_SUCCEED:
             raise DatabaseError(_build_ct_except(con, 'ct_options'))
         con.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
-        self._cmd = _Cmd(con)
         if self.database:
             self.execute('use %s' % self.database)
         self._dyn_num = 0
@@ -506,26 +527,30 @@ class Connection:
         con = self._con
         status, value = con.ct_con_props(CS_GET, prop)
         if status != CS_SUCCEED:
-            raise DatabaseError(_build_ct_except(con, 'ct_con_props'))
+            raise InternalError(_build_ct_except(con, 'ct_con_props'))
         return value
 
     def set_property(self, prop, value):
         con = self._con
         if con.ct_con_props(CS_SET, prop, value) != CS_SUCCEED:
-            raise DatabaseError(_build_ct_except(con, 'ct_con_props'))
+            raise InternalError(_build_ct_except(con, 'ct_con_props'))
 
     def __del__(self):
-        self.close()
+        try:
+            self.close()
+        except:
+            pass
 
     def close(self):
         '''DBI-API Connection.close()
         '''
-        if not self._con:
-            return
+        con = self._con
+        status, result = con.ct_con_props(CS_GET, CS_CON_STATUS)
+        if status == CS_SUCCEED and not result & CS_CONSTAT_CONNECTED:
+            raise ProgrammingError('Connection is already closed')
         if self._cmd:
             self._cmd = None
-        self._con.ct_close()
-        self._con = None
+        con.ct_close(CS_FORCE_CLOSE)
 
     def begin(self, name = None):
         '''Not in DB-API, but useful for Sybase
@@ -572,11 +597,12 @@ class Connection:
     def execute(self, sql):
         '''Backwards compatibility
         '''
-        cmd = self._cmd
+        cmd = self._cmd = _Cmd(self._con)
         cmd.ct_command(CS_LANG_CMD, sql)
         cmd.ct_send()
         result_list = self._fetch_results()
         self._con.ct_diag(CS_CLEAR, CS_ALLMSG_TYPE)
+        self._cmd = None
         return result_list
 
     def _fetch_results(self):
