@@ -30,10 +30,11 @@ static char CS_BLKDESC_blk_bind__doc__[] =
 static PyObject *CS_BLKDESC_blk_bind(CS_BLKDESCObj *self, PyObject *args)
 {
     int colnum;
-    DataBufObj *buffer;
+    DataBufObj *databuf;
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
-    if (!PyArg_ParseTuple(args, "iO!", &colnum, &DataBufType, &buffer))
+    if (!PyArg_ParseTuple(args, "iO!", &colnum, &DataBufType, &databuf))
 	return NULL;
 
     if (self->blk == NULL) {
@@ -42,13 +43,23 @@ static PyObject *CS_BLKDESC_blk_bind(CS_BLKDESCObj *self, PyObject *args)
     }
 
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(self->conn);
     SY_BEGIN_THREADS;
-    status = blk_bind(self->blk, colnum, &buffer->fmt,
-		      buffer->buff, buffer->copied, buffer->indicator);
+    status = blk_bind(self->blk, colnum, &databuf->fmt,
+		      databuf->buff, databuf->copied, databuf->indicator);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self->conn);
+
     if (self->debug)
-	fprintf(stderr, "blk_bind(%d) -> %s\n",
-		colnum, value_str(VAL_STATUS, status));
+	debug_msg("blk_bind(blk%d, %d,"
+		  " &databuf%d->fmt, databuf%d->buff, databuf%d->copied,"
+		  " databuf%d->indicator)"
+		  " -> %s\n",
+		  self->serial, colnum,
+		  databuf->serial, databuf->serial, databuf->serial,
+		  databuf->serial,
+		  value_str(VAL_STATUS, status));
     if (PyErr_Occurred())
         return NULL;
 
@@ -65,6 +76,7 @@ static PyObject *CS_BLKDESC_blk_describe(CS_BLKDESCObj *self, PyObject *args)
     CS_DATAFMT datafmt;
     CS_RETCODE status;
     PyObject *fmt;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "i", &colnum))
 	return NULL;
@@ -77,21 +89,36 @@ static PyObject *CS_BLKDESC_blk_describe(CS_BLKDESCObj *self, PyObject *args)
     memset(&datafmt, 0, sizeof(datafmt));
 
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(self->conn);
     SY_BEGIN_THREADS;
     status = blk_describe(self->blk, colnum, &datafmt);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self->conn);
+
     if (self->debug)
-	fprintf(stderr, "blk_describe(%d) -> %s\n",
-		colnum, value_str(VAL_STATUS, status));
-    if (PyErr_Occurred())
+	debug_msg("blk_describe(blk%d, %d, &fmt) -> %s",
+		  self->serial, colnum, value_str(VAL_STATUS, status));
+    if (PyErr_Occurred()) {
+	if (self->debug)
+	    debug_msg("\n");
         return NULL;
+    }
 
     if (status != CS_SUCCEED)
+	if (self->debug)
+	    debug_msg(", None\n");
 	return Py_BuildValue("iO", status, Py_None);
 
     fmt = datafmt_alloc(&datafmt, 0);
-    if (fmt == NULL)
+    if (fmt == NULL) {
+	if (self->debug)
+	    debug_msg("\n");
 	return NULL;
+    }
+
+    if (self->debug)
+	debug_msg(", datafmt%d\n", ((CS_DATAFMTObj*)fmt)->serial);
 
     return Py_BuildValue("iN", status, fmt);
 }
@@ -105,6 +132,7 @@ static PyObject *CS_BLKDESC_blk_done(CS_BLKDESCObj *self, PyObject *args)
     int type;
     CS_RETCODE status;
     CS_INT outrow;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "i", &type))
 	return NULL;
@@ -116,12 +144,18 @@ static PyObject *CS_BLKDESC_blk_done(CS_BLKDESCObj *self, PyObject *args)
 
     /* blk_done(type) -> status, outrow */
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(self->conn);
     SY_BEGIN_THREADS;
     status = blk_done(self->blk, type, &outrow);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self->conn);
+
     if (self->debug)
-	fprintf(stderr, "blk_done(%s) -> %s, %d\n",
-		value_str(VAL_BULK, type), value_str(VAL_STATUS, status), (int)outrow);
+	debug_msg("blk_done(blk%d, %s, &outrow) -> %s, %d\n",
+		  self->serial,
+		  value_str(VAL_BULK, type),
+		  value_str(VAL_STATUS, status), (int)outrow);
     if (PyErr_Occurred())
         return NULL;
 
@@ -134,6 +168,7 @@ static char CS_BLKDESC_blk_drop__doc__[] =
 static PyObject *CS_BLKDESC_blk_drop(CS_BLKDESCObj *self, PyObject *args)
 {
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
@@ -145,11 +180,16 @@ static PyObject *CS_BLKDESC_blk_drop(CS_BLKDESCObj *self, PyObject *args)
 
     /* blk_drop() -> status */
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(self->conn);
     SY_BEGIN_THREADS;
     status = blk_drop(self->blk);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self->conn);
+
     if (self->debug)
-	fprintf(stderr, "blk_drop() -> %s\n", value_str(VAL_STATUS, status));
+	debug_msg("blk_drop(blk%d) -> %s\n",
+		  self->serial, value_str(VAL_STATUS, status));
     if (status == CS_SUCCEED)
 	self->blk = NULL;
     if (PyErr_Occurred())
@@ -166,6 +206,7 @@ static PyObject *CS_BLKDESC_blk_init(CS_BLKDESCObj *self, PyObject *args)
     int direction;
     char *table;
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "is", &direction, &table))
 	return NULL;
@@ -176,14 +217,19 @@ static PyObject *CS_BLKDESC_blk_init(CS_BLKDESCObj *self, PyObject *args)
     }
 
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(self->conn);
     SY_BEGIN_THREADS;
     status = blk_init(self->blk, direction, table, CS_NULLTERM);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self->conn);
+
     self->direction = direction;
     if (self->debug)
-	fprintf(stderr, "blk_init(%s, %s) -> %s\n",
-		value_str(VAL_BULKDIR, direction), table,
-		value_str(VAL_STATUS, status));
+	debug_msg("blk_init(blk%d, %s, \"%s\", CS_NULLTERM) -> %s\n",
+		  self->serial,
+		  value_str(VAL_BULKDIR, direction), table,
+		  value_str(VAL_STATUS, status));
     if (PyErr_Occurred())
         return NULL;
 
@@ -234,6 +280,7 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
     CS_INT int_value;
     CS_BOOL bool_value;
     CS_NUMERIC numeric_value;
+    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &action))
 	return NULL;
@@ -256,14 +303,19 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 		return NULL;
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self->conn);
 	    SY_BEGIN_THREADS;
 	    status = blk_props(self->blk, CS_SET, property,
 			       &bool_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self->conn);
+
 	    if (self->debug)
-		fprintf(stderr, "blk_props(CS_SET, %s, %d) -> %s\n",
-			value_str(VAL_BULKPROPS, property), (int)bool_value,
-			value_str(VAL_STATUS, status));
+		debug_msg("blk_props(blk%d, CS_SET, %s, %d, CS_UNUSED, NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_BULKPROPS, property), (int)bool_value,
+			  value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -275,14 +327,19 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 		return NULL;
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self->conn);
 	    SY_BEGIN_THREADS;
 	    status = blk_props(self->blk, CS_SET, property,
 			       &int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self->conn);
+
 	    if (self->debug)
-		fprintf(stderr, "blk_props(CS_SET, %s, %d) -> %s\n",
-			value_str(VAL_BULKPROPS, property), (int)int_value,
-			value_str(VAL_STATUS, status));
+		debug_msg("blk_props(blk%d, CS_SET, %s, %d, CS_UNUSED, NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_BULKPROPS, property), (int)int_value,
+			  value_str(VAL_STATUS, status));
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -295,17 +352,22 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    }
 
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self->conn);
 	    SY_BEGIN_THREADS;
 	    status = blk_props(self->blk, CS_SET, property,
 			       &((NumericObj*)obj)->num, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self->conn);
+
 	    if (self->debug) {
 		char text[NUMERIC_LEN];
 
 		numeric_as_string(obj, text);
-		fprintf(stderr, "blk_props(CS_SET, %s, %s) -> %s\n",
-			value_str(VAL_BULKPROPS, property), text,
-			value_str(VAL_STATUS, status));
+		debug_msg("blk_props(blk%d, CS_SET, %s, %s, CS_UNUSED, NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_BULKPROPS, property), text,
+			  value_str(VAL_STATUS, status));
 	    }
 	    if (PyErr_Occurred())
 		return NULL;
@@ -326,14 +388,19 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	switch (property_type(property)) {
 	case OPTION_BOOL:
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self->conn);
 	    SY_BEGIN_THREADS;
 	    status = blk_props(self->blk, CS_GET, property,
 			       &bool_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self->conn);
+
 	    if (self->debug)
-		fprintf(stderr, "blk_props(CS_GET, %s) -> %s, %d\n",
-			value_str(VAL_BULKPROPS, property),
-			value_str(VAL_STATUS, status), (int)bool_value);
+		debug_msg("blk_props(blk%d, CS_GET, %s, &value, CS_UNUSED, NULL) -> %s, %d\n",
+			  self->serial,
+			  value_str(VAL_BULKPROPS, property),
+			  value_str(VAL_STATUS, status), (int)bool_value);
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -341,14 +408,19 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 
 	case OPTION_INT:
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self->conn);
 	    SY_BEGIN_THREADS;
 	    status = blk_props(self->blk, CS_GET, property,
 			       &int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self->conn);
+
 	    if (self->debug)
-		fprintf(stderr, "blk_props(CS_GET, %s) -> %s, %d\n",
-			value_str(VAL_BULKPROPS, property),
-			value_str(VAL_STATUS, status), (int)int_value);
+		debug_msg("blk_props(blk%d, CS_GET, %s, &value, CS_UNUSED, NULL) -> %s, %d\n",
+			  self->serial,
+			  value_str(VAL_BULKPROPS, property),
+			  value_str(VAL_STATUS, status), (int)int_value);
 	    if (PyErr_Occurred())
 		return NULL;
 
@@ -356,10 +428,14 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 
 	case OPTION_NUMERIC:
 	    PyErr_Clear();
+
+	    SY_LOCK_ACQUIRE(self->conn);
 	    SY_BEGIN_THREADS;
 	    status = blk_props(self->blk, CS_GET, property,
 			       &numeric_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    SY_LOCK_RELEASE(self->conn);
+
 	    obj = (PyObject*)numeric_alloc(&numeric_value);
 	    if (obj == NULL)
 		return NULL;
@@ -367,9 +443,10 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 		char text[NUMERIC_LEN];
 
 		numeric_as_string(obj, text);
-		fprintf(stderr, "blk_props(CS_GET, %s) -> %s, %s\n",
-			value_str(VAL_BULKPROPS, property),
-			value_str(VAL_STATUS, status), text);
+		debug_msg("blk_props(blk%d, CS_GET, %s, &value, CS_UNUSED, NULL) -> %s, %s\n",
+			  self->serial,
+			  value_str(VAL_BULKPROPS, property),
+			  value_str(VAL_STATUS, status), text);
 	    }
 	    if (PyErr_Occurred()) {
 		Py_DECREF(obj);
@@ -395,14 +472,19 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self->conn);
 	SY_BEGIN_THREADS;
 	status = blk_props(self->blk, CS_CLEAR, property,
 			   NULL, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self->conn);
+
 	if (self->debug)
-	    fprintf(stderr, "blk_props(CS_CLEAR, %s) -> %s\n",
-		    value_str(VAL_BULKPROPS, property),
-		    value_str(VAL_STATUS, status));
+	    debug_msg("blk_props(blk%d, CS_CLEAR, %s, NULL, CS_UNUSED, NULL) -> %s\n",
+		      self->serial,
+		      value_str(VAL_BULKPROPS, property),
+		      value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -421,6 +503,7 @@ static char CS_BLKDESC_blk_rowxfer__doc__[] =
 static PyObject *CS_BLKDESC_blk_rowxfer(CS_BLKDESCObj *self, PyObject *args)
 {
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
@@ -431,11 +514,16 @@ static PyObject *CS_BLKDESC_blk_rowxfer(CS_BLKDESCObj *self, PyObject *args)
     }
 
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(self->conn);
     SY_BEGIN_THREADS;
     status = blk_rowxfer(self->blk);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self->conn);
+
     if (self->debug)
-	fprintf(stderr, "blk_rowxfer() -> %s\n", value_str(VAL_STATUS, status));
+	debug_msg("blk_rowxfer(blk%d) -> %s\n",
+		  self->serial, value_str(VAL_STATUS, status));
     if (PyErr_Occurred())
 	return NULL;
 
@@ -451,6 +539,7 @@ static PyObject *CS_BLKDESC_blk_rowxfer_mult(CS_BLKDESCObj *self, PyObject *args
     int orig_count = 0;
     CS_INT row_count;
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "|i", &orig_count))
 	return NULL;
@@ -462,12 +551,17 @@ static PyObject *CS_BLKDESC_blk_rowxfer_mult(CS_BLKDESCObj *self, PyObject *args
     }
 
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(self->conn);
     SY_BEGIN_THREADS;
     status = blk_rowxfer_mult(self->blk, &row_count);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self->conn);
+
     if (self->debug)
-	fprintf(stderr, "blk_rowxfer_mult(%d) -> %s, %d\n",
-		orig_count, value_str(VAL_STATUS, status), (int)row_count);
+	debug_msg("blk_rowxfer_mult(blk%d, %d) -> %s, %d\n",
+		  self->serial,
+		  orig_count, value_str(VAL_STATUS, status), (int)row_count);
     if (PyErr_Occurred())
 	return NULL;
 
@@ -483,6 +577,7 @@ static char CS_BLKDESC_blk_textxfer__doc__[] =
 static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 {
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (self->blk == NULL) {
 	PyErr_SetString(PyExc_TypeError, "CS_BLKDESC has been dropped");
@@ -497,12 +592,17 @@ static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self->conn);
 	SY_BEGIN_THREADS;
 	status = blk_textxfer(self->blk, buff, buff_len, NULL);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self->conn);
+
 	if (self->debug)
-	    fprintf(stderr, "blk_textxfer() -> %s\n",
-		    value_str(VAL_STATUS, status));
+	    debug_msg("blk_textxfer(blk%d, buff, %d, NULL) -> %s\n",
+		      self->serial,
+		      buff_len, value_str(VAL_STATUS, status));
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -516,12 +616,17 @@ static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 
 	outlen = 0;
 	PyErr_Clear();
+
+	SY_LOCK_ACQUIRE(self->conn);
 	SY_BEGIN_THREADS;
 	status = blk_textxfer(self->blk, buff, sizeof(buff), &outlen);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self->conn);
+
 	if (self->debug)
-	    fprintf(stderr, "blk_textxfer() -> %s, %d\n",
-		    value_str(VAL_STATUS, status), (int)outlen);
+	    debug_msg("blk_textxfer(blk%d, buff, %d, &outlen) -> %s, %d\n",
+		      self->serial,
+		      sizeof(buff), value_str(VAL_STATUS, status), (int)outlen);
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -550,12 +655,15 @@ static struct PyMethodDef CS_BLKDESC_methods[] = {
     { NULL }			/* sentinel */
 };
 
+static int blk_serial;
+
 PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version)
 {
     CS_BLKDESCObj *self;
 #ifdef HAVE_BLK_ALLOC
     CS_RETCODE status;
     CS_BLKDESC *blk;
+    SY_THREAD_STATE;
 #endif
 
     self = PyObject_NEW(CS_BLKDESCObj, &CS_BLKDESCType);
@@ -567,21 +675,31 @@ PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version)
     self->conn = NULL;
     self->direction = 0;
     self->debug = conn->debug;
+    self->serial = blk_serial++;
 
 #ifdef HAVE_BLK_ALLOC
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(self->conn);
     SY_BEGIN_THREADS;
     status = blk_alloc(conn->conn, version, &blk);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self->conn);
+
     if (self->debug)
-	fprintf(stderr, "blk_alloc(%s) -> %s\n",
-		value_str(BULK, version), value_str(STATUS, status));
+	debug_msg("blk_alloc(conn%d, %s, &blk%d) -> %s",
+		  conn->serial, self->serial,
+		  value_str(BULK, version), value_str(STATUS, status));
     if (PyErr_Occurred()) {
+	if (self->debug)
+	    debug_msg("\n");
 	Py_DECREF(self);
 	return NULL;
     }
 
     if (status != CS_SUCCEED) {
+	if (self->debug)
+	    debug_msg(", None\n");
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
     }
@@ -590,6 +708,8 @@ PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version)
 
     self->conn = conn;
     Py_INCREF(self->conn);
+    if (self->debug)
+	debug_msg(", blk%d\n", self->serial);
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
@@ -601,12 +721,17 @@ static void CS_BLKDESC_dealloc(CS_BLKDESCObj *self)
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
 	CS_RETCODE status;
+	SY_THREAD_STATE;
 
+	SY_LOCK_ACQUIRE(self->conn);
 	SY_BEGIN_THREADS;
 	status = blk_drop(self->blk);
 	SY_END_THREADS;
+	SY_LOCK_RELEASE(self->conn);
+
 	if (self->debug)
-	    fprintf(stderr, "blk_drop() -> %s\n", value_str(STATUS, status));
+	    debug_msg("blk_drop(blk%d) -> %s\n",
+		      self->serial, value_str(STATUS, status));
     }
 #endif
     Py_XDECREF(self->conn);

@@ -24,11 +24,14 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
+static int locale_serial;
+
 PyObject *locale_alloc(CS_CONTEXTObj *ctx)
 {
     CS_LOCALEObj *self;
     CS_RETCODE status;
     CS_LOCALE *loc;
+    SY_THREAD_STATE;
 
     self = PyObject_NEW(CS_LOCALEObj, &CS_LOCALEType);
     if (self == NULL)
@@ -37,19 +40,29 @@ PyObject *locale_alloc(CS_CONTEXTObj *ctx)
     SY_LEAK_REG(self);
     self->locale = NULL;
     self->debug = ctx->debug;
+    self->serial = locale_serial++;
 
     PyErr_Clear();
+
+    SY_LOCK_ACQUIRE(ctx);
     SY_BEGIN_THREADS;
     status = cs_loc_alloc(ctx->ctx, &loc);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(ctx);
+
     if (self->debug)
-	fprintf(stderr, "cs_loc_alloc() -> %s\n", value_str(VAL_STATUS, status));
+	debug_msg("cs_loc_alloc(ctx%d, &loc) -> %s",
+		  ctx->serial, value_str(VAL_STATUS, status));
     if (PyErr_Occurred()) {
+	if (self->debug)
+	    debug_msg("\n");
 	Py_DECREF(self);
 	return NULL;
     }
 
     if (status != CS_SUCCEED) {
+	if (self->debug)
+	    debug_msg(", None\n");
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
     }
@@ -58,6 +71,8 @@ PyObject *locale_alloc(CS_CONTEXTObj *ctx)
     Py_INCREF(self->ctx);
     self->locale = loc;
 
+    if (self->debug)
+	debug_msg(", locale%d\n", self->serial);
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
@@ -72,8 +87,9 @@ static void CS_LOCALE_dealloc(CS_LOCALEObj *self)
 
 	status = cs_loc_drop(self->ctx->ctx, self->locale);
 	if (self->debug)
-	    fprintf(stderr, "cs_loc_drop() -> %s\n",
-		    value_str(VAL_STATUS, status));
+	    debug_msg("cs_loc_drop(ctx%d, locale%d) -> %s\n",
+		      self->ctx->serial, self->serial,
+		      value_str(VAL_STATUS, status));
     }
     Py_XDECREF(self->ctx);
     PyMem_DEL(self);
@@ -121,21 +137,22 @@ static PyObject *CS_LOCALE_cs_dt_info(CS_LOCALEObj *self, PyObject *args)
 	if (PyErr_Occurred())
 	    return NULL;
 
-	SY_BEGIN_THREADS;
 	status = cs_dt_info(self->ctx->ctx, CS_SET, self->locale,
 			    type, CS_UNUSED,
 			    &int_value, sizeof(int_value), &out_len);
-	SY_END_THREADS;
 	if (self->debug) {
 	    if (type == CS_DT_CONVFMT)
-		fprintf(stderr, "cs_dt_info(CS_SET, %s, %s) -> %s\n",
-			value_str(VAL_DTINFO, type),
-			value_str(VAL_CSDATES, int_value),
-			value_str(VAL_STATUS, status));
+		debug_msg("cs_dt_info(ctx%d, CS_SET, locale%d, %s, CS_UNUSED, %s, %d, &outlen) -> %s\n",
+			  self->ctx->serial, self->serial,
+			  value_str(VAL_DTINFO, type),
+			  value_str(VAL_CSDATES, int_value), sizeof(int_value),
+			  value_str(VAL_STATUS, status));
 	    else
-		fprintf(stderr, "cs_dt_info(CS_SET, %s, %d) -> %s\n",
-			value_str(VAL_DTINFO, type), (int)int_value,
-			value_str(VAL_STATUS, status));
+		debug_msg("cs_dt_info(ctx%d, CS_SET, locale%d, %s, CS_UNUSED, %d, %d, &outlen) -> %s\n",
+			  self->ctx->serial, self->serial,
+			  value_str(VAL_DTINFO, type),
+			  (int)int_value, sizeof(int_value),
+			  value_str(VAL_STATUS, status));
 	}
 
 	return PyInt_FromLong(status);
@@ -148,48 +165,46 @@ static PyObject *CS_LOCALE_cs_dt_info(CS_LOCALEObj *self, PyObject *args)
 
 	switch (csdate_type(type)) {
 	case OPTION_BOOL:
-	    SY_BEGIN_THREADS;
 	    status = cs_dt_info(self->ctx->ctx, CS_GET, self->locale,
 				type, CS_UNUSED,
 				&bool_value, sizeof(bool_value), &out_len);
-	    SY_END_THREADS;
 	    if (self->debug)
-		fprintf(stderr, "cs_dt_info(CS_GET, %s) -> %s, %d\n",
-			value_str(VAL_DTINFO, type),
-			value_str(VAL_STATUS, status), (int)bool_value);
+		debug_msg("cs_dt_info(ctx%d, CS_GET, locale%d, %s, CS_UNUSED, &value, %d, &outlen) -> %s, %d\n",
+			  self->ctx->serial, self->serial,
+			  value_str(VAL_DTINFO, type), sizeof(bool_value),
+			  value_str(VAL_STATUS, status), (int)bool_value);
 	    return Py_BuildValue("ii", status, bool_value);
 
 	case OPTION_INT:
-	    SY_BEGIN_THREADS;
 	    status = cs_dt_info(self->ctx->ctx, CS_GET, self->locale,
 				type, CS_UNUSED,
 				&int_value, sizeof(int_value), &out_len);
-	    SY_END_THREADS;
 	    if (self->debug) {
 		if (type == CS_DT_CONVFMT)
-		    fprintf(stderr, "cs_dt_info(CS_GET, %s) -> %s, %s\n",
-			    value_str(VAL_DTINFO, type),
-			    value_str(VAL_STATUS, status),
-			    value_str(VAL_CSDATES, int_value));
+		    debug_msg("cs_dt_info(ctx%d, CS_GET, locale%d, %s, CS_UNUSED, &value, %d, &outlen) -> %s, %s\n",
+			      self->ctx->serial, self->serial,
+			      value_str(VAL_DTINFO, type), sizeof(int_value),
+			      value_str(VAL_STATUS, status),
+			      value_str(VAL_CSDATES, int_value));
 		else
-		    fprintf(stderr, "cs_dt_info(CS_GET, %s) -> %s, %d\n",
-			    value_str(VAL_DTINFO, type),
-			    value_str(VAL_STATUS, status), (int)int_value);
+		    debug_msg("cs_dt_info(ctx%d, CS_GET, locale%d, %s, CS_UNUSED, &value, %d, &outlen) -> %s, %d\n",
+			      self->ctx->serial, self->serial,
+			      value_str(VAL_DTINFO, type), sizeof(int_value),
+			      value_str(VAL_STATUS, status), (int)int_value);
 	    }
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_STRING:
-	    SY_BEGIN_THREADS;
 	    status = cs_dt_info(self->ctx->ctx, CS_GET, self->locale,
 				type, item,
 				str_buff, sizeof(str_buff), &buff_len);
-	    SY_END_THREADS;
 	    if (buff_len > sizeof(str_buff))
 		buff_len = sizeof(str_buff);
 	    if (self->debug)
-		fprintf(stderr, "cs_dt_info(CS_GET, %s, %d) -> %s, '%.*s'\n",
-			value_str(VAL_DTINFO, type), (int)item,
-			value_str(VAL_STATUS, status), (int)buff_len, str_buff);
+		debug_msg("cs_dt_info(ctx%d, CS_GET, locale%d, %s, %d, buff, %d, &outlen) -> %s, \"%.*s\"\n",
+			  self->ctx->serial, self->serial,
+			  value_str(VAL_DTINFO, type), (int)item, sizeof(str_buff),
+			  value_str(VAL_STATUS, status), (int)buff_len, str_buff);
 	    return Py_BuildValue("is#", status, str_buff, buff_len);
 
 	case OPTION_UNKNOWN:
@@ -213,6 +228,7 @@ static char CS_LOCALE_cs_loc_drop__doc__[] =
 static PyObject *CS_LOCALE_cs_loc_drop(CS_LOCALEObj *self, PyObject *args)
 {
     CS_RETCODE status;
+    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
@@ -222,11 +238,16 @@ static PyObject *CS_LOCALE_cs_loc_drop(CS_LOCALEObj *self, PyObject *args)
 	return NULL;
     }
 
+    SY_LOCK_ACQUIRE(self->ctx);
     SY_BEGIN_THREADS;
     status = cs_loc_drop(self->ctx->ctx, self->locale);
     SY_END_THREADS;
+    SY_LOCK_RELEASE(self->ctx);
+
     if (self->debug)
-	fprintf(stderr, "cs_loc_drop() -> %s\n", value_str(VAL_STATUS, status));
+	debug_msg("cs_loc_drop(ctx%d, locale%d) -> %s\n",
+		  self->ctx->serial, self->serial,
+		  value_str(VAL_STATUS, status));
 
     if (status == CS_SUCCEED)
 	self->locale = NULL;
@@ -256,10 +277,10 @@ static PyObject *CS_LOCALE_cs_locale(CS_LOCALEObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
-	SY_BEGIN_THREADS;
+
 	status = cs_locale(self->ctx->ctx, CS_SET, self->locale,
 			   type, str, CS_NULLTERM, NULL);
-	SY_END_THREADS;
+
 	if (PyErr_Occurred())
 	    return NULL;
 
@@ -271,10 +292,8 @@ static PyObject *CS_LOCALE_cs_locale(CS_LOCALEObj *self, PyObject *args)
 	    return NULL;
 
 	PyErr_Clear();
-	SY_BEGIN_THREADS;
 	status = cs_locale(self->ctx->ctx, CS_GET, self->locale,
 			   type, buff, sizeof(buff), &str_len);
-	SY_END_THREADS;
 	if (PyErr_Occurred())
 	    return NULL;
 

@@ -56,7 +56,7 @@ void leak_unreg(PyObject *obj)
 	    num_objs--;
 	    return;
 	}
-    fprintf(stderr, "%s not registered!\n", obj->ob_type->tp_name);
+    debug_msg("%s not registered!\n", obj->ob_type->tp_name);
 }
 
 static PyObject *report_leaks(PyObject *module, PyObject *args)
@@ -64,7 +64,7 @@ static PyObject *report_leaks(PyObject *module, PyObject *args)
     LeakReg *reg;
 
     for (reg = all_objs; reg; reg = reg->next)
-	fprintf(stderr, "%s\n", reg->obj->ob_type->tp_name);
+	debug_msg("%s\n", reg->obj->ob_type->tp_name);
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -86,6 +86,56 @@ int first_tuple_int(PyObject *args, int *int_arg)
 }
 
 static char *module = "sybasect";
+
+static PyObject *debug_file = NULL;
+
+void debug_msg(char *fmt, ...)
+{
+    char buff[10240];
+    va_list ap;
+    PyObject *res;
+
+    if (debug_file == Py_None)
+	return;
+
+    va_start(ap, fmt);
+#ifdef _WIN32
+    _vsnprintf(buff, sizeof(buff), fmt, ap);
+#else
+    vsnprintf(buff, sizeof(buff), fmt, ap);
+#endif
+    va_end(ap);
+
+    res = PyObject_CallMethod(debug_file, "write", "s", buff);
+    Py_XDECREF(res);
+    PyErr_Clear();
+    res = PyObject_CallMethod(debug_file, "flush", "");
+    Py_XDECREF(res);
+    PyErr_Clear();
+}
+
+static char sybasect_set_debug__doc__[] = 
+"set_debug(file) -> old_file";
+
+static PyObject *sybasect_set_debug(PyObject *module, PyObject *args)
+{
+    PyObject *obj, *res;
+
+    if (!PyArg_ParseTuple(args, "O", &obj))
+	return NULL;
+
+    if (obj != Py_None) {
+	res = PyObject_CallMethod(obj, "write", "s", "");
+	Py_XDECREF(res);
+	if (res == NULL)
+	    return NULL;
+    }
+
+    res = debug_file;
+    debug_file = obj;
+    Py_INCREF(debug_file);
+    return res;
+}
 
 static char sybasect_cs_ctx_alloc__doc__[] =
 "cs_ctx_alloc([version]) -> ctx\n"
@@ -316,6 +366,7 @@ static struct PyMethodDef sybasect_methods[] = {
     { "CS_ORIGIN", (PyCFunction)sybasect_CS_ORIGIN, METH_VARARGS, sybasect_CS_ORIGIN__doc__ },
     { "CS_SEVERITY", (PyCFunction)sybasect_CS_SEVERITY, METH_VARARGS, sybasect_CS_SEVERITY__doc__ },
     { "CS_NUMBER", (PyCFunction)sybasect_CS_NUMBER, METH_VARARGS, sybasect_CS_NUMBER__doc__ },
+    { "set_debug", (PyCFunction)sybasect_set_debug, METH_VARARGS, sybasect_set_debug__doc__ },
     { NULL }			/* sentinel */
 };
 
@@ -1486,6 +1537,10 @@ void initsybasect(void)
     for (desc = sybase_args; desc->name != NULL; desc++)
 	if (!dict_add_int(d, desc->name, desc->value))
 	    break;
+
+    /* Set debug file to None */
+    debug_file = Py_None;
+    Py_INCREF(debug_file);
 
     /* Add type objects */
     if (dict_add_type(d, &CS_BLKDESCType)

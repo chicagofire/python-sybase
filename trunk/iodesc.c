@@ -28,6 +28,8 @@ static struct PyMethodDef CS_IODESC_methods[] = {
     { NULL }			/* sentinel */
 };
 
+static int iodesc_serial;
+
 PyObject *iodesc_alloc(CS_IODESC *iodesc)
 {
     CS_IODESCObj *self;
@@ -37,6 +39,8 @@ PyObject *iodesc_alloc(CS_IODESC *iodesc)
 	return NULL;
 
     SY_LEAK_REG(self);
+    self->serial = iodesc_serial++;
+
     self->iodesc = *iodesc;
     return (PyObject*)self;
 }
@@ -59,6 +63,8 @@ PyObject *iodesc_new(PyObject *module, PyObject *args)
 
     SY_LEAK_REG(self);
     memset(&self->iodesc, 0, sizeof(self->iodesc));
+    self->serial = iodesc_serial++;
+
     return (PyObject*)self;
 }
 
