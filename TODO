@@ -11,5 +11,3 @@
 - Bulkcopy copy out
 
 - DataBuf[n] = val should do more conversions
-
-- Access to CS_CONTEXT used by global_ctx() to allow callbacks.
