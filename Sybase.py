@@ -284,7 +284,6 @@ class Cursor:
         elif self._state in (CUR_FETCHING, CUR_END_RESULT, CUR_END_SET):
             self._cancel_all()
             self._dealloc()
-            self._drop_cmd()
         self._state = CUR_CLOSED
 
     def execute(self, sql, params = []):
