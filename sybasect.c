@@ -144,6 +144,153 @@ static PyObject *sybasect_CS_NUMBER(PyObject *module, PyObject *args)
     return PyInt_FromLong(CS_NUMBER(num));
 }
 
+static char sybasect_sizeof_type__doc__[] =
+"sizeof_type(int) -> int\n"
+"\n"
+"Return the size of a Sybase data type.";
+
+static PyObject *sybasect_sizeof_type(PyObject *module, PyObject *args)
+{
+    int num;
+    int size;
+
+    if (!PyArg_ParseTuple(args, "i", &num))
+	return NULL;
+
+    switch (num) {
+#ifdef CS_CHAR_TYPE
+    case CS_CHAR_TYPE:
+	size = sizeof(CS_CHAR);
+	break;
+#endif
+#ifdef CS_BINARY_TYPE
+    case CS_BINARY_TYPE:
+	size = sizeof(CS_BINARY);
+	break;
+#endif
+#ifdef CS_LONGCHAR_TYPE
+    case CS_LONGCHAR_TYPE:
+	size = sizeof(CS_LONGCHAR);
+	break;
+#endif
+#ifdef CS_LONGBINARY_TYPE
+    case CS_LONGBINARY_TYPE:
+	size = sizeof(CS_LONGBINARY);
+	break;
+#endif
+#ifdef CS_TEXT_TYPE
+    case CS_TEXT_TYPE:
+	size = sizeof(CS_TEXT);
+	break;
+#endif
+#ifdef CS_IMAGE_TYPE
+    case CS_IMAGE_TYPE:
+	size = sizeof(CS_IMAGE);
+	break;
+#endif
+#ifdef CS_TINYINT_TYPE
+    case CS_TINYINT_TYPE:
+	size = sizeof(CS_TINYINT);
+	break;
+#endif
+#ifdef CS_SMALLINT_TYPE
+    case CS_SMALLINT_TYPE:
+	size = sizeof(CS_SMALLINT);
+	break;
+#endif
+#ifdef CS_INT_TYPE
+    case CS_INT_TYPE:
+	size = sizeof(CS_INT);
+	break;
+#endif
+#ifdef CS_REAL_TYPE
+    case CS_REAL_TYPE:
+	size = sizeof(CS_REAL);
+	break;
+#endif
+#ifdef CS_FLOAT_TYPE
+    case CS_FLOAT_TYPE:
+	size = sizeof(CS_FLOAT);
+	break;
+#endif
+#ifdef CS_BIT_TYPE
+    case CS_BIT_TYPE:
+	size = sizeof(CS_BIT);
+	break;
+#endif
+#ifdef CS_DATETIME_TYPE
+    case CS_DATETIME_TYPE:
+	size = sizeof(CS_DATETIME);
+	break;
+#endif
+#ifdef CS_DATETIME4_TYPE
+    case CS_DATETIME4_TYPE:
+	size = sizeof(CS_DATETIME4);
+	break;
+#endif
+#ifdef CS_MONEY_TYPE
+    case CS_MONEY_TYPE:
+	size = sizeof(CS_MONEY);
+	break;
+#endif
+#ifdef CS_MONEY4_TYPE
+    case CS_MONEY4_TYPE:
+	size = sizeof(CS_MONEY4);
+	break;
+#endif
+#ifdef CS_NUMERIC_TYPE
+    case CS_NUMERIC_TYPE:
+	size = sizeof(CS_NUMERIC);
+	break;
+#endif
+#ifdef CS_DECIMAL_TYPE
+    case CS_DECIMAL_TYPE:
+	size = sizeof(CS_DECIMAL);
+	break;
+#endif
+#ifdef CS_VARCHAR_TYPE
+    case CS_VARCHAR_TYPE:
+	size = sizeof(CS_VARCHAR);
+	break;
+#endif
+#ifdef CS_VARBINARY_TYPE
+    case CS_VARBINARY_TYPE:
+	size = sizeof(CS_VARBINARY);
+	break;
+#endif
+#ifdef CS_LONG_TYPE
+    case CS_LONG_TYPE:
+	size = sizeof(CS_LONG);
+	break;
+#endif
+#ifdef CS_VOID_TYPE
+    case CS_VOID_TYPE:
+	size = sizeof(CS_VOID);
+	break;
+#endif
+#ifdef CS_USHORT_TYPE
+    case CS_USHORT_TYPE:
+	size = sizeof(CS_USHORT);
+	break;
+#endif
+#ifdef CS_CLIENTMSG_TYPE
+    case CS_CLIENTMSG_TYPE:
+	size = sizeof(CS_CLIENTMSG);
+	break;
+#endif
+#ifdef CS_SERVERMSG_TYPE
+    case CS_SERVERMSG_TYPE:
+	size = sizeof(CS_SERVERMSG);
+	break;
+#endif
+    default:
+	PyErr_SetString(PyExc_TypeError, "unknown type");
+	return NULL;
+    }
+
+    return PyInt_FromLong(size);
+}
+
 /* List of methods defined in the module */
 
 static struct PyMethodDef sybasect_methods[] = {
@@ -151,6 +298,7 @@ static struct PyMethodDef sybasect_methods[] = {
     { "cs_ctx_global", (PyCFunction)sybasect_cs_ctx_global, METH_VARARGS, sybasect_cs_ctx_global__doc__ },
     { "Buffer", (PyCFunction)sybasect_Buffer, METH_VARARGS, sybasect_Buffer__doc__ },
     { "numeric", (PyCFunction)NumericType_new, METH_VARARGS, numeric_new__doc__ },
+    { "sizeof_type", (PyCFunction)sybasect_sizeof_type, METH_VARARGS, sybasect_sizeof_type__doc__ },
     { "CS_DATAFMT", (PyCFunction)datafmt_new, METH_VARARGS, datafmt_new__doc__ },
     { "CS_IODESC", (PyCFunction)iodesc_new, METH_VARARGS, iodesc_new__doc__ },
     { "CS_LAYER", (PyCFunction)sybasect_CS_LAYER, METH_VARARGS, sybasect_CS_LAYER__doc__ },
@@ -370,6 +518,15 @@ static value_desc sybase_args[] = {
 #ifdef CS_BLK_CANCEL
     SYVAL(BULK, CS_BLK_CANCEL),
 #endif
+#ifdef BLK_VERSION_100
+    SYVAL(BULK, BLK_VERSION_100),
+#endif
+#ifdef BLK_VERSION_110
+    SYVAL(BULK, BLK_VERSION_110),
+#endif
+#ifdef CS_BLK_ARRAY_MAXLEN
+    SYVAL(BULK, CS_BLK_ARRAY_MAXLEN),
+#endif
 
 #ifdef CS_BLK_IN
     SYVAL(BULKDIR, CS_BLK_IN),
@@ -393,7 +550,7 @@ static value_desc sybase_args[] = {
 #ifdef BLK_IDSTARTNUM
     SYVAL(BULKPROPS, BLK_IDSTARTNUM),
 #endif
-#ifdef HAS_ARRAY_INSERT
+#ifdef ARRAY_INSERT
     SYVAL(BULKPROPS, ARRAY_INSERT),
 #endif
 
@@ -1068,6 +1225,7 @@ void initsybasect(void)
     CS_CONNECTIONType.ob_type = &PyType_Type;
     CS_CONTEXTType.ob_type = &PyType_Type;
     CS_DATAFMTType.ob_type = &PyType_Type;
+    CS_IODESCType.ob_type = &PyType_Type;
     CS_CLIENTMSGType.ob_type = &PyType_Type;
     CS_SERVERMSGType.ob_type = &PyType_Type;
     NumericType.ob_type = &PyType_Type;

@@ -155,7 +155,7 @@ PyObject *ctx_alloc(CS_INT version);
 PyObject *ctx_global(CS_INT version);
 PyObject *conn_alloc(CS_CONTEXTObj *ctx);
 PyObject *conn_find_object(CS_CONNECTION *conn);
-PyObject *bulk_alloc(CS_CONNECTIONObj *conn);
+PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version);
 PyObject *cmd_alloc(CS_CONNECTIONObj *conn);
 PyObject *cmd_eed(CS_CONNECTIONObj *conn, CS_COMMAND *eed);
 PyObject *clientmsg_alloc(void);
