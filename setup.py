@@ -34,7 +34,8 @@ if os.name == 'posix':                  # unix
     # On Linux the Sybase tcl library is distributed as sybtcl
     syb_libs = []
     for name in ['blk', 'ct', 'cs', 'sybtcl', 'tcl', 'comn', 'intl']:
-        if os.access(os.path.join(sybase, 'lib', 'lib%s.a' % name), os.R_OK):
+        lib_name = os.path.join(sybase, 'lib', 'lib%s.a' % name)
+        if os.access(lib_name, os.R_OK):
             syb_libs.append(name)
 
 elif os.name == 'nt':                   # win32
@@ -68,26 +69,26 @@ for dir in (syb_incdir, syb_libdir):
         sys.exit(1)
 
 extra_objects = None
-try:
-    if os.uname()[0] == 'SunOS':
-        syb_libs.remove('comn')
-        extra_objects = [os.path.join(syb_libdir, 'libcomn.a')]
-except:
-    pass
+#try:
+#    if os.uname()[0] == 'SunOS':
+#        syb_libs.remove('comn')
+#        extra_objects = [os.path.join(syb_libdir, 'libcomn.a')]
+#except:
+#    pass
 
-syb_macros = [('WANT_THREADS', None)]
+syb_macros = []
 for api in ('blk_describe', 'blk_rowxfer_mult', 'blk_textxfer',):
     if api_exists(api, os.path.join(syb_incdir, 'bkpublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
 for api in ('ct_cursor', 'ct_data_info', 'ct_send_data', 'ct_setparam', 'ct_diag',):
     if api_exists(api, os.path.join(syb_incdir, 'ctpublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
-for api in ('cs_ctx_global', 'cs_diag',):
+for api in ('cs_ctx_global',):
     if api_exists(api, os.path.join(syb_incdir, 'cspublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
 
 setup(name = "Sybase",
-      version = "0.33pre2",
+      version = "0.33pre3",
       maintainer = "Dave Cole",
       maintainer_email = " djc@object-craft.com.au",
       description = "Sybase Extension to Python",
