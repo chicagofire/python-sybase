@@ -1,0 +1,60 @@
+PYTHON_SRC=	${HOME}/download/Python-2.1
+
+MKHOWTO=	$(PYTHON_SRC)/Doc/tools/mkhowto
+
+.PHONY: html
+
+PAPER=		a4
+
+DOCFILES= copyright.tex
+
+all:	pdf
+
+dvi:	$(DOCFILES)
+	$(MKHOWTO) --dvi sybase.tex
+
+pdf:	$(DOCFILES)
+	$(MKHOWTO) --pdf --$(PAPER) sybase.tex
+
+ps:	$(DOCFILES)
+	$(MKHOWTO) --ps --$(PAPER) sybase.tex
+
+html:	$(DOCFILES)
+	$(MKHOWTO) --html sybase.tex
+	mkdir -p sybase/icons
+	cp $(PYTHON_SRC)/Doc/html/icons/* sybase/icons/
+	rm sybase/sybase.how
+# the iconserver option of mkhowto is broken since it writes
+# it to the end if the init_file where they aren't useful anymore,
+# so we work around it:
+	for f in `find sybase`; do \
+	  cat $$f | sed s/\.\.\\/icons/icons/g > $${f}2; \
+	  mv $${f}2 $$f; \
+	done
+
+world:	ps pdf html
+
+pdf-$(PAPER).tgz: pdf
+	tar cf - *.pdf | gzip -9 >$@
+
+postscript-$(PAPER).tgz: ps
+	tar cf - *.ps | gzip -9 >$@
+
+html.tgz:	html
+	tar cf - sybase | gzip -9 >$@
+
+clean:
+	rm -f *~ *.aux *.idx *.ilg *.ind *.log *.toc *.bkm *.syn *.pla api.tex
+
+# HTML in the doc directory
+dist: version html
+	rm -rf ../doc
+	mv sybase ../doc
+
+# Version substitution
+version: ../Sybase.py
+	DATE="`date +'%B %d, %Y'`"; \
+	VERSION="`awk '/__version__/ {print $$3}' ../Sybase.py`"; \
+	VERSION="`echo $$VERSION | sed s/\\'//g`"; \
+	cat sybase.tex | sed s/\\release.*/\\release\{$$VERSION\}/ >sybase.tex2; \
+	cat sybase.tex2 | sed s/\\date.*/\\date\{"$$DATE"\}/ >sybase.tex

@@ -18,5 +18,5 @@ SYBLIB = $(SYBROOT)/lib -lblk -lct -lcs -lsybtcl -lcomn -linsck -lintl
 # For Solaris
 #SYBLIB = $(SYBROOT)/lib -lblk -lct -lcs -ltcl -lcomn -lintl -lxnet
 
-_sybase _sybase.c ctx.c con.c cmd.c datafmt.c buffer.c numeric.c msgs.c -I$(DATETIMEINC) -I$(SYBINC) -L$(SYBLIB)
+sybasect sybasect.c ctx.c con.c blk.c cmd.c datafmt.c buffer.c numeric.c msgs.c -I$(DATETIMEINC) -I$(SYBINC) -L$(SYBLIB)
 

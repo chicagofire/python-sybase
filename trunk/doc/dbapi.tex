@@ -1,0 +1,68 @@
+\chapter{DB-API 2.0 Interface}
+
+\localmoduletable
+
+\section{\module{Sybase} --- Provide interface to Sybase}
+
+\declaremodule{standard}{Sybase}
+
+%\modulesynopsis{DB-API 2.0 interface to Sybase.}
+
+The \module{Sybase} module contains the following:
+
+\begin{datadesc}{__version__}
+A string which specifies the version of the Sybase module.
+\end{datadesc}
+
+\begin{datadesc}{apilevel}
+Specifies the level of DB-API compliance.  Currently set to
+\texttt{'2.0'}.
+\end{datadesc}
+
+\begin{datadesc}{threadsafety}
+Specifies the DB-API threadsafety.  The \module{Sybase} module allows
+threads to share the module, connections and cursors.
+\end{datadesc}
+
+\begin{datadesc}{paramstyle}
+Specifies the DB-API parameter style.  The \module{Sybase} module uses
+question marks as parameter place holders.
+\end{datadesc}
+
+\begin{classdesc}{Cursor}{owner}
+Return a new instance of the \class{Cursor} class which implements the
+DB-API 2.0 cursor functionality.
+
+The \var{owner} argument must be an instance of the \class{Connection}
+class.
+\end{classdesc}
+
+\begin{classdesc}{Bulkcopy}{owner, table, direction}
+Return a new instance of the \class{Bulkcopy} class.
+
+The \var{owner} argument must be an instance of the \class{Connection}
+class.  A bulk copy context will be established for the table named in
+the \var{table} argument, the bulkcopy direction must be either
+\code{CS_BLK_IN} or \code{CS_BLK_OUT} as defined in the
+\module{_sybase} module.
+
+This is an extension of the DB-API 2.0 specification.
+\end{classdesc}
+
+\begin{classdesc}{Connection}{dsn, user, passwd \optional{, database \code{= None}} \optional{, strip \code{= 0}}}
+Return a new instance of the \class{Connection} class which implements
+the DB-API 2.0 connection functionality.
+
+The \var{dsn} argument identifies the Sybase server, \var{user} and
+\var{passwd} are the Sybase username and password respectively.  If
+supplied, \var{database} specifies the database to use.  If the
+optional \var{strip} argument is non-zero then all \code{char} columns
+will be right stripped of whitespace.
+\end{classdesc}
+
+\begin{funcdesc}{connect}{dsn, user, passwd \optional{, database \code{= None}} \optional{, strip \code{ = 0}}}
+Implements the DB-API 2.0 \function{connect()} function.
+
+Creates a new \class{Connection} object passing the function arguments
+to the \class{Connection} constructor.
+\end{funcdesc}

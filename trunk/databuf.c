@@ -22,7 +22,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-#include "_sybase.h"
+#include "sybasect.h"
 #include "time.h"
 #include "mxDateTime.h"
 

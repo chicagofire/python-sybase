@@ -22,7 +22,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-#include "_sybase.h"
+#include "sybasect.h"
 
 int first_tuple_int(PyObject *args, int *int_arg)
 {
@@ -39,38 +39,42 @@ int first_tuple_int(PyObject *args, int *int_arg)
     return !PyErr_Occurred();
 }
 
-static char *module = "_sybase";
+static char *module = "sybasect";
 
-static char _sybase_cs_ctx_alloc__doc__[] =
-"cs_ctx_alloc() -> ctx\n"
+static char sybasect_cs_ctx_alloc__doc__[] =
+"cs_ctx_alloc([version]) -> ctx\n"
 "\n"
 "Allocate a new Sybase library context object.";
 
-static PyObject *_sybase_cs_ctx_alloc(PyObject *module, PyObject *args)
+static PyObject *sybasect_cs_ctx_alloc(PyObject *module, PyObject *args)
 {
-    if (!PyArg_ParseTuple(args, ""))
+    int version = CS_VERSION_100;
+
+    if (!PyArg_ParseTuple(args, "|i", &version))
 	return NULL;
-    return ctx_alloc();
+    return ctx_alloc(version);
 }
 
-static char _sybase_cs_ctx_global__doc__[] =
-"cs_ctx_global() -> ctx\n"
+static char sybasect_cs_ctx_global__doc__[] =
+"cs_ctx_global([version]) -> ctx\n"
 "\n"
 "Allocate or return global Sybase library context object.";
 
-static PyObject *_sybase_cs_ctx_global(PyObject *module, PyObject *args)
+static PyObject *sybasect_cs_ctx_global(PyObject *module, PyObject *args)
 {
-    if (!PyArg_ParseTuple(args, ""))
+    int version = CS_VERSION_100;
+
+    if (!PyArg_ParseTuple(args, "|i", &version))
 	return NULL;
-    return ctx_global();
+    return ctx_global(version);
 }
 
-static char _sybase_Buffer__doc__[] =
-"Buffer(datafmt) -> buffer\n"
+static char sybasect_Buffer__doc__[] =
+"Buffer(obj) -> buffer\n"
 "\n"
-"Allocate a buffer to store data described by datafmt.";
+"Allocate a buffer to store data described by datafmt or object type.";
 
-static PyObject *_sybase_Buffer(PyObject *module, PyObject *args)
+static PyObject *sybasect_Buffer(PyObject *module, PyObject *args)
 {
     PyObject *obj;
 
@@ -82,18 +86,18 @@ static PyObject *_sybase_Buffer(PyObject *module, PyObject *args)
 
 /* List of methods defined in the module */
 
-static struct PyMethodDef _sybase_methods[] = {
-    { "cs_ctx_alloc", (PyCFunction)_sybase_cs_ctx_alloc, METH_VARARGS, _sybase_cs_ctx_alloc__doc__ },
-    { "cs_ctx_global", (PyCFunction)_sybase_cs_ctx_global, METH_VARARGS, _sybase_cs_ctx_global__doc__ },
-    { "Buffer", (PyCFunction)_sybase_Buffer, METH_VARARGS, _sybase_Buffer__doc__ },
+static struct PyMethodDef sybasect_methods[] = {
+    { "cs_ctx_alloc", (PyCFunction)sybasect_cs_ctx_alloc, METH_VARARGS, sybasect_cs_ctx_alloc__doc__ },
+    { "cs_ctx_global", (PyCFunction)sybasect_cs_ctx_global, METH_VARARGS, sybasect_cs_ctx_global__doc__ },
+    { "Buffer", (PyCFunction)sybasect_Buffer, METH_VARARGS, sybasect_Buffer__doc__ },
     { "numeric", (PyCFunction)NumericType_new, METH_VARARGS },
     { NULL }			/* sentinel */
 };
 
 /* Initialization function for the module (*must* be called
-   init_sybase) */
+   initsybasect) */
 
-static char _sybase_module_documentation[] = 
+static char sybasect_module_documentation[] = 
 "Thin wrapper on top of the Sybase CT library - intended to be used\n"
 "by the Sybase.py module.";
 
@@ -118,6 +122,9 @@ typedef struct {
 } value_desc;
 
 static value_desc sybase_args[] = {
+    SYVAL(CSVER, CS_VERSION_100),
+    SYVAL(CSVER, CS_VERSION_110),
+
     SYVAL(ACTION, CS_CACHE),
     SYVAL(ACTION, CS_CLEAR),
     SYVAL(ACTION, CS_GET),
@@ -183,6 +190,20 @@ static value_desc sybase_args[] = {
 #ifdef CS_END
     SYVAL(CURSOROPT, CS_END),
 #endif
+
+    SYVAL(BULK, CS_BLK_ALL),
+    SYVAL(BULK, CS_BLK_BATCH),
+    SYVAL(BULK, CS_BLK_CANCEL),
+
+    SYVAL(BULKDIR, CS_BLK_IN),
+    SYVAL(BULKDIR, CS_BLK_OUT),
+
+    SYVAL(BULKPROPS, BLK_IDENTITY),
+    SYVAL(BULKPROPS, BLK_SENSITIVITY_LBL),
+    SYVAL(BULKPROPS, BLK_NOAPI_CHK),
+    SYVAL(BULKPROPS, BLK_SLICENUM),
+    SYVAL(BULKPROPS, BLK_IDSTARTNUM),
+    SYVAL(BULKPROPS, ARRAY_INSERT),
 
     SYVAL(DYNAMIC, CS_PREPARE),
     SYVAL(DYNAMIC, CS_EXECUTE),
@@ -330,7 +351,9 @@ static value_desc sybase_args[] = {
     SYVAL(STATUSFMT, CS_INPUTVALUE),
     SYVAL(STATUSFMT, CS_UPDATECOL),
     SYVAL(STATUSFMT, CS_RETURN),
+#ifdef CS_RETURN_CANBENULL
     SYVAL(STATUSFMT, CS_RETURN_CANBENULL),
+#endif
     SYVAL(STATUSFMT, CS_TIMESTAMP),
     SYVAL(STATUSFMT, CS_NODEFAULT),
     SYVAL(STATUSFMT, CS_IDENTITY),
@@ -426,14 +449,14 @@ char *value_str(int type, int value)
     return num_str;
 }
 
-void init_sybase()
+void initsybasect()
 {
     PyObject *m, *d;
     value_desc *desc;
 
     /* Create the module and add the functions */
-    m = Py_InitModule4(module, _sybase_methods,
-		       _sybase_module_documentation,
+    m = Py_InitModule4(module, sybasect_methods,
+		       sybasect_module_documentation,
 		       (PyObject*)NULL, PYTHON_API_VERSION);
 
     /* Add some symbolic constants to the module */

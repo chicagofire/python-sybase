@@ -22,7 +22,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-#include "_sybase.h"
+#include "sybasect.h"
 
 static struct PyMethodDef CS_CLIENTMSG_methods[] = {
     { NULL }			/* sentinel */

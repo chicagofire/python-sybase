@@ -22,7 +22,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-#include "_sybase.h"
+#include "sybasect.h"
 
 void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale)
 {

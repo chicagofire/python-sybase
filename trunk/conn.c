@@ -22,7 +22,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-#include "_sybase.h"
+#include "sybasect.h"
 
 static char CS_CONNECTION_ct_diag__doc__[] = 
 "ct_diag(CS_INIT) -> status\n"
@@ -140,7 +140,7 @@ static PyObject *CS_CONNECTION_ct_connect(CS_CONNECTIONObj *self, PyObject *args
 }
 
 static char CS_CONNECTION_ct_cmd_alloc__doc__[] = 
-"ct_cmd_alloc() -> cmd";
+"ct_cmd_alloc() -> status, cmd";
 
 static PyObject *CS_CONNECTION_ct_cmd_alloc(CS_CONNECTIONObj *self, PyObject *args)
 {
@@ -157,12 +157,12 @@ static PyObject *CS_CONNECTION_blk_alloc(CS_CONNECTIONObj *self, PyObject *args)
 {
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
-    Py_INCREF(Py_None);
-    return Py_None;
+
+    return bulk_alloc(self);
 }
 
 static char CS_CONNECTION_ct_close__doc__[] = 
-"ct_close([option]) - > None";
+"ct_close([option]) - > status";
 
 static PyObject *CS_CONNECTION_ct_close(CS_CONNECTIONObj *self, PyObject *args)
 {
