@@ -54,9 +54,6 @@ elif os.name == 'nt':                   # win32
     # Not sure how the installation location is specified under NT
     if os.environ.has_key('SYBASE'):
         sybase = os.environ['SYBASE']
-        if os.environ.has_key('SYBASE_OCS'):
-            ocs = os.environ['SYBASE_OCS']
-            sybase = os.path.join(sybase, ocs)
     else:
         sybase = r'i:\sybase\sql11.5'
         if not os.access(sybase, os.F_OK):
@@ -75,6 +72,10 @@ else:                                   # unknown
         'figure out how to get it working for your platform, please send\n'
         'mail to djc@object-craft.com.au so you can help other people.\n')
     sys.exit(1)
+
+if os.environ.has_key('SYBASE_OCS'):
+    ocs = os.environ['SYBASE_OCS']
+    sybase = os.path.join(sybase, ocs)
 
 syb_incdir = os.path.join(sybase, 'include')
 syb_libdir = os.path.join(sybase, 'lib')
