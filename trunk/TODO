@@ -17,7 +17,7 @@
 
 - Expose value_str() to Python.
 
-- BLOB columns
+- BLOB columns (text/image)
 
 - Document numeric, money, datetime
 
