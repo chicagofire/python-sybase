@@ -25,7 +25,7 @@ PERFORMANCE OF THIS SOFTWARE.
 #include "sybasect.h"
 
 static char CS_COMMAND_ct_bind__doc__[] = 
-"ct_bind(int, datafmt) -> status, buffer";
+"ct_bind(int, datafmt) -> status, buf";
 
 static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
 {
@@ -318,7 +318,7 @@ static PyObject *CS_COMMAND_ct_cursor(CS_COMMANDObj *self, PyObject *args)
 }
 
 static char CS_COMMAND_ct_data_info__doc__[] = 
-"ct_data_info(CS_SET, num, iodesc) -> status\n"
+"ct_data_info(CS_SET, iodesc) -> status\n"
 "ct_data_info(CS_GET, num) -> status, iodesc";
 
 static PyObject *CS_COMMAND_ct_data_info(CS_COMMANDObj *self, PyObject *args)
@@ -340,13 +340,13 @@ static PyObject *CS_COMMAND_ct_data_info(CS_COMMANDObj *self, PyObject *args)
     switch (action) {
     case CS_SET:
 	/* ct_data_info(CS_SET, int, iodesc) -> status */
-	if (!PyArg_ParseTuple(args, "iiO!",
-			      &action, &num, &CS_IODESCType, &desc))
+	if (!PyArg_ParseTuple(args, "iO!",
+			      &action, &CS_IODESCType, &desc))
 	    return NULL;
-	status = ct_data_info(self->cmd, CS_SET, num, &desc->iodesc);
+	status = ct_data_info(self->cmd, CS_SET, CS_UNUSED, &desc->iodesc);
 	if (self->debug)
-	    fprintf(stderr, "ct_data_info(CS_SET, %d) -> %s\n",
-		    (int)num, value_str(STATUS, status));
+	    fprintf(stderr, "ct_data_info(CS_SET) -> %s\n",
+		    value_str(STATUS, status));
 	return PyInt_FromLong(status);
 
     case CS_GET:
@@ -555,7 +555,7 @@ static PyObject *CS_COMMAND_ct_get_data(CS_COMMANDObj *self, PyObject *args)
 }
 
 static char CS_COMMAND_ct_param__doc__[] = 
-"ct_param(buffer) -> status";
+"ct_param(buf) -> status";
 
 static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 {
@@ -570,6 +570,7 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 	return NULL;
     }
 
+    /* FIXME: Need to handle CS_UPDATECOL variant */
     if (DataBuf_Check(obj)) {
 	DataBufObj *buffer = (DataBufObj *)obj;
 
@@ -802,7 +803,7 @@ static PyObject *CS_COMMAND_ct_send(CS_COMMANDObj *self, PyObject *args)
 }
 
 static char CS_COMMAND_ct_send_data__doc__[] = 
-"ct_send_data(string) -> status";
+"ct_send_data(buf) -> status";
 
 static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
 {
@@ -827,7 +828,7 @@ static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
 }
 
 static char CS_COMMAND_ct_setparam__doc__[] = 
-"ct_setparam(buffer) -> status";
+"ct_setparam(buf) -> status";
 
 static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
 {
