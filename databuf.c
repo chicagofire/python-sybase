@@ -160,8 +160,7 @@ static PyObject *DataBuf_item(DataBufObj *self, int i)
     case CS_LONGBINARY_TYPE:
     case CS_VARBINARY_TYPE:
     case CS_BINARY_TYPE:
-	PyErr_SetString(PyExc_TypeError, "unsupported data format");
-	return NULL;
+	return PyString_FromStringAndSize(item, self->copied[i]);
 
     case CS_CHAR_TYPE:
 	if (self->strip) {
@@ -250,8 +249,17 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
     case CS_LONGBINARY_TYPE:
     case CS_VARBINARY_TYPE:
     case CS_BINARY_TYPE:
-	PyErr_SetString(PyExc_TypeError, "unsupported data format");
-	return -1;
+	size = PyString_Size(v);
+	if (size > self->fmt.maxlength) {
+	    PyErr_SetString(PyExc_TypeError, "string too long for buffer");
+	    Py_XDECREF(obj);
+	    return -1;
+	}
+	memmove(item, PyString_AsString(v), size);
+	if (size < self->fmt.maxlength)
+	    ((char*)item)[size] = '\0';
+	self->copied[i] = size;
+	break;
 
     case CS_CHAR_TYPE:
 	if (!PyString_Check(v)) {
