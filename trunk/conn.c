@@ -821,7 +821,7 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    return Py_BuildValue("is#", status, str_buff, buff_len);
+	    return Py_BuildValue("is", status, str_buff);
 
 	case OPTION_UNKNOWN:
 	    PyErr_SetString(PyExc_TypeError, "unknown option value");
