@@ -1,7 +1,3 @@
-\chapter{Low Level Sybase Access}
-
-\localmoduletable
-
 \section{\module{sybasect} --- Interface to Sybase-CT library}
 
 \declaremodule[sybasect]{extension}{sybasect}
@@ -12,8 +8,8 @@ This is not a complete reference to the Sybase CT library.  Sybase
 produce excellent documentation which fully describes the use of the
 CT library.
 
-This document describes how to access the Sybase CT library while
-using this module.
+This section describes how to access the Sybase CT library while
+using this wrapper module.
 
 The \module{sybasect} extension contains the following:
 
@@ -67,6 +63,15 @@ Sybase.  The type of object returned by \code{DataBuf('hello')}.
 \begin{datadesc}{NumericType}
 The type used to store Sybase \code{CS_NUMERIC} and \code{CS_DECIMAL}
 data values.
+\end{datadesc}
+
+\begin{datadesc}{DateTimeType}
+The type used to store Sybase \code{CS_DATETIME} and
+\code{CS_DATETIME4} data values.
+\end{datadesc}
+
+\begin{datadesc}{MoneyType}
+The type used to store Sybase \code{CS_MONEY} data values.
 \end{datadesc}
 
 \subsection{Functions}
