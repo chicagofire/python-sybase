@@ -1,5 +1,5 @@
-Installing Sybase module on Linux / Unix
-----------------------------------------
+Installing Sybase module
+------------------------
 
 Edit setup.py:
 
@@ -14,24 +14,7 @@ Edit setup.py:
 
 	http://www.lemburg.com/files/python/mxDateTime.html
 
-Then all you should need to do is run the following command as root:
+Then all you should need to do is run the following command as
+root/administrator:
 
-# python setup.py install
-
-Installing Sybase module on Linux / Unix
-----------------------------------------
-
-Edit ntsetup.py:
-
-- Change sybase to point to the top level directory when Sybase is
-  installed on your system
-
-- Change mxdatetime_incdir to point to the location of mxDateTime.h
-  from the mxDateTime source.  mxDateTime can be obtained from:
-
-	http://www.lemburg.com/files/python/mxDateTime.html
-
-Then all you should need to do is run the following command:
-
-> python ntsetup.py install
-
+	python setup.py install
