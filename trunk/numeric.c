@@ -141,14 +141,18 @@ NumericObj *Numeric_FromLong(PyObject *obj, int precision, int scale)
     CS_RETCODE conv_result;
     PyObject *strobj = PyObject_Str(obj);
     char *str;
+    int num_digits;
 
     if (strobj == NULL)
 	return NULL;
     str = PyString_AsString(strobj);
+    num_digits = strlen(str);
+    if (str[num_digits - 1] == 'L')
+	num_digits--;
     char_datafmt(&char_fmt);
-    char_fmt.maxlength = strlen(str) - 1;
+    char_fmt.maxlength = num_digits;
     if (precision < 0)
-	precision = strlen(str) - 1;
+	precision = num_digits;
     if (precision > CS_MAX_PREC)
 	precision = CS_MAX_PREC;
     if (scale < 0)
@@ -524,7 +528,7 @@ static char NumericType__doc__[] =
 PyTypeObject NumericType = {
     PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
-    "Numeric",			/*tp_name*/
+    "NumericType",		/*tp_name*/
     sizeof(NumericObj),		/*tp_basicsize*/
     0,				/*tp_itemsize*/
     /* methods */
