@@ -28,7 +28,7 @@ PERFORMANCE OF THIS SOFTWARE.
 #include "Python.h"
 #include "structmember.h"
 
-#define WANT_THREADS
+#undef WANT_THREADS
 
 #ifdef WANT_THREADS
 #define SY_BEGIN_THREADS Py_BEGIN_ALLOW_THREADS
