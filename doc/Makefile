@@ -1,4 +1,4 @@
-PYTHON_SRC=	${HOME}/download/Python-2.1
+PYTHON_SRC=	${HOME}/download/Python-2.2
 
 MKHOWTO=	$(PYTHON_SRC)/Doc/tools/mkhowto
 
