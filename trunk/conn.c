@@ -56,7 +56,6 @@ PyObject *conn_find_object(CS_CONNECTION *cs_conn)
     return NULL;
 }
 
-#ifdef HAVE_CT_DIAG
 static char CS_CONNECTION_ct_diag__doc__[] = 
 "ct_diag(CS_INIT) -> status\n"
 "ct_diag(CS_MSGLIMIT, type, num) -> status\n"
@@ -69,9 +68,12 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 {
     int operation, type, index, num;
     CS_VOID *buffer;
-    PyObject *cmd, *msg;
+    PyObject *msg;
     CS_RETCODE status;
+#ifndef HAVE_FREETDS
+    PyObject *cmd;
     CS_COMMAND *eed;
+#endif
     SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &operation))
@@ -90,11 +92,15 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 
 	PyErr_Clear();
 
+#ifdef HAVE_FREETDS
+	status = CS_SUCCEED;
+#else
 	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_diag(self->conn, operation, CS_UNUSED, CS_UNUSED, NULL);
 	SY_END_THREADS;
 	SY_LOCK_RELEASE(self);
+#endif
 
 	if (self->debug)
 	    debug_msg("ct_diag(conn%d, CS_INIT, CS_UNUSED, CS_UNUSED, NULL)"
@@ -112,11 +118,15 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 
 	PyErr_Clear();
 
+#ifdef HAVE_FREETDS
+	status = CS_SUCCEED;
+#else
 	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_diag(self->conn, operation, type, CS_UNUSED, &num);
 	SY_END_THREADS;
 	SY_LOCK_RELEASE(self);
+#endif
 
 	if (self->debug)
 	    debug_msg("ct_diag(conn%d, CS_MSGLIMIT, %s, CS_UNUSED, %d)"
@@ -135,11 +145,15 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 
 	PyErr_Clear();
 
+#ifdef HAVE_FREETDS
+	status = CS_SUCCEED;
+#else
 	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_diag(self->conn, operation, type, CS_UNUSED, NULL);
 	SY_END_THREADS;
 	SY_LOCK_RELEASE(self);
+#endif
 
 	if (self->debug)
 	    debug_msg("ct_diag(conn%d, CS_CLEAR, %s, CS_UNUSED, NULL) -> %s\n",
@@ -169,11 +183,15 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 
 	PyErr_Clear();
 
+#ifdef HAVE_FREETDS
+	status = CS_SUCCEED;
+#else
 	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_diag(self->conn, operation, type, index, buffer);
 	SY_END_THREADS;
 	SY_LOCK_RELEASE(self);
+#endif
 
 	if (self->debug)
 	    debug_msg("ct_diag(conn%d, CS_GET, %s, %d, buff) -> %s\n",
@@ -198,11 +216,15 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 
 	PyErr_Clear();
 
+#ifdef HAVE_FREETDS
+	status = CS_SUCCEED;
+#else
 	SY_LOCK_ACQUIRE(self);
 	SY_BEGIN_THREADS;
 	status = ct_diag(self->conn, operation, type, CS_UNUSED, &num);
 	SY_END_THREADS;
 	SY_LOCK_RELEASE(self);
+#endif
 
 	if (self->debug)
 	    debug_msg("ct_diag(conn%d, CS_STATUS, %s, CS_UNUSED, &num)"
@@ -214,6 +236,7 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 
 	return Py_BuildValue("ii", status, num);
 
+#ifndef HAVE_FREETDS
     case CS_EED_CMD:
 	/* ct_diag(CS_EED_CMD, type, index) -> status, cmd */
 	if (!PyArg_ParseTuple(args, "iii", &operation, &type, &index))
@@ -246,13 +269,13 @@ static PyObject *CS_CONNECTION_ct_diag(CS_CONNECTIONObj *self, PyObject *args)
 	if (self->debug)
 	    debug_msg(", cmd%d\n", ((CS_COMMANDObj*)cmd)->serial);
 	return Py_BuildValue("iN", status, cmd);
+#endif
 
     default:
 	PyErr_SetString(PyExc_TypeError, "unknown operation");
 	return NULL;
     }
 }
-#endif
 
 static char CS_CONNECTION_ct_cancel__doc__[] = 
 "ct_cancel(type) -> status";
@@ -1229,9 +1252,7 @@ static PyObject *CS_CONNECTION_ct_options(CS_CONNECTIONObj *self, PyObject *args
 }
 
 static struct PyMethodDef CS_CONNECTION_methods[] = {
-#ifdef HAVE_CT_DIAG
     { "ct_diag", (PyCFunction)CS_CONNECTION_ct_diag, METH_VARARGS, CS_CONNECTION_ct_diag__doc__ },
-#endif
     { "ct_cancel", (PyCFunction)CS_CONNECTION_ct_cancel, METH_VARARGS, CS_CONNECTION_ct_cancel__doc__ },
     { "ct_connect", (PyCFunction)CS_CONNECTION_ct_connect, METH_VARARGS, CS_CONNECTION_ct_connect__doc__ },
     { "ct_cmd_alloc", (PyCFunction)CS_CONNECTION_ct_cmd_alloc, METH_VARARGS, CS_CONNECTION_ct_cmd_alloc__doc__ },
