@@ -24,9 +24,9 @@ def connect_db(ctx, user_name, password):
     # Allocate a connection pointer
     status, conn = ctx.ct_con_alloc()
     if status != CS_SUCCEED:
-        raise Error('ct_con_alloc failed')
+        raise CSError(ctx, 'ct_con_alloc failed')
     if conn.ct_diag(CS_INIT) != CS_SUCCEED:
-        raise CTError('ct_diag failed')
+        raise CTError(conn, 'ct_diag failed')
     # Set the username and password properties
     if conn.ct_con_props(CS_SET, CS_USERNAME, user_name) != CS_SUCCEED:
         raise CTError(conn, 'ct_con_props CS_USERNAME failed')
@@ -90,7 +90,7 @@ def handle_returns(cmd):
         elif result == CS_CMD_DONE:
             print 'TYPE : CMD DONE'
         elif result == CS_CMD_FAIL:
-            print 'TYPE: CMD FAIL'
+            raise CTError(cmd.conn, 'ct_results: CS_CMD_FAIL')
         elif result == CS_CURSOR_RESULT:
             print 'TYPE: CURSOR RESULT'
             bufs = bind_columns(cmd)
