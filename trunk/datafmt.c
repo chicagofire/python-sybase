@@ -149,7 +149,7 @@ void datafmt_debug(CS_DATAFMT *fmt)
 #define OFF(x) offsetof(CS_DATAFMTObj, x)
 
 static struct memberlist CS_DATAFMT_memberlist[] = {
-    { "name", T_STRING, OFF(fmt.name) }, /* faked */
+    { "name", T_STRING_INPLACE, OFF(fmt.name) }, /* faked */
     { "datatype", T_INT, OFF(fmt.datatype) },
     { "format", T_INT, OFF(fmt.format) },
     { "maxlength", T_INT, OFF(fmt.maxlength) },

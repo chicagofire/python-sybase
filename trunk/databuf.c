@@ -393,7 +393,7 @@ static PySequenceMethods DataBuf_as_sequence = {
 #define OFF(x) offsetof(DataBufObj, x)
 
 static struct memberlist DataBuf_memberlist[] = {
-    { "name", T_STRING, OFF(fmt.name) }, /* faked */
+    { "name", T_STRING_INPLACE, OFF(fmt.name) }, /* faked */
     { "datatype", T_INT, OFF(fmt.datatype), RO },
     { "format", T_INT, OFF(fmt.format) },
     { "maxlength", T_INT, OFF(fmt.maxlength), RO },

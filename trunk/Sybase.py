@@ -586,6 +586,7 @@ class Connection:
         self.database = database
         self.auto_commit = auto_commit
         self._do_locking = locking
+        self._is_connected = 0
         self.arraysize = 32
         if locking:
             self._connlock = threading.RLock()
@@ -614,7 +615,8 @@ class Connection:
             self._connlock.release()
 
     def _raise_error(self, exc, text):
-        self._conn.ct_cancel(CS_CANCEL_ALL)
+        if self._is_connected:
+            self._conn.ct_cancel(CS_CANCEL_ALL)
         raise exc(text)
 
     def connect(self):
@@ -624,6 +626,7 @@ class Connection:
             status = conn.ct_connect(self.dsn)
             if status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_connect')
+            self._is_connected = 1
             status = conn.ct_options(CS_SET, CS_OPT_CHAINXACTS, not self.auto_commit)
             if status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_options')
@@ -676,6 +679,7 @@ class Connection:
             status = conn.ct_close(CS_FORCE_CLOSE)
             if status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_close')
+            self._is_connected = 0
         finally:
             self._unlock()
 

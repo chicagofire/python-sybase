@@ -69,9 +69,9 @@ static struct memberlist CS_IODESC_memberlist[] = {
     { "total_txtlen",  T_INT,    OFF(iodesc.total_txtlen) },
     { "offset",        T_INT,    OFF(iodesc.offset) },
     { "log_on_update", T_INT,    OFF(iodesc.log_on_update) },
-    { "name",          T_STRING, OFF(iodesc.name) }, /* faked */
-    { "timestamp",     T_STRING, OFF(iodesc.timestamp) }, /* faked */
-    { "textptr",       T_STRING, OFF(iodesc.textptr) }, /* faked */
+    { "name",          T_STRING_INPLACE, OFF(iodesc.name) }, /* faked */
+    { "timestamp",     T_STRING_INPLACE, OFF(iodesc.timestamp) }, /* faked */
+    { "textptr",       T_STRING_INPLACE, OFF(iodesc.textptr) }, /* faked */
     { NULL }			/* Sentinel */
 };
 

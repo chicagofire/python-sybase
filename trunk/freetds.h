@@ -62,7 +62,9 @@
 #define CS_DATES_YMD3 CS_DATES_YMD3
 #define CS_DATES_YMD3_YYYY CS_DATES_YMD3_YYYY
 
+#ifndef CS_SRC_VALUE
 #define CS_SRC_VALUE 0
+#endif
 #define CS_MAX_SCALE 77
 
 typedef unsigned char CS_BIT;
