@@ -150,7 +150,7 @@ static char CS_IODESCType__doc__[] =
 PyTypeObject CS_IODESCType = {
     PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
-    "CS_IODESC",		/*tp_name*/
+    "IODescType",		/*tp_name*/
     sizeof(CS_IODESCObj),	/*tp_basicsize*/
     0,				/*tp_itemsize*/
     /* methods */

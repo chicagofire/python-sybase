@@ -101,7 +101,7 @@ typedef struct {
     char *buff;
     CS_INT *copied;
     CS_SMALLINT *indicator;
-} BufferObj;
+} DataBufObj;
 
 typedef struct {
     PyObject_HEAD
@@ -126,7 +126,7 @@ extern PyTypeObject CS_DATAFMTType;
 extern PyTypeObject CS_IODESCType;
 extern PyTypeObject CS_CLIENTMSGType;
 extern PyTypeObject CS_SERVERMSGType;
-extern PyTypeObject BufferType;
+extern PyTypeObject DataBufType;
 extern PyTypeObject NumericType;
 
 int first_tuple_int(PyObject *args, int *int_arg);
@@ -139,7 +139,7 @@ enum { CSVER, ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT,
 char *value_str(int type, int value);
 
 int Numeric_Check(PyObject *obj);
-int Buffer_Check(PyObject *obj);
+int DataBuf_Check(PyObject *obj);
 int CS_DATAFMT_Check(PyObject *obj);
 int CS_IODESC_Check(PyObject *obj);
 

@@ -30,10 +30,10 @@ static char CS_BLKDESC_blk_bind__doc__[] =
 static PyObject *CS_BLKDESC_blk_bind(CS_BLKDESCObj *self, PyObject *args)
 {
     int colnum;
-    BufferObj *buffer;
+    DataBufObj *buffer;
     CS_RETCODE status;
 
-    if (!PyArg_ParseTuple(args, "iO!", &colnum, &BufferType, &buffer))
+    if (!PyArg_ParseTuple(args, "iO!", &colnum, &DataBufType, &buffer))
 	return NULL;
 
     if (self->blk == NULL) {
@@ -532,7 +532,7 @@ static char CS_BLKDESCType__doc__[] =
 PyTypeObject CS_BLKDESCType = {
     PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
-    "CS_BLKDESC",		/*tp_name*/
+    "BlkDescType",		/*tp_name*/
     sizeof(CS_BLKDESCObj),	/*tp_basicsize*/
     0,				/*tp_itemsize*/
     /* methods */

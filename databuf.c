@@ -26,11 +26,11 @@ PERFORMANCE OF THIS SOFTWARE.
 #include "time.h"
 #include "mxDateTime.h"
 
-static struct PyMethodDef Buffer_methods[] = {
+static struct PyMethodDef DataBuf_methods[] = {
     { NULL }			/* sentinel */
 };
 
-static PyObject *allocate_buffers(BufferObj *self)
+static PyObject *allocate_buffers(DataBufObj *self)
 {
     int i;
 
@@ -50,13 +50,13 @@ static PyObject *allocate_buffers(BufferObj *self)
     return (PyObject*)self;
 }
 
-static int Buffer_ass_item(BufferObj *self, int i, PyObject *v);
+static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v);
 
 PyObject *buffer_alloc(PyObject *obj)
 {
-    BufferObj *self;
+    DataBufObj *self;
 
-    self = PyObject_NEW(BufferObj, &BufferType);
+    self = PyObject_NEW(DataBufObj, &DataBufType);
     if (self == NULL)
 	return NULL;
 
@@ -95,7 +95,7 @@ PyObject *buffer_alloc(PyObject *obj)
 	}
 
 	if (allocate_buffers(self) == NULL
-	    || Buffer_ass_item(self, 0, obj) < 0) {
+	    || DataBuf_ass_item(self, 0, obj) < 0) {
 	    Py_DECREF(self);
 	    return NULL;
 	}
@@ -104,7 +104,7 @@ PyObject *buffer_alloc(PyObject *obj)
     return (PyObject*)self;
 }
 
-static void Buffer_dealloc(BufferObj *self)
+static void DataBuf_dealloc(DataBufObj *self)
 {
     if (self->buff != NULL)
 	free(self->buff);
@@ -116,19 +116,19 @@ static void Buffer_dealloc(BufferObj *self)
     PyMem_DEL(self);
 }
 
-/* Code to handle accessing Buffer objects as sequence objects */
-static int Buffer_length(BufferObj *self)
+/* Code to handle accessing DataBuf objects as sequence objects */
+static int DataBuf_length(DataBufObj *self)
 {
     return self->fmt.count;
 }
 
-static PyObject *Buffer_concat(BufferObj *self, PyObject *bb)
+static PyObject *DataBuf_concat(DataBufObj *self, PyObject *bb)
 {
     PyErr_SetString(PyExc_TypeError, "buffer concat not supported");
     return NULL;
 }
 
-static PyObject *Buffer_repeat(BufferObj *self, int n)
+static PyObject *DataBuf_repeat(DataBufObj *self, int n)
 {
     PyErr_SetString(PyExc_TypeError, "buffer repeat not supported");
     return NULL;
@@ -148,7 +148,7 @@ static PyObject *mx_datetime(CS_DATEREC *date_rec)
 					       (double)date_rec->datesecond + (double)date_rec->datemsecond / 1000.0);
 }
 
-static PyObject *Buffer_item(BufferObj *self, int i)
+static PyObject *DataBuf_item(DataBufObj *self, int i)
 {
     void *item;
     CS_DATEREC date_rec;
@@ -223,14 +223,14 @@ static PyObject *Buffer_item(BufferObj *self, int i)
     }
 }
 
-static PyObject *Buffer_slice(BufferObj *self, int ilow, int ihigh)
+static PyObject *DataBuf_slice(DataBufObj *self, int ilow, int ihigh)
 {
     PyErr_SetString(PyExc_TypeError, "buffer slice not supported");
     return NULL;
 }
 
 /* Assign to the i-th element of self */
-static int Buffer_ass_item(BufferObj *self, int i, PyObject *v)
+static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 {
     void *item;
     PyObject *obj = NULL;
@@ -365,28 +365,28 @@ static int Buffer_ass_item(BufferObj *self, int i, PyObject *v)
     return 0;
 }
 
-static int Buffer_ass_slice(PyListObject *self, int ilow, int ihigh, PyObject *v)
+static int DataBuf_ass_slice(PyListObject *self, int ilow, int ihigh, PyObject *v)
 {
     PyErr_SetString(PyExc_TypeError, "buffer slice not supported");
     /* XXXX Replace ilow..ihigh slice of self with v */
     return -1;
 }
 
-static PySequenceMethods Buffer_as_sequence = {
-    (inquiry)Buffer_length,	/*sq_length*/
-    (binaryfunc)Buffer_concat,	/*sq_concat*/
-    (intargfunc)Buffer_repeat,	/*sq_repeat*/
-    (intargfunc)Buffer_item,	/*sq_item*/
-    (intintargfunc)Buffer_slice, /*sq_slice*/
-    (intobjargproc)Buffer_ass_item, /*sq_ass_item*/
-    (intintobjargproc)Buffer_ass_slice, /*sq_ass_slice*/
+static PySequenceMethods DataBuf_as_sequence = {
+    (inquiry)DataBuf_length,	/*sq_length*/
+    (binaryfunc)DataBuf_concat,	/*sq_concat*/
+    (intargfunc)DataBuf_repeat,	/*sq_repeat*/
+    (intargfunc)DataBuf_item,	/*sq_item*/
+    (intintargfunc)DataBuf_slice, /*sq_slice*/
+    (intobjargproc)DataBuf_ass_item, /*sq_ass_item*/
+    (intintobjargproc)DataBuf_ass_slice, /*sq_ass_slice*/
 };
 
 /* Code to access structure members by accessing attributes */
 
-#define OFF(x) offsetof(BufferObj, x)
+#define OFF(x) offsetof(DataBufObj, x)
 
-static struct memberlist Buffer_memberlist[] = {
+static struct memberlist DataBuf_memberlist[] = {
     { "name", T_STRING, OFF(fmt.name) }, /* faked */
     { "datatype", T_INT, OFF(fmt.datatype), RO },
     { "format", T_INT, OFF(fmt.format) },
@@ -400,21 +400,21 @@ static struct memberlist Buffer_memberlist[] = {
     { NULL }			/* Sentinel */
 };
 
-static PyObject *Buffer_getattr(BufferObj *self, char *name)
+static PyObject *DataBuf_getattr(DataBufObj *self, char *name)
 {
     PyObject *rv;
 
     if (strcmp(name, "name") == 0)
 	return PyString_FromStringAndSize(self->fmt.name, self->fmt.namelen);
 
-    rv = PyMember_Get((char *)self, Buffer_memberlist, name);
+    rv = PyMember_Get((char *)self, DataBuf_memberlist, name);
     if (rv)
 	return rv;
     PyErr_Clear();
-    return Py_FindMethod(Buffer_methods, (PyObject *)self, name);
+    return Py_FindMethod(DataBuf_methods, (PyObject *)self, name);
 }
 
-static int Buffer_setattr(BufferObj *self, char *name, PyObject *v)
+static int DataBuf_setattr(DataBufObj *self, char *name, PyObject *v)
 {
     if (v == NULL) {
 	PyErr_SetString(PyExc_AttributeError, "Cannot delete attribute");
@@ -436,27 +436,27 @@ static int Buffer_setattr(BufferObj *self, char *name, PyObject *v)
 	self->fmt.namelen = size;
 	return 0;
     }
-    return PyMember_Set((char *)self, Buffer_memberlist, name, v);
+    return PyMember_Set((char *)self, DataBuf_memberlist, name, v);
 }
 
-static char BufferType__doc__[] = 
+static char DataBufType__doc__[] = 
 "";
 
-PyTypeObject BufferType = {
+PyTypeObject DataBufType = {
     PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
-    "Buffer",			/*tp_name*/
-    sizeof(BufferObj),		/*tp_basicsize*/
+    "DataBufType",		/*tp_name*/
+    sizeof(DataBufObj),		/*tp_basicsize*/
     0,				/*tp_itemsize*/
     /* methods */
-    (destructor)Buffer_dealloc,	/*tp_dealloc*/
+    (destructor)DataBuf_dealloc,	/*tp_dealloc*/
     (printfunc)0,		/*tp_print*/
-    (getattrfunc)Buffer_getattr, /*tp_getattr*/
-    (setattrfunc)Buffer_setattr, /*tp_setattr*/
+    (getattrfunc)DataBuf_getattr, /*tp_getattr*/
+    (setattrfunc)DataBuf_setattr, /*tp_setattr*/
     (cmpfunc)0,			/*tp_compare*/
     (reprfunc)0,		/*tp_repr*/
     0,				/*tp_as_number*/
-    &Buffer_as_sequence,	/*tp_as_sequence*/
+    &DataBuf_as_sequence,	/*tp_as_sequence*/
     0,				/*tp_as_mapping*/
     (hashfunc)0,		/*tp_hash*/
     (ternaryfunc)0,		/*tp_call*/
@@ -464,10 +464,10 @@ PyTypeObject BufferType = {
 
     /* Space for future expansion */
     0L, 0L, 0L, 0L,
-    BufferType__doc__		/* Documentation string */
+    DataBufType__doc__		/* Documentation string */
 };
 
-int Buffer_Check(PyObject *obj)
+int DataBuf_Check(PyObject *obj)
 {
-    return obj->ob_type == &BufferType;
+    return obj->ob_type == &DataBufType;
 }

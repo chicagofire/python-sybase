@@ -171,7 +171,7 @@ static char CS_DATAFMTType__doc__[] =
 PyTypeObject CS_DATAFMTType = {
     PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
-    "CS_DATAFMT",		/*tp_name*/
+    "DataFmtType",		/*tp_name*/
     sizeof(CS_DATAFMTObj),	/*tp_basicsize*/
     0,				/*tp_itemsize*/
     /* methods */

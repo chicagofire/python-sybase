@@ -193,7 +193,7 @@ static CS_RETCODE servermsg_cb(CS_CONTEXT *cs_ctx,
 }
 
 static char CS_CONTEXT_ct_callback__doc__[] = 
-"ct_callback(CS_SET, type, func) -> status\n"
+"ct_callback(CS_SET, type, func = None) -> status\n"
 "ct_callback(CS_GET, type) -> status, func";
 
 static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
@@ -216,7 +216,8 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
     switch (action) {
     case CS_SET:
 	/* ct_callback(CS_SET, type, func) -> status */
-	if (!PyArg_ParseTuple(args, "iiO", &action, &type, &func))
+	func = Py_None;
+	if (!PyArg_ParseTuple(args, "ii|O", &action, &type, &func))
 	    return NULL;
 
 	switch (type) {
@@ -489,7 +490,7 @@ static PyObject *CS_CONTEXT_ct_con_alloc(CS_CONTEXTObj *self, PyObject *args)
 }
 
 static char CS_CONTEXT_ct_init__doc__[] = 
-"ct_init() -> status";
+"ct_init(version = CS_VERSION_100) -> status";
 
 static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
 {
@@ -608,10 +609,6 @@ static PyObject *CS_CONTEXT_cs_diag(CS_CONTEXTObj *self, PyObject *args)
 	    if ((msg = clientmsg_alloc()) == NULL)
 		return NULL;
 	    buffer = &((CS_CLIENTMSGObj*)msg)->msg;
-	} else if (type == CS_SERVERMSG_TYPE) {
-	    if ((msg = servermsg_alloc()) == NULL)
-		return NULL;
-	    buffer = &((CS_SERVERMSGObj*)msg)->msg;
 	} else {
 	    PyErr_SetString(PyExc_TypeError, "unsupported message type");
 	    return NULL;
@@ -794,7 +791,7 @@ static char CS_CONTEXTType__doc__[] =
 PyTypeObject CS_CONTEXTType = {
     PyObject_HEAD_INIT(0)
     0,				/*ob_size*/
-    "CS_CONTEXT",		/*tp_name*/
+    "ContextType",		/*tp_name*/
     sizeof(CS_CONTEXTObj),	/*tp_basicsize*/
     0,				/*tp_itemsize*/
     /* methods */
