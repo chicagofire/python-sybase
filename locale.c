@@ -205,7 +205,7 @@ static PyObject *CS_LOCALE_cs_dt_info(CS_LOCALEObj *self, PyObject *args)
 			  self->ctx->serial, self->serial,
 			  value_str(VAL_DTINFO, type), (int)item, sizeof(str_buff),
 			  value_str(VAL_STATUS, status), (int)buff_len, str_buff);
-	    return Py_BuildValue("is#", status, str_buff, buff_len);
+	    return Py_BuildValue("is", status, str_buff);
 
 	case OPTION_UNKNOWN:
 	    PyErr_SetString(PyExc_TypeError, "unknown option type");
