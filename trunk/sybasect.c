@@ -1512,7 +1512,9 @@ void initsybasect(void)
 
     /* Initialise the type of the new type objects here; doing it here
      * is required for portability to Windows without requiring C++. */
+#ifdef WANT_BULKCOPY
     CS_BLKDESCType.ob_type = &PyType_Type;
+#endif
     CS_COMMANDType.ob_type = &PyType_Type;
     CS_CONNECTIONType.ob_type = &PyType_Type;
     CS_CONTEXTType.ob_type = &PyType_Type;
@@ -1543,8 +1545,10 @@ void initsybasect(void)
     Py_INCREF(debug_file);
 
     /* Add type objects */
-    if (dict_add_type(d, &CS_BLKDESCType)
-	|| dict_add_type(d, &CS_COMMANDType)
+    if (dict_add_type(d, &CS_COMMANDType)
+#ifdef WANT_BULKCOPY
+	|| dict_add_type(d, &CS_BLKDESCType)
+#endif
 	|| dict_add_type(d, &CS_CONNECTIONType)
 	|| dict_add_type(d, &CS_CONTEXTType)
 	|| dict_add_type(d, &CS_DATAFMTType)
