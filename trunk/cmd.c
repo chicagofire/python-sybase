@@ -33,7 +33,7 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
     /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self->conn);
-    status = ct_bind(self->cmd, item, &datafmt->fmt,
+    status = ct_bind(self->cmd, item, &databuf->fmt,
 		     databuf->buff, databuf->copied, databuf->indicator);
     SY_CONN_END_THREADS(self->conn);
 

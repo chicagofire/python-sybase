@@ -55,6 +55,11 @@ PyObject *databuf_alloc(PyObject *obj)
     if (CS_DATAFMT_Check(obj)) {
 	self->strip = ((CS_DATAFMTObj*)obj)->strip;
 	self->fmt = ((CS_DATAFMTObj*)obj)->fmt;
+	if (self->fmt.datatype == CS_VARBINARY_TYPE) {
+	    self->fmt.datatype = CS_CHAR_TYPE;
+	    self->fmt.format = CS_FMT_NULLTERM;
+	    self->fmt.maxlength = self->fmt.maxlength * 2 + 1;
+	}
 	if (self->fmt.count == 0)
 	    self->fmt.count = 1;
 

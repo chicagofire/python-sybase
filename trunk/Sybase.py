@@ -190,8 +190,7 @@ def _fetch_rows(cmd, bufs):
         pass
     elif status == CS_END_DATA:
         return None
-    elif status in (CS_ROW_FAIL, CS_FAIL, CS_CANCELED,
-                    CS_PENDING, CS_BUSY):
+    elif status in (CS_ROW_FAIL, CS_FAIL, CS_CANCELED):
         raise Error('ct_fetch')
     if bufs[0].count > 1:
         rows = []
