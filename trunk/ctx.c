@@ -334,7 +334,7 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 }
 #endif
 
-static int property_type(int property)
+static int ct_property_type(int property)
 {
     switch (property) {
     case CS_LOGIN_TIMEOUT:
@@ -381,7 +381,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "iiO", &action, &property, &obj))
 	    return NULL;
 
-	switch (property_type(property)) {
+	switch (ct_property_type(property)) {
 	case OPTION_INT:
 	    int_value = PyInt_AsLong(obj);
 	    if (PyErr_Occurred())
@@ -421,7 +421,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &action, &property))
 	    return NULL;
 
-	switch (property_type(property)) {
+	switch (ct_property_type(property)) {
 	case OPTION_INT:
 	    SY_BEGIN_THREADS;
 	    status = ct_config(self->ctx, CS_GET, property,
@@ -537,6 +537,66 @@ static PyObject *CS_CONTEXT_ct_exit(CS_CONTEXTObj *self, PyObject *args)
     if (self->debug)
 	fprintf(stderr, "ct_exit(%s) -> %s\n",
 		value_str(OPTION, option), value_str(STATUS, status));
+
+    return PyInt_FromLong(status);
+}
+
+static int cs_property_type(int property)
+{
+    switch (property) {
+    case CS_EXTERNAL_CONFIG:
+    case CS_EXTRA_INF:
+    case CS_NOAPI_CHK:
+	return OPTION_BOOL;
+    case CS_VERSION:
+	return OPTION_INT;
+    case CS_APPNAME:
+    case CS_CONFIG_FILE:
+	return OPTION_STRING;
+    case CS_LOC_PROP:
+	return OPTION_LOCALE;
+    case CS_MESSAGE_CB:
+	return OPTION_CALLBACK;
+    default:
+	return OPTION_UNKNOWN;
+    }
+}
+
+static char CS_CONTEXT_cs_config__doc__[] = 
+"cs_config(CS_SET, property, value) -> status\n"
+"cs_config(CS_GET, property) -> status, value\n"
+"cs_config(CS_CLEAR, property) -> status\n";
+
+static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
+{
+    int action, property;
+    PyObject *obj = NULL;
+    CS_RETCODE status = 0;
+    int int_value;
+    char *str_value;
+    char str_buff[10240];
+    CS_INT buff_len;
+
+    if (!first_tuple_int(args, &action))
+	return NULL;
+
+    if (self->ctx == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
+	return NULL;
+    }
+
+/*
+    SY_BEGIN_THREADS;
+    status = cs_config(CS_CONTEXT *context,
+		       CS_INT action,
+		       CS_INT property,
+		       CS_VOID *buffer,
+		       CS_INT buflen,
+		       CS_INT *outlen)
+    SY_END_THREADS;
+*/
+    if (self->debug)
+	fprintf(stderr, "cs_config() -> %s\n", value_str(STATUS, status));
 
     return PyInt_FromLong(status);
 }
@@ -672,16 +732,34 @@ static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
     return PyInt_FromLong(status);
 }
 
+static char CS_CONTEXT_cs_loc_alloc__doc__[] = 
+"";
+
+static PyObject *CS_CONTEXT_cs_loc_alloc(CS_CONTEXTObj *self, PyObject *args)
+{
+    if (!PyArg_ParseTuple(args, ""))
+	return NULL;
+
+    if (self->ctx == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
+	return NULL;
+    }
+
+    return locale_alloc(self);
+}
+
 static struct PyMethodDef CS_CONTEXT_methods[] = {
-    { "ct_init", (PyCFunction)CS_CONTEXT_ct_init, METH_VARARGS, CS_CONTEXT_ct_init__doc__ },
-    { "ct_config", (PyCFunction)CS_CONTEXT_ct_config, METH_VARARGS, CS_CONTEXT_ct_config__doc__ },
-    { "ct_con_alloc", (PyCFunction)CS_CONTEXT_ct_con_alloc, METH_VARARGS, CS_CONTEXT_ct_con_alloc__doc__ },
 #ifndef WANT_THREADS
     { "ct_callback", (PyCFunction)CS_CONTEXT_ct_callback, METH_VARARGS, CS_CONTEXT_ct_callback__doc__ },
 #endif
+    { "ct_con_alloc", (PyCFunction)CS_CONTEXT_ct_con_alloc, METH_VARARGS, CS_CONTEXT_ct_con_alloc__doc__ },
+    { "ct_config", (PyCFunction)CS_CONTEXT_ct_config, METH_VARARGS, CS_CONTEXT_ct_config__doc__ },
+    { "ct_exit", (PyCFunction)CS_CONTEXT_ct_exit, METH_VARARGS, CS_CONTEXT_ct_exit__doc__ },
+    { "ct_init", (PyCFunction)CS_CONTEXT_ct_init, METH_VARARGS, CS_CONTEXT_ct_init__doc__ },
+    { "cs_config", (PyCFunction)CS_CONTEXT_cs_config, METH_VARARGS, CS_CONTEXT_cs_config__doc__ },
     { "cs_ctx_drop", (PyCFunction)CS_CONTEXT_cs_ctx_drop, METH_VARARGS, CS_CONTEXT_cs_ctx_drop__doc__ },
     { "cs_diag", (PyCFunction)CS_CONTEXT_cs_diag, METH_VARARGS, CS_CONTEXT_cs_diag__doc__ },
-    { "ct_exit", (PyCFunction)CS_CONTEXT_ct_exit, METH_VARARGS, CS_CONTEXT_ct_exit__doc__ },
+    { "cs_loc_alloc", (PyCFunction)CS_CONTEXT_cs_loc_alloc, METH_VARARGS, CS_CONTEXT_cs_loc_alloc__doc__ },
     { NULL }			/* sentinel */
 };
 
