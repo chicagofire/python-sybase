@@ -38,6 +38,7 @@ int numeric_as_string(PyObject *obj, char *text)
 
     numeric_datafmt(&numeric_fmt, CS_SRC_VALUE, CS_SRC_VALUE);
     char_datafmt(&char_fmt);
+
     return cs_convert(global_ctx(), &numeric_fmt, &((NumericObj*)obj)->num,
 		      &char_fmt, text, &char_len);
 }
@@ -62,6 +63,7 @@ NumericObj *numeric_from_int(long num, int precision, int scale)
     CS_DATAFMT numeric_fmt;
     CS_NUMERIC numeric_value;
     CS_INT numeric_len;
+    CS_RETCODE conv_result;
 
     int_datafmt(&int_fmt);
     if (precision < 0)
@@ -72,13 +74,14 @@ NumericObj *numeric_from_int(long num, int precision, int scale)
     int_value = num;
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &int_fmt, &int_value,
-		   &numeric_fmt, &numeric_value, &numeric_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &int_fmt, &int_value,
+			     &numeric_fmt, &numeric_value, &numeric_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric from int conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return numeric_alloc(&numeric_value);
 }
@@ -97,8 +100,10 @@ NumericObj *Numeric_FromString(PyObject *obj, int precision, int scale)
     char *str = PyString_AsString(obj);
     char *dp = strchr(str, '.');
     int len = strlen(str);
-    
+    CS_RETCODE conv_result;
+
     char_datafmt(&char_fmt);
+    char_fmt.maxlength = len;
     if (precision < 0) {
 	precision = len;
 	if (precision > CS_MAX_PREC)
@@ -116,13 +121,14 @@ NumericObj *Numeric_FromString(PyObject *obj, int precision, int scale)
     numeric_datafmt(&numeric_fmt, precision, scale);
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &char_fmt, str,
-		   &numeric_fmt, &numeric_value, &numeric_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &char_fmt, str,
+			     &numeric_fmt, &numeric_value, &numeric_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric from string conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return numeric_alloc(&numeric_value);
 }
@@ -146,6 +152,7 @@ NumericObj *Numeric_FromLong(PyObject *obj, int precision, int scale)
 	num_digits--;
     char_datafmt(&char_fmt);
     char_fmt.maxlength = num_digits;
+
     if (precision < 0)
 	precision = num_digits;
     if (precision > CS_MAX_PREC)
@@ -175,6 +182,7 @@ NumericObj *Numeric_FromFloat(PyObject *obj, int precision, int scale)
     CS_DATAFMT numeric_fmt;
     CS_NUMERIC numeric_value;
     CS_INT numeric_len;
+    CS_RETCODE conv_result;
 
     float_datafmt(&float_fmt);
     if (precision < 0)
@@ -185,13 +193,14 @@ NumericObj *Numeric_FromFloat(PyObject *obj, int precision, int scale)
     float_value = PyFloat_AsDouble(obj);
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &float_fmt, &float_value,
-		   &numeric_fmt, &numeric_value, &numeric_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &float_fmt, &float_value,
+			     &numeric_fmt, &numeric_value, &numeric_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric from float conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return numeric_alloc(&numeric_value);
 }
@@ -202,6 +211,7 @@ NumericObj *Numeric_FromNumeric(PyObject *obj, int precision, int scale)
     CS_DATAFMT numeric_fmt;
     CS_NUMERIC numeric_value;
     CS_INT numeric_len;
+    CS_RETCODE conv_result;
 
     if ((precision < 0 || precision == ((NumericObj*)obj)->num.precision)
 	&& (scale < 0 || scale == ((NumericObj*)obj)->num.scale)) {
@@ -216,13 +226,14 @@ NumericObj *Numeric_FromNumeric(PyObject *obj, int precision, int scale)
     numeric_datafmt(&numeric_fmt, precision, scale);
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &src_numeric_fmt, &((NumericObj*)obj)->num,
-		   &numeric_fmt, &numeric_value, &numeric_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &src_numeric_fmt, &((NumericObj*)obj)->num,
+			     &numeric_fmt, &numeric_value, &numeric_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return numeric_alloc(&numeric_value);
 }
@@ -236,15 +247,17 @@ static void Numeric_dealloc(NumericObj *self)
 static int Numeric_compare(NumericObj *v, NumericObj *w)
 {
     CS_INT result;
+    CS_RETCODE cmp_result;
 
     PyErr_Clear();
-    if (cs_cmp(global_ctx(), CS_NUMERIC_TYPE,
-	       &v->num, &w->num, &result) != CS_SUCCEED) {
+    cmp_result = cs_cmp(global_ctx(), CS_NUMERIC_TYPE,
+			&v->num, &w->num, &result);
+    if (PyErr_Occurred())
+	return 0;
+    if (cmp_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "compare failed");
 	return 0;
     }
-    if (PyErr_Occurred())
-	return 0;
 
     return result;
 }
@@ -252,11 +265,16 @@ static int Numeric_compare(NumericObj *v, NumericObj *w)
 static PyObject *Numeric_repr(NumericObj *self)
 {
     char text[NUMERIC_LEN];
+    CS_RETCODE conv_result;
 
     PyErr_Clear();
-    numeric_as_string((PyObject*)self, text);
+    conv_result = numeric_as_string((PyObject*)self, text);
     if (PyErr_Occurred())
 	return NULL;
+    if (conv_result != CS_SUCCEED) {
+	PyErr_SetString(PyExc_TypeError, "numeric to string conversion failed");
+	return NULL;
+    }
 
     return PyString_FromString(text);
 }
@@ -313,6 +331,7 @@ static long Numeric_hash(NumericObj *self)
 static PyObject *Numeric_add(NumericObj *v, NumericObj *w)
 {
     CS_NUMERIC result;
+    CS_RETCODE calc_result;
 
     result.precision = maxv(v->num.precision, w->num.precision) + 1;
     if (result.precision > CS_MAX_PREC)
@@ -320,13 +339,14 @@ static PyObject *Numeric_add(NumericObj *v, NumericObj *w)
     result.scale = maxv(v->num.scale, w->num.scale);
 
     PyErr_Clear();
-    if (cs_calc(global_ctx(), CS_ADD, CS_NUMERIC_TYPE,
-		&v->num, &w->num, &result) != CS_SUCCEED) {
+    calc_result = cs_calc(global_ctx(), CS_ADD, CS_NUMERIC_TYPE,
+			  &v->num, &w->num, &result);
+    if (PyErr_Occurred())
+	return NULL;
+    if (calc_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric add failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return (PyObject*)numeric_alloc(&result);
 }
@@ -334,6 +354,7 @@ static PyObject *Numeric_add(NumericObj *v, NumericObj *w)
 static PyObject *Numeric_sub(NumericObj *v, NumericObj *w)
 {
     CS_NUMERIC result;
+    CS_RETCODE calc_result;
 
     result.precision = maxv(v->num.precision, w->num.precision) + 1;
     if (result.precision > CS_MAX_PREC)
@@ -341,13 +362,14 @@ static PyObject *Numeric_sub(NumericObj *v, NumericObj *w)
     result.scale = maxv(v->num.scale, w->num.scale);
 
     PyErr_Clear();
-    if (cs_calc(global_ctx(), CS_SUB, CS_NUMERIC_TYPE,
-		&v->num, &w->num, &result) != CS_SUCCEED) {
+    calc_result = cs_calc(global_ctx(), CS_SUB, CS_NUMERIC_TYPE,
+			  &v->num, &w->num, &result);
+    if (PyErr_Occurred())
+	return NULL;
+    if (calc_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric sub failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return (PyObject*)numeric_alloc(&result);
 }
@@ -355,6 +377,7 @@ static PyObject *Numeric_sub(NumericObj *v, NumericObj *w)
 static PyObject *Numeric_mul(NumericObj *v, NumericObj *w)
 {
     CS_NUMERIC result;
+    CS_RETCODE calc_result;
 
     result.precision = v->num.precision + w->num.precision;
     if (result.precision > CS_MAX_PREC)
@@ -364,13 +387,14 @@ static PyObject *Numeric_mul(NumericObj *v, NumericObj *w)
 	result.scale = CS_MAX_SCALE;
 
     PyErr_Clear();
-    if (cs_calc(global_ctx(), CS_MULT, CS_NUMERIC_TYPE,
-		&v->num, &w->num, &result) != CS_SUCCEED) {
+    calc_result = cs_calc(global_ctx(), CS_MULT, CS_NUMERIC_TYPE,
+			  &v->num, &w->num, &result);
+    if (PyErr_Occurred())
+	return NULL;
+    if (calc_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric mul failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return (PyObject*)numeric_alloc(&result);
 }
@@ -378,6 +402,7 @@ static PyObject *Numeric_mul(NumericObj *v, NumericObj *w)
 static PyObject *Numeric_div(NumericObj *v, NumericObj *w)
 {
     CS_NUMERIC result;
+    CS_RETCODE calc_result;
 
     result.precision = v->num.precision + w->num.precision;
     if (result.precision > CS_MAX_PREC)
@@ -387,13 +412,14 @@ static PyObject *Numeric_div(NumericObj *v, NumericObj *w)
 	result.scale = CS_MAX_SCALE;
 
     PyErr_Clear();
-    if (cs_calc(global_ctx(), CS_DIV, CS_NUMERIC_TYPE,
-		&v->num, &w->num, &result) != CS_SUCCEED) {
+    calc_result = cs_calc(global_ctx(), CS_DIV, CS_NUMERIC_TYPE,
+			  &v->num, &w->num, &result);
+    if (PyErr_Occurred())
+	return NULL;
+    if (calc_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "numeric div failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return (PyObject*)numeric_alloc(&result);
 }
@@ -464,18 +490,20 @@ static PyObject *Numeric_int(NumericObj *v)
     CS_DATAFMT int_fmt;
     CS_INT int_value;
     CS_INT int_len;
+    CS_RETCODE conv_result;
 
     numeric_datafmt(&numeric_fmt, CS_SRC_VALUE, CS_SRC_VALUE);
     int_datafmt(&int_fmt);
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &numeric_fmt, &v->num,
-		   &int_fmt, &int_value, &int_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &numeric_fmt, &v->num,
+			     &int_fmt, &int_value, &int_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "int conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return PyInt_FromLong(int_value);
 }
@@ -484,11 +512,16 @@ static PyObject *Numeric_long(NumericObj *v)
 {
     char *end;
     char text[NUMERIC_LEN];
+    CS_RETCODE conv_result;
 
     PyErr_Clear();
-    numeric_as_string((PyObject*)v, text);
+    conv_result = numeric_as_string((PyObject*)v, text);
     if (PyErr_Occurred())
 	return NULL;
+    if (conv_result != CS_SUCCEED) {
+	PyErr_SetString(PyExc_TypeError, "numeric to string conversion failed");
+	return NULL;
+    }
 
     return PyLong_FromString(text, &end, 10);
 }
@@ -499,18 +532,20 @@ static PyObject *Numeric_float(NumericObj *v)
     CS_DATAFMT float_fmt;
     CS_FLOAT float_value;
     CS_INT float_len;
+    CS_RETCODE conv_result;
 
     numeric_datafmt(&numeric_fmt, CS_SRC_VALUE, CS_SRC_VALUE);
     float_datafmt(&float_fmt);
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &numeric_fmt, &v->num,
-		   &float_fmt, &float_value, &float_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &numeric_fmt, &v->num,
+			     &float_fmt, &float_value, &float_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "float conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return PyFloat_FromDouble(float_value);
 }
@@ -597,7 +632,7 @@ PyTypeObject NumericType = {
     NumericType__doc__		/* Documentation string */
 };
 
-char numeric_new__doc__[] =
+char NumericType_new__doc__[] =
 "numeric(num, precision = -1, scale = -1) -> num\n"
 "\n"
 "Create a Sybase numeric object.";
@@ -668,14 +703,19 @@ PyObject *pickle_numeric(PyObject *module, PyObject *args)
     PyObject *values = NULL,
 	*tuple = NULL;
     char text[NUMERIC_LEN];
+    CS_RETCODE conv_result;
 
     if (!PyArg_ParseTuple(args, "O!", &NumericType, &obj))
 	goto error;
 
     PyErr_Clear();
-    numeric_as_string((PyObject*)obj, text);
+    conv_result = numeric_as_string((PyObject*)obj, text);
     if (PyErr_Occurred())
 	return NULL;
+    if (conv_result != CS_SUCCEED) {
+	PyErr_SetString(PyExc_TypeError, "numeric to string conversion failed");
+	return NULL;
+    }
 
     if ((values = Py_BuildValue("(sii)", text,
 				obj->num.precision, obj->num.scale)) == NULL)

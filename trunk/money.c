@@ -38,6 +38,7 @@ int money_as_string(PyObject *obj, char *text)
 
     money_datafmt(&money_fmt);
     char_datafmt(&char_fmt);
+
     return cs_convert(global_ctx(), &money_fmt, &((MoneyObj*)obj)->num,
 		      &char_fmt, text, &char_len);
 }
@@ -57,6 +58,7 @@ MoneyObj *money_alloc(CS_MONEY *num)
 
 MoneyObj *money_from_int(long num)
 {
+    CS_RETCODE conv_result;
     CS_DATAFMT int_fmt;
     CS_INT int_value;
     CS_DATAFMT money_fmt;
@@ -68,13 +70,14 @@ MoneyObj *money_from_int(long num)
     int_value = num;
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &int_fmt, &int_value,
-		   &money_fmt, &money_value, &money_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &int_fmt, &int_value,
+			     &money_fmt, &money_value, &money_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money from int conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return money_alloc(&money_value);
 }
@@ -86,23 +89,27 @@ MoneyObj *Money_FromInt(PyObject *obj)
 
 MoneyObj *Money_FromString(PyObject *obj)
 {
+    CS_RETCODE conv_result;
     CS_DATAFMT char_fmt;
     CS_DATAFMT money_fmt;
     CS_MONEY money_value;
     CS_INT money_len;
     char *str = PyString_AsString(obj);
     
-    char_datafmt(&char_fmt);
     money_datafmt(&money_fmt);
+    char_datafmt(&char_fmt);
+    char_fmt.maxlength = strlen(str);
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &char_fmt, str,
-		   &money_fmt, &money_value, &money_len) != CS_SUCCEED) {
-	PyErr_SetString(PyExc_TypeError, "money from string conversion failed");
-	return NULL;
-    }
+    conv_result = cs_convert(global_ctx(), &char_fmt, str,
+			     &money_fmt, &money_value, &money_len);
     if (PyErr_Occurred())
 	return NULL;
+    if (conv_result != CS_SUCCEED) {
+	PyErr_SetString(PyExc_TypeError,
+			"money from string conversion failed");
+	return NULL;
+    }
 
     return money_alloc(&money_value);
 }
@@ -132,18 +139,19 @@ MoneyObj *Money_FromLong(PyObject *obj)
     conv_result = cs_convert(global_ctx(), &char_fmt, str,
 			     &money_fmt, &money_value, &money_len);
     Py_DECREF(strobj);
+    if (PyErr_Occurred())
+	return NULL;
     if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money from long conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return money_alloc(&money_value);
 }
 
 MoneyObj *Money_FromFloat(PyObject *obj)
 {
+    CS_RETCODE conv_result;
     CS_DATAFMT float_fmt;
     CS_FLOAT float_value;
     CS_DATAFMT money_fmt;
@@ -155,14 +163,14 @@ MoneyObj *Money_FromFloat(PyObject *obj)
     float_value = PyFloat_AsDouble(obj);
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &float_fmt, &float_value,
-		   &money_fmt, &money_value, &money_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &float_fmt, &float_value,
+			     &money_fmt, &money_value, &money_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money from float conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
-
     return money_alloc(&money_value);
 }
 
@@ -180,28 +188,35 @@ static void Money_dealloc(MoneyObj *self)
 
 static int Money_compare(MoneyObj *v, MoneyObj *w)
 {
+    CS_RETCODE cmp_result;
     CS_INT result;
 
     PyErr_Clear();
-    if (cs_cmp(global_ctx(), CS_MONEY_TYPE,
-	       &v->num, &w->num, &result) != CS_SUCCEED) {
+    cmp_result = cs_cmp(global_ctx(), CS_MONEY_TYPE,
+			&v->num, &w->num, &result);
+    if (PyErr_Occurred())
+	return 0;
+    if (cmp_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "compare failed");
 	return 0;
     }
-    if (PyErr_Occurred())
-	return 0;
 
     return result;
 }
 
 static PyObject *Money_repr(MoneyObj *self)
 {
+    CS_RETCODE conv_result;
     char text[MONEY_LEN];
 
     PyErr_Clear();
-    money_as_string((PyObject*)self, text);
+    conv_result = money_as_string((PyObject*)self, text);
     if (PyErr_Occurred())
 	return NULL;
+    if (conv_result != CS_SUCCEED) {
+	PyErr_SetString(PyExc_TypeError, "money to string conversion failed");
+	return NULL;
+    }
 
     return PyString_FromString(text);
 }
@@ -348,6 +363,7 @@ static int Money_coerce(PyObject **pv, PyObject **pw)
 
 static PyObject *Money_int(MoneyObj *v)
 {
+    CS_RETCODE conv_result;
     CS_DATAFMT money_fmt;
     CS_DATAFMT int_fmt;
     CS_INT int_value;
@@ -357,32 +373,39 @@ static PyObject *Money_int(MoneyObj *v)
     int_datafmt(&int_fmt);
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &money_fmt, &v->num,
-		   &int_fmt, &int_value, &int_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &money_fmt, &v->num,
+			     &int_fmt, &int_value, &int_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "int conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return PyInt_FromLong(int_value);
 }
 
 static PyObject *Money_long(MoneyObj *v)
 {
+    CS_RETCODE conv_result;
     char *end;
     char text[MONEY_LEN];
 
     PyErr_Clear();
-    money_as_string((PyObject*)v, text);
+    conv_result = money_as_string((PyObject*)v, text);
     if (PyErr_Occurred())
 	return NULL;
+    if (conv_result != CS_SUCCEED) {
+	PyErr_SetString(PyExc_TypeError, "money to string conversion failed");
+	return NULL;
+    }
 
     return PyLong_FromString(text, &end, 10);
 }
 
 static PyObject *Money_float(MoneyObj *v)
 {
+    CS_RETCODE conv_result;
     CS_DATAFMT money_fmt;
     CS_DATAFMT float_fmt;
     CS_FLOAT float_value;
@@ -392,13 +415,14 @@ static PyObject *Money_float(MoneyObj *v)
     float_datafmt(&float_fmt);
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &money_fmt, &v->num,
-		   &float_fmt, &float_value, &float_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &money_fmt, &v->num,
+			     &float_fmt, &float_value, &float_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "float conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return PyFloat_FromDouble(float_value);
 }
@@ -480,7 +504,7 @@ PyTypeObject MoneyType = {
     MoneyType__doc__
 };
 
-char money_new__doc__[] =
+char MoneyType_new__doc__[] =
 "money(num) -> num\n"
 "\n"
 "Create a Sybase money object.";
@@ -544,6 +568,7 @@ char pickle_money__doc__[] =
 
 PyObject *pickle_money(PyObject *module, PyObject *args)
 {
+    CS_RETCODE conv_result;
     MoneyObj *obj = NULL;
     PyObject *values = NULL,
 	*tuple = NULL;
@@ -553,9 +578,13 @@ PyObject *pickle_money(PyObject *module, PyObject *args)
 	goto error;
 
     PyErr_Clear();
-    money_as_string((PyObject*)obj, text);
+    conv_result = money_as_string((PyObject*)obj, text);
     if (PyErr_Occurred())
 	return NULL;
+    if (conv_result != CS_SUCCEED) {
+	PyErr_SetString(PyExc_TypeError, "money to string conversion failed");
+	return NULL;
+    }
 
     if ((values = Py_BuildValue("(s)", text)) == NULL)
 	goto error;
