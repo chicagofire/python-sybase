@@ -367,6 +367,8 @@ class Cursor:
         '''
         self._lock()
         try:
+            if self._state == _CUR_IDLE:
+                return
             if self._state == _CUR_CLOSED:
                 self._raise_error(ProgrammingError, 'cursor is closed')
             if self._state == _CUR_FETCHING:
