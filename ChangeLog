@@ -1,3 +1,38 @@
+2003-02-23 16:38  djc
+
+	* conn.c: Forgot to self self->conn to NULL during ct_con_drop().  
+
+2003-02-23 15:49  djc
+
+	* Sybase.py, setup.py, sybasect.c, doc/sybase.tex: Added
+	__have_freetds__ which indicates the FreeTDS version being used.  
+
+2003-02-18 22:29  djc
+
+	* ctx.c, setup.py: Speeling error.  
+
+2003-02-18 22:28  djc
+
+	* Sybase.py: Set global ctx as soon as it is created.  
+
+2003-02-18 22:23  djc
+
+	* setup.py: Try to handle all platforms where SYBASE_OCS might be
+	defined.  
+
+2003-02-18 16:55  djc
+
+	* ChangeLog, setup.py: Fix setup.py to allow 0.60 compiles.  
+
+2003-02-18 14:48  djc
+
+	* doc/: ctxobj.tex, sybase.tex: Added documentation for the
+	ctx.debug_msg() method.  
+
+2003-02-18 14:40  djc
+
+	* dist/release-0.36pre4: Added release notice.  
+
 2003-02-18 14:34  djc
 
 	* Sybase.py, setup.py, sybasect.c, doc/sybase.tex: Bump release to
