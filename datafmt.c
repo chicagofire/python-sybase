@@ -85,6 +85,8 @@ PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip)
     self = PyObject_NEW(CS_DATAFMTObj, &CS_DATAFMTType);
     if (self == NULL)
 	return NULL;
+
+    SY_LEAK_REG(self);
     self->strip = strip;
     self->fmt = *datafmt;
     return (PyObject*)self;
@@ -106,6 +108,7 @@ PyObject *datafmt_new(PyObject *module, PyObject *args)
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     memset(&self->fmt, 0, sizeof(self->fmt));
     self->strip = 0;
     char_datafmt(&self->fmt);
@@ -115,6 +118,7 @@ PyObject *datafmt_new(PyObject *module, PyObject *args)
 
 static void CS_DATAFMT_dealloc(CS_DATAFMTObj *self)
 {
+    SY_LEAK_UNREG(self);
     PyMem_DEL(self);
 }
 

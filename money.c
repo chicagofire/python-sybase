@@ -50,6 +50,7 @@ MoneyObj *money_alloc(CS_MONEY *num)
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     memcpy(&self->num, num, sizeof(self->num));
     return self;
 }
@@ -153,6 +154,7 @@ MoneyObj *Money_FromMoney(PyObject *obj)
 
 static void Money_dealloc(MoneyObj *self)
 {
+    SY_LEAK_UNREG(self);
     PyMem_DEL(self);
 }
 
@@ -444,6 +446,7 @@ PyObject *MoneyType_new(PyObject *module, PyObject *args)
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     if (PyArg_ParseTuple(args, "O", &obj)) {
 	MoneyObj *num = NULL;
 

@@ -691,10 +691,13 @@ PyObject *ctx_alloc(CS_INT version)
     self = PyObject_NEW(CS_CONTEXTObj, &CS_CONTEXTType);
     if (self == NULL)
 	return NULL;
+
+    SY_LEAK_REG(self);
     self->ctx = NULL;
     self->servermsg_cb = NULL;
     self->clientmsg_cb = NULL;
     self->debug = 0;
+    self->is_global = 0;
 
     SY_BEGIN_THREADS;
     status = cs_ctx_alloc(version, &ctx);
@@ -729,10 +732,13 @@ PyObject *ctx_global(CS_INT version)
     self = PyObject_NEW(CS_CONTEXTObj, &CS_CONTEXTType);
     if (self == NULL)
 	return NULL;
+
+    SY_LEAK_REG(self);
     self->ctx = NULL;
     self->servermsg_cb = NULL;
     self->clientmsg_cb = NULL;
     self->debug = 0;
+    self->is_global = 1;
 
     SY_BEGIN_THREADS;
     status = cs_ctx_global(version, &ctx);
@@ -751,7 +757,9 @@ PyObject *ctx_global(CS_INT version)
 
 static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
 {
-    if (self->ctx) {
+    SY_LEAK_UNREG(self);
+
+    if (self->ctx && !self->is_global) {
 	CS_RETCODE status;
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
@@ -764,6 +772,7 @@ static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
     }
     Py_XDECREF(self->servermsg_cb);
     ctx_del_object(self);
+
     PyMem_DEL(self);
 }
 

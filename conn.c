@@ -490,10 +490,17 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 	    status = ct_con_props(self->conn, CS_GET, property,
 				  &int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
-	    if (self->debug)
-		fprintf(stderr, "ct_con_props(CS_GET, %s) -> %s, %d\n",
-			value_str(PROPS, property),
-			value_str(STATUS, status), (int)int_value);
+	    if (self->debug) {
+		if (property == CS_CON_STATUS || property == CS_LOGIN_STATUS)
+		    fprintf(stderr, "ct_con_props(CS_GET, %s) -> %s, %s\n",
+			    value_str(PROPS, property),
+			    value_str(STATUS, status),
+			    mask_str(CONSTAT, (int)int_value));
+		else
+		    fprintf(stderr, "ct_con_props(CS_GET, %s) -> %s, %d\n",
+			    value_str(PROPS, property),
+			    value_str(STATUS, status), (int)int_value);
+	    }
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_STRING:
@@ -757,6 +764,8 @@ PyObject *conn_alloc(CS_CONTEXTObj *ctx)
     self = PyObject_NEW(CS_CONNECTIONObj, &CS_CONNECTIONType);
     if (self == NULL)
 	return NULL;
+
+    SY_LEAK_REG(self);
     self->conn = NULL;
     self->ctx = NULL;
     self->strip = 0;
@@ -781,6 +790,7 @@ PyObject *conn_alloc(CS_CONTEXTObj *ctx)
 
 static void CS_CONNECTION_dealloc(CS_CONNECTIONObj *self)
 {
+    SY_LEAK_UNREG(self);
     if (self->conn) {
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */

@@ -482,6 +482,7 @@ PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version)
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     self->blk = NULL;
     self->conn = NULL;
     self->direction = 0;
@@ -506,6 +507,7 @@ PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version)
 
 static void CS_BLKDESC_dealloc(CS_BLKDESCObj *self)
 {
+    SY_LEAK_UNREG(self);
     if (self->blk) {
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */

@@ -50,6 +50,7 @@ NumericObj *numeric_alloc(CS_NUMERIC *num)
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     memcpy(&self->num, num, sizeof(self->num));
     return self;
 }
@@ -203,6 +204,7 @@ NumericObj *Numeric_FromNumeric(PyObject *obj, int precision, int scale)
 
 static void Numeric_dealloc(NumericObj *self)
 {
+    SY_LEAK_UNREG(self);
     PyMem_DEL(self);
 }
 
@@ -551,6 +553,7 @@ PyObject *NumericType_new(PyObject *module, PyObject *args)
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     precision = -1;
     scale = -1;
     if (PyArg_ParseTuple(args, "O|ii", &obj, &precision, &scale)) {
