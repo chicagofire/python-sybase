@@ -34,9 +34,16 @@ PERFORMANCE OF THIS SOFTWARE.
 #endif
 
 #ifdef WANT_THREADS
-#define SY_DECLARE_LOCK PyThread_type_lock lock;
-#define SY_THREAD_STATE PyThreadState *_save;
-#define SY_LOCK_CLEAR(self) self->lock = NULL
+#define SY_DECLARE_LOCK \
+    PyThread_type_lock lock;
+#define SY_THREAD_STATE \
+    PyThreadState *thread_state; \
+    int entry_count;
+#define SY_THREAD_INIT(self) \
+    self->thread_state = NULL; \
+    self->entry_count = 0;
+#define SY_LOCK_CLEAR(self) \
+    self->lock = NULL
 #define SY_LOCK_ALLOC(self) \
     self->lock = PyThread_allocate_lock(); \
     if (self->lock == NULL) { \
@@ -56,6 +63,18 @@ PERFORMANCE OF THIS SOFTWARE.
     }
 #define SY_BEGIN_THREADS Py_UNBLOCK_THREADS
 #define SY_END_THREADS Py_BLOCK_THREADS
+#define SY_CONN_BEGIN_THREADS(conn) \
+    SY_LOCK_ACQUIRE(conn) \
+    conn_release_gil(conn)
+#define SY_CONN_END_THREADS(conn) \
+    conn_acquire_gil(conn); \
+    SY_LOCK_RELEASE(conn)
+#define SY_CTX_BEGIN_THREADS(ctx) \
+    SY_LOCK_ACQUIRE(ctx) \
+    ctx_release_gil(ctx)
+#define SY_CTX_END_THREADS(ctx) \
+    ctx_acquire_gil(ctx); \
+    SY_LOCK_RELEASE(ctx)
 #else
 #define SY_DECLARE_LOCK
 #define SY_THREAD_STATE
@@ -66,6 +85,10 @@ PERFORMANCE OF THIS SOFTWARE.
 #define SY_LOCK_RELEASE(owner)
 #define SY_BEGIN_THREADS
 #define SY_END_THREADS
+#define SY_CONN_BEGIN_THREADS(conn)
+#define SY_CONN_END_THREADS(conn)
+#define SY_CTX_BEGIN_THREADS(ctx)
+#define SY_CTX_END_THREADS(ctx)
 #endif
 
 #ifdef FIND_LEAKS
@@ -92,6 +115,7 @@ typedef struct CS_CONTEXTObj {
     int debug;
     int serial;
     SY_DECLARE_LOCK
+    SY_THREAD_STATE
     struct CS_CONTEXTObj *next;
 } CS_CONTEXTObj;
 
@@ -109,12 +133,20 @@ typedef struct CS_CONNECTIONObj {
     int debug;
     int serial;
     SY_DECLARE_LOCK
+    SY_THREAD_STATE
     struct CS_CONNECTIONObj *next;
 } CS_CONNECTIONObj;
 
 extern PyTypeObject CS_CONNECTIONType;
 PyObject *conn_alloc(CS_CONTEXTObj *ctx, int enable_lock);
 PyObject *conn_find_object(CS_CONNECTION *conn);
+
+#ifdef WANT_THREADS
+void ctx_acquire_gil(CS_CONTEXTObj *ctx);
+void ctx_release_gil(CS_CONTEXTObj *ctx);
+void conn_acquire_gil(CS_CONNECTIONObj *conn);
+void conn_release_gil(CS_CONNECTIONObj *conn);
+#endif
 
 #ifdef WANT_BULKCOPY
 typedef struct {

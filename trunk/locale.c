@@ -31,7 +31,6 @@ PyObject *locale_alloc(CS_CONTEXTObj *ctx)
     CS_LOCALEObj *self;
     CS_RETCODE status;
     CS_LOCALE *loc;
-    SY_THREAD_STATE;
 
     self = PyObject_NEW(CS_LOCALEObj, &CS_LOCALEType);
     if (self == NULL)
@@ -44,11 +43,9 @@ PyObject *locale_alloc(CS_CONTEXTObj *ctx)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(ctx);
-    SY_BEGIN_THREADS;
+    SY_CTX_BEGIN_THREADS(ctx);
     status = cs_loc_alloc(ctx->ctx, &loc);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(ctx);
+    SY_CTX_END_THREADS(ctx);
 
     if (self->debug)
 	debug_msg("cs_loc_alloc(ctx%d, &loc) -> %s",
@@ -228,7 +225,6 @@ static char CS_LOCALE_cs_loc_drop__doc__[] =
 static PyObject *CS_LOCALE_cs_loc_drop(CS_LOCALEObj *self, PyObject *args)
 {
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
@@ -238,11 +234,9 @@ static PyObject *CS_LOCALE_cs_loc_drop(CS_LOCALEObj *self, PyObject *args)
 	return NULL;
     }
 
-    SY_LOCK_ACQUIRE(self->ctx);
-    SY_BEGIN_THREADS;
+    SY_CTX_BEGIN_THREADS(self->ctx);
     status = cs_loc_drop(self->ctx->ctx, self->locale);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(self->ctx);
+    SY_CTX_END_THREADS(self->ctx);
 
     if (self->debug)
 	debug_msg("cs_loc_drop(ctx%d, locale%d) -> %s\n",

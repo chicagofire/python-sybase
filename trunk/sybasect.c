@@ -1547,6 +1547,12 @@ void initsybasect(void)
 	if (!dict_add_int(d, desc->name, desc->value))
 	    break;
 
+#ifdef WANT_THREADS
+    dict_add_int(d, "__with_threads__", 1);
+#else
+    dict_add_int(d, "__with_threads__", 0);
+#endif
+
     /* Set debug file to None */
     debug_file = Py_None;
     Py_INCREF(debug_file);

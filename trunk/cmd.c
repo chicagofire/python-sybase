@@ -33,7 +33,6 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
     CS_DATAFMTObj *datafmt;
     DataBufObj *databuf;
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "iO!", &item, &CS_DATAFMTType, &datafmt))
 	return NULL;
@@ -49,12 +48,10 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(self->conn);
-    SY_BEGIN_THREADS;
+    SY_CONN_BEGIN_THREADS(self->conn);
     status = ct_bind(self->cmd, item, &datafmt->fmt,
 		     databuf->buff, databuf->copied, databuf->indicator);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(self->conn);
+    SY_CONN_END_THREADS(self->conn);
 
     if (self->debug) {
 	debug_msg("ct_bind(cmd%d, %d, &datafmt%d->fmt=",
@@ -84,7 +81,6 @@ static PyObject *CS_COMMAND_ct_cancel(CS_COMMANDObj *self, PyObject *args)
 {
     int type;
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "i", &type))
 	return NULL;
@@ -96,11 +92,9 @@ static PyObject *CS_COMMAND_ct_cancel(CS_COMMANDObj *self, PyObject *args)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(self->conn);
-    SY_BEGIN_THREADS;
+    SY_CONN_BEGIN_THREADS(self->conn);
     status = ct_cancel(NULL, self->cmd, type);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(self->conn);
+    SY_CONN_END_THREADS(self->conn);
 
     if (self->debug)
 	debug_msg("ct_cancel(NULL, cmd%d, %s) -> %s\n",
@@ -118,7 +112,6 @@ static char CS_COMMAND_ct_cmd_drop__doc__[] =
 static PyObject *CS_COMMAND_ct_cmd_drop(CS_COMMANDObj *self, PyObject *args)
 {
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
@@ -130,11 +123,9 @@ static PyObject *CS_COMMAND_ct_cmd_drop(CS_COMMANDObj *self, PyObject *args)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(self->conn);
-    SY_BEGIN_THREADS;
+    SY_CONN_BEGIN_THREADS(self->conn);
     status = ct_cmd_drop(self->cmd);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(self->conn);
+    SY_CONN_END_THREADS(self->conn);
 
     if (self->debug)
 	debug_msg("ct_cmd_drop(cmd%d) -> %s\n",
@@ -161,7 +152,6 @@ static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
     CS_INT option = CS_UNUSED;
     CS_RETCODE status;
     char *type_str = NULL;
-    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &type))
 	return NULL;
@@ -184,11 +174,9 @@ static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_command(self->cmd, type, databuf, CS_NULLTERM, option);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_command(cmd%d, %s, \"%s\", CS_NULLTERM, %s) -> %s\n",
@@ -211,11 +199,9 @@ static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_command(self->cmd, type, (CS_VOID*)&num, CS_UNUSED, CS_UNUSED);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_command(cmd%d, CS_MSG_CMD, %d, CS_UNUSED, CS_UNUSED)"
@@ -236,11 +222,9 @@ static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_command(self->cmd, type, databuf, CS_NULLTERM, CS_UNUSED);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_command(cmd%d, CS_PACKAGE_CMD, \"%s\", CS_NULLTERM,"
@@ -260,11 +244,9 @@ static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_command(self->cmd, type, NULL, CS_UNUSED, CS_COLUMN_DATA);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_command(cmd%d, CS_SEND_DATA_CMD, NULL, CS_UNUSED,"
@@ -300,7 +282,6 @@ static PyObject *CS_COMMAND_ct_cursor(CS_COMMANDObj *self, PyObject *args)
     CS_INT option = CS_UNUSED;
     CS_RETCODE status;
     char *type_str = NULL;
-    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &type))
 	return NULL;
@@ -323,12 +304,10 @@ static PyObject *CS_COMMAND_ct_cursor(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_cursor(self->cmd, type,
 			   name, CS_NULLTERM, text, CS_NULLTERM, option);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_cursor(cmd%d, %s, \"%s\", CS_NULLTERM, \"%s\","
@@ -357,12 +336,10 @@ static PyObject *CS_COMMAND_ct_cursor(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_cursor(self->cmd, type,
 			   NULL, CS_UNUSED, NULL, CS_UNUSED, option);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_cursor(cmd%d, %s, NULL, CS_UNUSED, NULL, CS_UNUSED,"
@@ -382,12 +359,10 @@ static PyObject *CS_COMMAND_ct_cursor(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_cursor(self->cmd, type,
 			   NULL, CS_UNUSED, NULL, CS_UNUSED, option);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_cursor(cmd%d, CS_CURSOR_ROWS, NULL, CS_UNUSED,"
@@ -407,12 +382,10 @@ static PyObject *CS_COMMAND_ct_cursor(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_cursor(self->cmd, type,
 			   name, CS_NULLTERM, NULL, CS_UNUSED, CS_UNUSED);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_cursor(cmd%d, CS_CURSOR_DELETE, \"%s\", CS_NULLTERM,"
@@ -430,12 +403,10 @@ static PyObject *CS_COMMAND_ct_cursor(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_cursor(self->cmd, type,
 			   NULL, CS_UNUSED, NULL, CS_UNUSED, CS_UNUSED);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_cursor(cmd%d, CS_CURSOR_DEALLOC, NULL, CS_UNUSED,"
@@ -465,7 +436,6 @@ static PyObject *CS_COMMAND_ct_data_info(CS_COMMANDObj *self, PyObject *args)
     CS_IODESC iodesc;
     CS_IODESCObj *desc;
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &action))
 	return NULL;
@@ -484,11 +454,9 @@ static PyObject *CS_COMMAND_ct_data_info(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_data_info(self->cmd, CS_SET, CS_UNUSED, &desc->iodesc);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_data_info(cmd%d, CS_SET, CS_UNUSED, iodesc%d)"
@@ -508,11 +476,9 @@ static PyObject *CS_COMMAND_ct_data_info(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_data_info(self->cmd, CS_GET, num, &iodesc);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_data_info(cmd%d, CS_GET, %d, &iodesc) -> %s",
@@ -555,7 +521,6 @@ static PyObject *CS_COMMAND_ct_describe(CS_COMMANDObj *self, PyObject *args)
     CS_DATAFMT datafmt;
     PyObject *fmt;
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "i", &num))
 	return NULL;
@@ -569,11 +534,9 @@ static PyObject *CS_COMMAND_ct_describe(CS_COMMANDObj *self, PyObject *args)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(self->conn);
-    SY_BEGIN_THREADS;
+    SY_CONN_BEGIN_THREADS(self->conn);
     status = ct_describe(self->cmd, num, &datafmt);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(self->conn);
+    SY_CONN_END_THREADS(self->conn);
 
     if (self->debug)
 	debug_msg("ct_describe(cmd%d, %d, &fmt) -> %s",
@@ -621,7 +584,6 @@ static PyObject *CS_COMMAND_ct_dynamic(CS_COMMANDObj *self, PyObject *args)
     char *id, *buff;
     char *cmd_str = NULL;
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!first_tuple_int(args, &type))
 	return NULL;
@@ -644,12 +606,10 @@ static PyObject *CS_COMMAND_ct_dynamic(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_dynamic(self->cmd, type,
 			    id, CS_NULLTERM, buff, CS_NULLTERM);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_dynamic(cmd%d, %s, \"%s\", CS_NULLTERM, \"%s\","
@@ -681,12 +641,10 @@ static PyObject *CS_COMMAND_ct_dynamic(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_dynamic(self->cmd, type,
 			    id, CS_NULLTERM, NULL, CS_UNUSED);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_dynamic(cmd%d, %s, \"%s\", CS_NULLTERM, NULL,"
@@ -705,12 +663,10 @@ static PyObject *CS_COMMAND_ct_dynamic(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_dynamic(self->cmd, type,
 			    NULL, CS_UNUSED, buff, CS_NULLTERM);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_dynamic(cmd%d, CS_EXEC_IMMEDIATE, NULL, CS_UNUSED,"
@@ -735,7 +691,6 @@ static PyObject *CS_COMMAND_ct_fetch(CS_COMMANDObj *self, PyObject *args)
 {
     CS_RETCODE status;
     CS_INT rows_read = 0;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
@@ -747,11 +702,9 @@ static PyObject *CS_COMMAND_ct_fetch(CS_COMMANDObj *self, PyObject *args)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(self->conn);
-    SY_BEGIN_THREADS;
+    SY_CONN_BEGIN_THREADS(self->conn);
     status = ct_fetch(self->cmd, CS_UNUSED, CS_UNUSED, CS_UNUSED, &rows_read);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(self->conn);
+    SY_CONN_END_THREADS(self->conn);
 
     if (self->debug)
 	debug_msg("ct_fetch(cmd%d, CS_UNUSED, CS_UNUSED, CS_UNUSED,"
@@ -771,7 +724,6 @@ static PyObject *CS_COMMAND_ct_get_data(CS_COMMANDObj *self, PyObject *args)
     DataBufObj *databuf;
     int num;
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "iO!", &num, &DataBufType, &databuf))
 	return NULL;
@@ -783,14 +735,12 @@ static PyObject *CS_COMMAND_ct_get_data(CS_COMMANDObj *self, PyObject *args)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(self->conn);
-    SY_BEGIN_THREADS;
+    SY_CONN_BEGIN_THREADS(self->conn);
     status = ct_get_data(self->cmd, (CS_INT)num,
 			 databuf->buff, databuf->fmt.maxlength,
 			 &databuf->copied[0]);
     databuf->indicator[0] = 0;
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(self->conn);
+    SY_CONN_END_THREADS(self->conn);
 
     if (self->debug)
 	debug_msg("ct_get_data(cmd%d, %d, databuf%d->buff,"
@@ -811,7 +761,6 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 {
     PyObject *obj;
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "O", &obj))
 	return NULL;
@@ -827,13 +776,11 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_param(self->cmd, &databuf->fmt,
 			  databuf->buff, databuf->copied[0],
 			  databuf->indicator[0]);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug) {
 	    debug_msg("ct_param(cmd%d, &databuf%d->fmt=",
@@ -851,12 +798,10 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_param(self->cmd, &datafmt->fmt,
 			  NULL, CS_UNUSED, CS_UNUSED);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug) {
 	    debug_msg("ct_param(cmd%s, &fmt=", self->serial);
@@ -924,7 +869,6 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
     CS_INT int_val;
     CS_BOOL bool_val;
     char *type_str = NULL;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "i", &type))
 	return NULL;
@@ -939,11 +883,9 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 	/* ct_res_info(CS_BROWSE_INFO) -> status, bool */
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_res_info(self->cmd, type, &bool_val, CS_UNUSED, NULL);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_res_info(cmd%d, CS_BROWSE_INFO, &value, CS_UNUSED,"
@@ -963,11 +905,9 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_res_info(self->cmd, type, &ushort_val, CS_UNUSED, NULL);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_res_info(cmd%d, CS_MSGTYPE, &value, CS_UNUSED, NULL)"
@@ -1005,11 +945,9 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 	    type_str = "CS_TRANS_STATE";
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_res_info(self->cmd, type, &int_val, CS_UNUSED, NULL);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_res_info(cmd%d, %s, &value, CS_UNUSED, NULL)"
@@ -1030,11 +968,9 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_res_info(self->cmd, CS_NUMORDERCOLS, &int_val, CS_UNUSED, NULL);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_res_info(cmd%d, CS_NUMORDERCOLS, &value, CS_UNUSED,"
@@ -1056,12 +992,10 @@ static PyObject *CS_COMMAND_ct_res_info(CS_COMMANDObj *self, PyObject *args)
 
 	PyErr_Clear();
 
-	SY_LOCK_ACQUIRE(self->conn);
-	SY_BEGIN_THREADS;
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_res_info(self->cmd, CS_ORDERBY_COLS,
 			     col_nums, sizeof(*col_nums) * int_val, NULL);
-	SY_END_THREADS;
-	SY_LOCK_RELEASE(self->conn);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug) {
 	    int i;
@@ -1103,7 +1037,6 @@ static PyObject *CS_COMMAND_ct_results(CS_COMMANDObj *self, PyObject *args)
 {
     CS_RETCODE status;
     CS_INT result = 0;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
@@ -1115,11 +1048,9 @@ static PyObject *CS_COMMAND_ct_results(CS_COMMANDObj *self, PyObject *args)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(self->conn);
-    SY_BEGIN_THREADS;
+    SY_CONN_BEGIN_THREADS(self->conn);
     status = ct_results(self->cmd, &result);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(self->conn);
+    SY_CONN_END_THREADS(self->conn);
 
     if (self->debug)
 	debug_msg("ct_results(cmd%d, &result) -> %s, %s\n",
@@ -1137,7 +1068,6 @@ static char CS_COMMAND_ct_send__doc__[] =
 static PyObject *CS_COMMAND_ct_send(CS_COMMANDObj *self, PyObject *args)
 {
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
@@ -1149,11 +1079,9 @@ static PyObject *CS_COMMAND_ct_send(CS_COMMANDObj *self, PyObject *args)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(self->conn);
-    SY_BEGIN_THREADS;
+    SY_CONN_BEGIN_THREADS(self->conn);
     status = ct_send(self->cmd);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(self->conn);
+    SY_CONN_END_THREADS(self->conn);
 
     if (self->debug)
 	debug_msg("ct_send(cmd%d) -> %s\n",
@@ -1172,7 +1100,6 @@ static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
 {
     CS_RETCODE status;
     DataBufObj *databuf;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "O!", &DataBufType, &databuf))
 	return NULL;
@@ -1184,11 +1111,9 @@ static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(self->conn);
-    SY_BEGIN_THREADS;
+    SY_CONN_BEGIN_THREADS(self->conn);
     status = ct_send_data(self->cmd, databuf->buff, databuf->copied[0]);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(self->conn);
+    SY_CONN_END_THREADS(self->conn);
 
     if (self->debug)
 	debug_msg("ct_send_data(cmd%d, databuf%d->buff, %d) -> %s\n",
@@ -1209,7 +1134,6 @@ static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
 {
     DataBufObj *databuf;
     CS_RETCODE status;
-    SY_THREAD_STATE;
 
     if (!PyArg_ParseTuple(args, "O!", &DataBufType, &databuf))
 	return NULL;
@@ -1221,13 +1145,11 @@ static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(self->conn);
-    SY_BEGIN_THREADS;
+    SY_CONN_BEGIN_THREADS(self->conn);
     status = ct_setparam(self->cmd, &databuf->fmt,
 			 databuf->buff, &databuf->copied[0],
 			 &databuf->indicator[0]);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(self->conn);
+    SY_CONN_END_THREADS(self->conn);
 
     if (self->debug) {
 	debug_msg("ct_setparam(cmd%d, &databuf%d->fmt=",
@@ -1282,7 +1204,6 @@ PyObject *cmd_alloc(CS_CONNECTIONObj *conn)
     CS_COMMANDObj *self;
     CS_RETCODE status;
     CS_COMMAND *cmd;
-    SY_THREAD_STATE;
 
     self = PyObject_NEW(CS_COMMANDObj, &CS_COMMANDType);
     if (self == NULL)
@@ -1297,11 +1218,9 @@ PyObject *cmd_alloc(CS_CONNECTIONObj *conn)
 
     PyErr_Clear();
 
-    SY_LOCK_ACQUIRE(conn);
-    SY_BEGIN_THREADS;
+    SY_CONN_BEGIN_THREADS(conn);
     status = ct_cmd_alloc(conn->conn, &cmd);
-    SY_END_THREADS;
-    SY_LOCK_RELEASE(conn);
+    SY_CONN_END_THREADS(conn);
 
     if (self->debug)
 	debug_msg("ct_cmd_alloc(conn%d, &cmd) -> %s",
