@@ -51,7 +51,8 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
 		     buffer->buff, buffer->copied, buffer->indicator);
     SY_END_THREADS;
     if (self->debug)
-	fprintf(stderr, "ct_bind(%d) -> %s\n", (int)item, value_str(STATUS, status));
+	fprintf(stderr, "ct_bind(%d) -> %s\n",
+		(int)item, value_str(STATUS, status));
     return Py_BuildValue("iN", status, buffer);
 }
 
@@ -558,10 +559,10 @@ static char CS_COMMAND_ct_param__doc__[] =
 
 static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 {
-    BufferObj *buffer;
+    PyObject *obj;
     CS_RETCODE status;
 
-    if (!PyArg_ParseTuple(args, "O!", &BufferType, &buffer))
+    if (!PyArg_ParseTuple(args, "O", &obj))
 	return NULL;
 
     if (self->cmd == NULL) {
@@ -569,12 +570,32 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 	return NULL;
     }
 
-    SY_BEGIN_THREADS;
-    status = ct_param(self->cmd, &buffer->fmt,
-		      buffer->buff, buffer->copied[0], buffer->indicator[0]);
-    SY_END_THREADS;
-    if (self->debug)
-	fprintf(stderr, "ct_param() -> %s\n", value_str(STATUS, status));
+    if (Buffer_Check(obj)) {
+	BufferObj *buffer = (BufferObj *)obj;
+
+	SY_BEGIN_THREADS;
+	status = ct_param(self->cmd, &buffer->fmt,
+			  buffer->buff, buffer->copied[0],
+			  buffer->indicator[0]);
+	SY_END_THREADS;
+	if (self->debug)
+	    fprintf(stderr, "ct_param(buf) -> %s\n",
+		    value_str(STATUS, status));
+    } else if (CS_DATAFMT_Check(obj)) {
+	CS_DATAFMTObj *datafmt = (CS_DATAFMTObj *)obj;
+
+	SY_BEGIN_THREADS;
+	status = ct_param(self->cmd, &datafmt->fmt,
+			  NULL, CS_UNUSED, CS_UNUSED);
+	SY_END_THREADS;
+	if (self->debug)
+	    fprintf(stderr, "ct_param(fmt) -> %s\n",
+		    value_str(STATUS, status));
+    } else {
+	PyErr_SetString(PyExc_TypeError, "expect CS_DATAFMT or Buffer");
+	return NULL;
+	
+    }
     return PyInt_FromLong(status);
 }
 
@@ -822,8 +843,9 @@ static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
     }
 
     SY_BEGIN_THREADS;
-    status = ct_param(self->cmd, &buffer->fmt,
-		      buffer->buff, buffer->copied[0], buffer->indicator[0]);
+    status = ct_setparam(self->cmd, &buffer->fmt,
+			 buffer->buff, &buffer->copied[0],
+			 &buffer->indicator[0]);
     SY_END_THREADS;
     if (self->debug)
 	fprintf(stderr, "ct_setparam() -> %s\n", value_str(STATUS, status));
@@ -868,6 +890,8 @@ PyObject *cmd_alloc(CS_CONNECTIONObj *conn)
     SY_BEGIN_THREADS;
     status = ct_cmd_alloc(conn->conn, &cmd);
     SY_END_THREADS;
+    if (self->debug)
+	fprintf(stderr, "ct_cmd_alloc() -> %s\n", value_str(STATUS, status));
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
@@ -900,7 +924,12 @@ static void CS_COMMAND_dealloc(CS_COMMANDObj *self)
     if (!self->is_eed && self->cmd) {
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
-	ct_cmd_drop(self->cmd);
+	CS_RETCODE status;
+
+	status = ct_cmd_drop(self->cmd);
+	if (self->debug)
+	    fprintf(stderr, "ct_cmd_drop() -> %s\n",
+		    value_str(STATUS, status));
     }
     Py_XDECREF(self->conn);
     PyMem_DEL(self);

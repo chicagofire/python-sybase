@@ -46,7 +46,8 @@ static PyObject *CS_BLKDESC_blk_bind(CS_BLKDESCObj *self, PyObject *args)
 		      buffer->buff, buffer->copied, buffer->indicator);
     SY_END_THREADS;
     if (self->debug)
-	fprintf(stderr, "blk_bind(%d) -> %s\n", colnum, value_str(STATUS, status));
+	fprintf(stderr, "blk_bind(%d) -> %s\n",
+		colnum, value_str(STATUS, status));
 
     return PyInt_FromLong(status);
 }
@@ -236,6 +237,10 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    status = blk_props(self->blk, CS_SET, property,
 			       &bool_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    if (self->debug)
+		fprintf(stderr, "blk_props(CS_SET, %s, %d) -> %s\n",
+			value_str(BULKPROPS, property), (int)bool_value,
+			value_str(STATUS, status));
 	    return PyInt_FromLong(status);
 
 	case OPTION_INT:
@@ -246,6 +251,10 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    status = blk_props(self->blk, CS_SET, property,
 			       &int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    if (self->debug)
+		fprintf(stderr, "blk_props(CS_SET, %s, %d) -> %s\n",
+			value_str(BULKPROPS, property), (int)int_value,
+			value_str(STATUS, status));
 	    return PyInt_FromLong(status);
 
 	case OPTION_NUMERIC:
@@ -257,6 +266,14 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    status = blk_props(self->blk, CS_SET, property,
 			       &((NumericObj*)obj)->num, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    if (self->debug) {
+		char text[NUMERIC_LEN];
+
+		numeric_as_string(obj, text);
+		fprintf(stderr, "blk_props(CS_SET, %s, %s) -> %s\n",
+			value_str(BULKPROPS, property), text,
+			value_str(STATUS, status));
+	    }
 	    return PyInt_FromLong(status);
 
 	default:
@@ -276,6 +293,10 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    status = blk_props(self->blk, CS_GET, property,
 			       &bool_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    if (self->debug)
+		fprintf(stderr, "blk_props(CS_GET, %s) -> %s, %d\n",
+			value_str(BULKPROPS, property),
+			value_str(STATUS, status), (int)bool_value);
 	    return Py_BuildValue("ii", status, bool_value);
 
 	case OPTION_INT:
@@ -283,6 +304,10 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    status = blk_props(self->blk, CS_GET, property,
 			       &int_value, CS_UNUSED, NULL);
 	    SY_END_THREADS;
+	    if (self->debug)
+		fprintf(stderr, "blk_props(CS_GET, %s) -> %s, %d\n",
+			value_str(BULKPROPS, property),
+			value_str(STATUS, status), (int)int_value);
 	    return Py_BuildValue("ii", status, int_value);
 
 	case OPTION_NUMERIC:
@@ -293,6 +318,14 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	    obj = (PyObject*)numeric_alloc(&numeric_value);
 	    if (obj == NULL)
 		return NULL;
+	    if (self->debug) {
+		char text[NUMERIC_LEN];
+
+		numeric_as_string(obj, text);
+		fprintf(stderr, "blk_props(CS_GET, %s) -> %s, %s\n",
+			value_str(BULKPROPS, property),
+			value_str(STATUS, status), text);
+	    }
 	    return Py_BuildValue("iN", status, obj);
 
 	case OPTION_UNKNOWN:
@@ -314,6 +347,10 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 	status = blk_props(self->blk, CS_CLEAR, property,
 			   NULL, CS_UNUSED, NULL);
 	SY_END_THREADS;
+	if (self->debug)
+	    fprintf(stderr, "blk_props(CS_CLEAR, %s) -> %s\n",
+		    value_str(BULKPROPS, property),
+		    value_str(STATUS, status));
 	return PyInt_FromLong(status);
 
     default:
@@ -453,6 +490,9 @@ PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version)
     SY_BEGIN_THREADS;
     status = blk_alloc(conn->conn, version, &blk);
     SY_END_THREADS;
+    if (self->debug)
+	fprintf(stderr, "blk_alloc(%s) -> %s\n",
+		value_str(BULK, version), value_str(STATUS, status));
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
 	return Py_BuildValue("iO", status, Py_None);
@@ -469,9 +509,13 @@ static void CS_BLKDESC_dealloc(CS_BLKDESCObj *self)
     if (self->blk) {
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
+	CS_RETCODE status;
+
 	SY_BEGIN_THREADS;
-	blk_drop(self->blk);
+	status = blk_drop(self->blk);
 	SY_END_THREADS;
+	if (self->debug)
+	    fprintf(stderr, "blk_drop() -> %s\n", value_str(STATUS, status));
     }
     Py_XDECREF(self->conn);
     PyMem_DEL(self);
