@@ -55,10 +55,8 @@ for dir in (syb_incdir, syb_libdir):
         sys.stderr.write('Directory %s does not exist - cannot build.\n' % dir)
         sys.exit(1)
 
-# The version is set in Lib/numeric_version.py
-
 setup (name = "Sybase",
-       version = "0.30",
+       version = "0.31",
        maintainer = "Dave Cole",
        maintainer_email = " djc@object-craft.com.au",
        description = "Sybase Extension to Python",
