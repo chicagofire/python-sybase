@@ -1,3 +1,31 @@
+2003-04-27 21:52  djc
+
+	* dist/release-0.36, examples/rpc.sql: Getting ready for release
+	0.36 
+
+2003-04-27 21:28  djc
+
+	* freetds.h: Moving to FreeTDS 0.62 
+
+2003-04-27 20:54  djc
+
+	* Sybase.py, setup.py, sybasect.c, doc/sybase.tex: Use "fetcher"
+	classes to retrieve results form the server.  Changes from running
+	Anal Compliance Unit Test.  
+
+2003-04-27 11:10  djc
+
+	* sybasect.c: Renamed __with_freetds__ to __have_freetds__.  
+
+2003-02-24 15:30  djc
+
+	* dist/release-0.36pre6: Release announcement.  
+
+2003-02-24 15:28  djc
+
+	* ChangeLog, Sybase.py, setup.py, sybasect.c, doc/sybase.tex: Bump
+	release to 0.36pre6 
+
 2003-02-24 15:26  djc
 
 	* sybasect.c: Fix compilation for non-FreeTDS users.  
