@@ -84,6 +84,29 @@ class ProgrammingError(DatabaseError):
 class NotSupportedError(DatabaseError):
     pass
 
+class DBAPITypeObject:
+    def __init__(self, *values):
+	self.values = values
+
+    def __cmp__(self, other):
+	if other in self.values:
+	    return 0
+	if other < self.values:
+	    return 1
+	else:
+	    return -1
+
+STRING = DBAPITypeObject(CS_LONGCHAR_TYPE, CS_VARCHAR_TYPE,
+                         CS_TEXT_TYPE, CS_CHAR_TYPE)
+BINARY = DBAPITypeObject(CS_IMAGE_TYPE, CS_LONGBINARY_TYPE,
+                         CS_VARBINARY_TYPE, CS_BINARY_TYPE)
+NUMBER = DBAPITypeObject(CS_BIT_TYPE, CS_TINYINT_TYPE,
+                         CS_SMALLINT_TYPE, CS_INT_TYPE,
+                         CS_MONEY_TYPE, CS_REAL_TYPE, CS_FLOAT_TYPE,
+                         CS_DECIMAL_TYPE, CS_NUMERIC_TYPE)
+DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE)
+ROWID = DBAPITypeObject(CS_DECIMAL_TYPE, CS_NUMERIC_TYPE)
+
 # Query diagnostic information from Sybase API
 
 def _get_diag(func, type):
