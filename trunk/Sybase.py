@@ -684,7 +684,7 @@ class Connection:
         self._dyn_num = self._dyn_num + 1
         return self._dyn_num
 
-    def bulkcopy(self, table, direction):
+    def bulkcopy(self, table, direction = CS_BLK_IN):
         '''Create a new bulkcopy context
         '''
         return Bulkcopy(self, table, direction)
