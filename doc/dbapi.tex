@@ -148,31 +148,243 @@ close the transaction with a commit.
 \end{quote}
 
 The optional \var{name} argument is an extension of the DB-API 2.0
-specification.  Sybase allows you to nest and name transactions.
+specification.  It allows you to make use of the Sybase ability to
+nest and name transactions.
 \end{methoddesc}
 
 \begin{methoddesc}[Connection]{rollback}{\optional{name \code{= None}}}
+Implements the DB-API 2.0 connection \method{rollback()} method.
+
+Tells Sybase to roll back to the start of any pending transaction.
+Closing a connection without committing the changes first will cause
+an implicit rollback to be performed.
+
+The optional \var{name} argument is an extension of the DB-API 2.0
+specification.  It allows you to make use of the Sybase ability to
+nest and name transactions.
 \end{methoddesc}
 
 \begin{methoddesc}[Connection]{cursor}{}
+Implements the DB-API 2.0 connection \method{cursor()} method.
+
+Returns a new \class{Cursor} object using the connection.
 \end{methoddesc}
 
 \begin{methoddesc}[Connection]{begin}{\optional{name \code{= None}}}
 This is an extension of the DB-API 2.0 specification.
+
+If you have turned off chained transaction mode via the
+\var{auto_commit} argument to the connection constructor then you can
+use this method to begin a transaction.  It also allows you to use the
+nested transaction support in Sybase.
+\end{methoddesc}
+
+\begin{methoddesc}[Connection]{connect}{}
+This is an extension of the DB-API 2.0 specification.
+
+If you pass a TRUE value to the \var{delay_connect} argument to the
+\function{connect()} function then you must call this method to
+complete the server connection process.  This is useful if you wish to
+set connection properties which cannot be set after you have connected
+to the server.
 \end{methoddesc}
 
 \begin{methoddesc}[Connection]{get_property}{prop}
 This is an extension of the DB-API 2.0 specification.
+
+Use this function to retrieve properties of the connection to the
+server.
+
+\begin{verbatim}
+import Sybase
+db = Sybase.connect('SYBASE', 'sa', '', 'pubs2')
+print db.get_property(Sybase.CS_TDS_VERSION)
+\end{verbatim}
 \end{methoddesc}
 
 \begin{methoddesc}[Connection]{set_property}{prop, value}
 This is an extension of the DB-API 2.0 specification.
+
+Use this function to set properties of the connection to the server.
 \end{methoddesc}
 
 \begin{methoddesc}[Connection]{execute}{sql}
 This is an extension of the DB-API 2.0 specification.
+
+This method executes the SQL passed in the \var{sql} argument via the
+\function{ct_command(CS_LANG_CMD, ...)} Sybase function.  This is what
+programs such as \program{sqsh} use to send SQL to the server.  The
+return value is a list of logical results.  Each logical result is a
+list of row tuples.
+
+The disadvantage to using this method is that you are not able to bind
+binary parameters to the command, you must format the parameters as
+part of the SQL string in the \var{sql} argument.
 \end{methoddesc}
 
 \begin{methoddesc}[Connection]{bulkcopy}{table \optional{, copy_out\code{ = 0}}}
 This is an extension of the DB-API 2.0 specification.
+
+Returns a new \class{Bulkcopy} object using the connection.  The
+\var{table} argument identifies the table which you wish to perform
+bulkcopy operations upon.
+
+By default the bulkcopy object will be created to copy data into the
+table.  To copy data out pass a TRUE value as the \var{copy_out}
+argument.
 \end{methoddesc}
+
+\subsection{Cursor Objects}
+
+Implements the DB-API 2.0 \class{Cursor} class.
+
+\class{Cursor} objects have the following interface:
+
+\begin{memberdesc}[Cursor]{description}
+The DB-API 2.0 cursor \member{description} member.
+
+A list of 7-item tuples.  Each of the tuples describes one result
+column: \code{(name, type_code, display_size, internal_size,
+precision, scale, null_ok)}.  This attribute will be \code{None} for
+operations which do not return rows or if the cursor has not had an
+operation invoked via \method{execute()} or \method{executemany()}.
+
+The \code{type_code} can be interpreted by comparing it to the Type
+Objects specified in the section below.
+\end{memberdesc}
+
+\begin{memberdesc}[Cursor]{rowcount}
+The DB-API 2.0 cursor \member{rowcount} member.
+
+This attribute reports the number of rows that the last
+\method{execute()} or \method{executemany()} method produced or
+affected.
+
+The attribute is \code{-1} if no \method{execute()} or
+\method{executemany()} has been performed on the cursor.
+\end{memberdesc}
+
+\begin{methoddesc}[Cursor]{callproc}{procname \optional{, parameters}}
+Implements the DB-API 2.0 cursor \method{callproc()} method.
+
+Calls the stored database procedure named in the \var{procname}
+argument. The optional \var{parameters} argument must be a sequence
+which contains one entry for each argument that the procedure expects.
+
+The result of the call is returned as a modified copy of the input
+sequence.  Input parameters are left untouched, output and
+input/output parameters replaced with possibly new values.
+
+The procedure may also provide a result set as output. This can be
+retrieved via the \method{fetchone()}, \method{fetchmany()}, and
+\method{fetchall()} methods.
+\end{methoddesc}
+
+\begin{methoddesc}[Cursor]{close}{}
+Implements the DB-API 2.0 cursor \method{close()} method.
+
+Cancels any pending results immediately.  Any operation on the cursor
+after calling this method will raise an exception.
+
+This method is called by the \method{__del__()} method.
+\end{methoddesc}
+
+\begin{methoddesc}[Cursor]{execute}{sql \optional{, params}}
+Implements the DB-API 2.0 cursor \method{execute()} method.
+
+Prepares a dynamic SQL command on the Sybase server and executes it.
+The optional \var{params} argument is a sequence of parameters which
+are bound as parameters to the dynamic SQL command.  Sybase uses
+question mark (\code{?}) placeholders to specify which the parameters
+will be used by the SQL command.
+
+\begin{verbatim}
+import Sybase
+db = Sybase.connect('SYBASE', 'sa', '', 'pubs2')
+c = db.cursor()
+c.execute("select * from titles where price > ?", [15.00])
+c.fetchall()
+\end{verbatim}
+
+The prepared dynamic SQL will be reused by the cursor if the same SQL
+is passed in the \var{sql} argument.  This is most effective for
+algorithms where the same operation is used, but different parameters
+are bound to it (many times).
+
+The method returns \code{None}.
+\end{methoddesc}
+
+\begin{methoddesc}[Cursor]{executemany}{sql, params_seq}
+Implements the DB-API 2.0 cursor \method{executemany()} method.
+
+Calls the \method{execute()} method for every parameter sequence in
+the sequence passed as the \var{params_seq} argument.
+
+The method returns \code{None}.
+\end{methoddesc}
+
+\begin{methoddesc}[Cursor]{fetchone}{}
+Implements the DB-API 2.0 cursor \method{fetchone()} method.
+
+Fetches the next row of a logical result and returns it as a tuple.
+\code{None} is returned when no more rows are available in the logical
+result.
+\end{methoddesc}
+
+\begin{methoddesc}[Cursor]{fetchmany}{\optional{size \code{= cursor.arraysize}}}
+Implements the DB-API 2.0 cursor \method{fetchmany()} method.
+
+Fetches the next set of rows of a logical result, returning a list of
+tuples. An empty list is returned when no more rows are available.
+
+The number of rows to fetch per call is specified by the optional
+\var{size} argument.  If \var{size} is not supplied, the
+\member{arraysize} member determines the number of rows to be
+fetched.  The method will try to fetch the number of rows indicated by
+the size parameter.  If this is not possible due to the specified
+number of rows not being available, fewer rows will be returned.
+\end{methoddesc}
+
+\begin{methoddesc}[Cursor]{fetchall}{}
+Implements the DB-API 2.0 cursor \method{fetchall()} method.
+
+Fetches all remaining rows of a logical result returning them as a
+list of tuples.
+\end{methoddesc}
+
+\begin{methoddesc}[Cursor]{nextset}{}
+Implements the DB-API 2.0 cursor \method{nextset()} method.
+
+Makes the cursor skip to the next logical result, discarding any
+remaining rows from the current logical result.
+
+If there are no more logical results, the method returns \code{None}.
+Otherwise, it returns \code{1} and subsequent calls to the
+\method{fetchone()}, \method{fetchmany()}, and \method{fetchall()}
+methods will return rows from the next logical result.
+\end{methoddesc}
+
+\begin{memberdesc}[Cursor]{arraysize}
+The DB-API 2.0 cursor \member{arraysize} member.
+
+This read/write attribute specifies the number of rows to fetch at a
+time with \method{fetchmany()}.  It defaults to \code{1} meaning to
+fetch a single row at a time.
+\end{memberdesc}
+
+\begin{methoddesc}[Cursor]{setinputsizes}{size}
+Implements the DB-API 2.0 cursor \method{setinputsizes()} method.
+
+This method does nothing -- it is provided for DB-API compliance.
+\end{methoddesc}
+
+\begin{methoddesc}[Cursor]{setoutputsize}{size \optional{, column}}
+Implements the DB-API 2.0 cursor \method{setoutputsize()} method.
+
+This method does nothing -- it is provided for DB-API compliance.
+\end{methoddesc}
+
+\subsection{Bulkcopy Objects}
+
+This is an extension of the DB-API 2.0 specification.
+

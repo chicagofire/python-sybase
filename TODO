@@ -21,3 +21,30 @@
 
   * see if callbacks might not be a better way to go - try in mssql
     module first
+
+- Connection.rollback() cannot be called while a cursor is in flight...
+
+- Cursor.callproc() does not return parameters.
+
+- Type Objects and Constructors
+
+      Date(year,month,day)
+      Time(hour,minute,second)
+      Timestamp(year,month,day,hour,minute,second)
+      DateFromTicks(ticks)
+      TimeFromTicks(ticks)
+      TimestampFromTicks(ticks)
+      Binary(string)
+      STRING
+      BINARY
+      NUMBER
+      DATETIME
+      ROWID
+
+- Document Bulkcopy
+
+- Document numeric, money, datetime
+
+- Check Py_BuildValue("is#", status, str_buff, buff_len) for props GET.
+
+- PyUnit
