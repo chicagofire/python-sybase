@@ -68,13 +68,6 @@ typedef struct CS_CONNECTIONObj {
 
 typedef struct {
     PyObject_HEAD
-    CS_CONTEXTObj *ctx;
-    CS_LOCALE *locale;
-    int debug;
-} CS_LOCALEObj;
-
-typedef struct {
-    PyObject_HEAD
     CS_CONNECTIONObj *conn;
     CS_BLKDESC *blk;
     CS_INT direction;
@@ -131,7 +124,6 @@ extern PyTypeObject CS_BLKDESCType;
 extern PyTypeObject CS_COMMANDType;
 extern PyTypeObject CS_DATAFMTType;
 extern PyTypeObject CS_IODESCType;
-extern PyTypeObject CS_LOCALEType;
 extern PyTypeObject CS_CLIENTMSGType;
 extern PyTypeObject CS_SERVERMSGType;
 extern PyTypeObject BufferType;
@@ -142,7 +134,7 @@ int first_tuple_int(PyObject *args, int *int_arg);
 enum { CSVER, ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT,
        BULK, BULKDIR, BULKPROPS, DYNAMIC, PROPS, DIRSERV, SECURITY, NETIO,
        OPTION, DATEDAY, DATEFMT, DATAFMT, LEVEL, TYPE, STATUS, STATUSFMT,
-       CBTYPE, CSDATES, LOCALE, DTINFO, };
+       CBTYPE, };
 
 char *value_str(int type, int value);
 
@@ -183,8 +175,6 @@ extern char iodesc_new__doc__[];
 PyObject *iodesc_new(PyObject *module, PyObject *args);
 PyObject *iodesc_alloc(CS_IODESC *iodesc);
 PyObject *buffer_alloc(PyObject *obj);
-
-PyObject *locale_alloc(CS_CONTEXTObj *ctx);
 
 NumericObj *numeric_alloc(CS_NUMERIC *num);
 int numeric_as_string(PyObject *obj, char *text);
