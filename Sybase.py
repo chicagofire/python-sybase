@@ -16,7 +16,7 @@ from sybasect import *
 
 set_debug(sys.stderr)
 
-__version__ = '0.33pre3'
+__version__ = '0.33pre4'
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
@@ -233,39 +233,48 @@ class Cursor:
         self.rowcount = -1              # DB-API
         self.arraysize = 1              # DB-API
         self._owner = owner
-        self._lock = owner._lock
         self._state = _CUR_IDLE
-        self._lock.acquire()
+        self._lock_count = 0
+        self._lock()
         try:
             status, self._cmd = owner._conn.ct_cmd_alloc()
             if status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_cmd_alloc')
         finally:
-            self._lock.release()
+            self._unlock()
 
     def __del__(self):
         if self._state not in (_CUR_IDLE, _CUR_CLOSED):
             self._owner._conn.ct_cancel(CS_CANCEL_ALL)
-            try:
-                # By the time we get called the threading module might
-                # have killed the thread the lock was created in ---
-                # oops.
-                self._lock._RLock__block.release()
-            except:
-                pass
+        if self._lock_count:
+            # By the time we get called the threading module might
+            # have killed the thread the lock was created in ---
+            # oops.
+            count, owner = self._owner._lock._release_save()
+            self._owner._lock._acquire_restore(count, threading.currentThread())
+            while self._lock_count:
+                self._unlock()
+
+    def _lock(self):
+        self._owner._lock.acquire()
+        self._lock_count = self._lock_count + 1
+
+    def _unlock(self):
+        self._owner._lock.release()
+        self._lock_count = self._lock_count - 1
 
     def _raise_error(self, exc, text):
         text = _ct_errors(self._owner._conn, text)
         if self._state not in (_CUR_IDLE, _CUR_CLOSED):
             if self._owner._conn.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
                 self._state = _CUR_IDLE
-                self._lock.release()
+                self._unlock()
         raise exc(text)
 
     def callproc(self, name, params = ()):
         '''DB-API Cursor.callproc()
         '''
-        self._lock.acquire()
+        self._lock()
         try:
             if self._state == _CUR_CLOSED:
                 self._raise_error(ProgrammingError, 'cursor is closed')
@@ -275,7 +284,7 @@ class Cursor:
                 # At the start of a command acquire an extra lock -
                 # when the cursor is idle again the extra lock will be
                 # released.
-                self._lock.acquire()
+                self._lock()
                 status = self._cmd.ct_command(CS_RPC_CMD, name)
                 if status != CS_SUCCEED:
                     self._raise_error(Error, 'ct_command')
@@ -298,28 +307,28 @@ class Cursor:
                 self._state = _CUR_FETCHING
                 self._start_results()
         finally:
-            self._lock.release()
+            self._unlock()
 
     def close(self):
         '''DB-API Cursor.close()
         '''
-        self._lock.acquire()
+        self._lock()
         try:
             if self._state == _CUR_CLOSED:
                 self._raise_error(Error, 'cursor is closed')
             if self._state != _CUR_IDLE:
                 status = self._cmd.ct_cancel(CS_CANCEL_ALL)
                 if status == CS_SUCCEED:
-                    self._lock.release()
+                    self._unlock()
             self._cmd = None
             self._state = _CUR_CLOSED
         finally:
-            self._lock.release()
+            self._unlock()
 
     def execute(self, sql, params = {}):
         '''DB-API Cursor.execute()
         '''
-        self._lock.acquire()
+        self._lock()
         try:
             if self._state == _CUR_CLOSED:
                 self._raise_error(Error, 'cursor is closed')
@@ -328,7 +337,7 @@ class Cursor:
             # At the start of a command acquire an extra lock - when
             # the cursor is idle again the extra lock will be
             # released.
-            self._lock.acquire()
+            self._lock()
             self._cmd.ct_command(CS_LANG_CMD, sql)
             for name, value in params.items():
                 buf = DataBuf(value)
@@ -339,24 +348,24 @@ class Cursor:
             self._cmd.ct_send()
             self._start_results()
         finally:
-            self._lock.release()
+            self._unlock()
 
     def executemany(self, sql, params_seq = []):
         '''DB-API Cursor.executemany()
         '''
-        self._lock.acquire()
+        self._lock()
         try:
             for params in params_seq:
                 self.execute(sql, params)
                 if self._state != _CUR_IDLE:
                     self._raise_error(ProgrammingError, 'fetchable results on cursor')
         finally:
-            self._lock.release()
+            self._unlock()
 
     def fetchone(self):
         '''DB-API Cursor.fetchone()
         '''
-        self._lock.acquire()
+        self._lock()
         try:
             if self._state == _CUR_CLOSED:
                 self._raise_error(ProgrammingError, 'cursor is closed')
@@ -367,7 +376,7 @@ class Cursor:
                     status = self._cmd.ct_cancel(CS_CANCEL_ALL)
                     if status == CS_SUCCEED:
                         self._state = _CUR_IDLE
-                        self._lock.release()
+                        self._unlock()
                     raise
                 if row:
                     return row
@@ -375,12 +384,12 @@ class Cursor:
                     self._fetch_rowcount()
             self._state = _CUR_END_RESULT
         finally:
-            self._lock.release()
+            self._unlock()
 
     def fetchmany(self, num = -1):
         '''DB-API Cursor.fetchmany()
         '''
-        self._lock.acquire()
+        self._lock()
         try:
             if num == -1:
                 num = self.arraysize
@@ -392,12 +401,12 @@ class Cursor:
                 rows.append(row)
             return rows
         finally:
-            self._lock.release()
+            self._unlock()
 
     def fetchall(self):
         '''DB-API Cursor.fetchall()
         '''
-        self._lock.acquire()
+        self._lock()
         try:
             rows = []
             while 1:
@@ -407,12 +416,12 @@ class Cursor:
                 rows.append(row)
             return rows
         finally:
-            self._lock.release()
+            self._unlock()
 
     def nextset(self):
         '''DB-API Cursor.nextset()
         '''
-        self._lock.acquire()
+        self._lock()
         try:
             if self._state == _CUR_CLOSED:
                 self._raise_error(ProgrammingError, 'cursor is closed')
@@ -425,7 +434,7 @@ class Cursor:
             self._start_results()
             return self._state != _CUR_IDLE or None
         finally:
-            self._lock.release()
+            self._unlock()
 
     def setinputsizes(self):
         '''DB-API Cursor.setinputsizes()
@@ -441,7 +450,7 @@ class Cursor:
         status, result = self._cmd.ct_results()
         if status == CS_END_RESULTS:
             self._state = _CUR_IDLE
-            self._lock.release()
+            self._unlock()
             return
         elif status != CS_SUCCEED:
             self._raise_error(Error, 'ct_results')
@@ -457,7 +466,7 @@ class Cursor:
             status, result = self._cmd.ct_results()
             if status == CS_END_RESULTS:
                 self._state = _CUR_IDLE
-                self._lock.release()
+                self._unlock()
                 return
             elif status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_results')
