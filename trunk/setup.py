@@ -84,13 +84,15 @@ except:
     pass
 
 syb_macros = [('WANT_BULKCOPY', None)]
-for api in ('blk_describe', 'blk_rowxfer_mult', 'blk_textxfer',):
+for api in ('blk_alloc', 'blk_describe', 'blk_drop', 'blk_rowxfer_mult',
+            'blk_textxfer',):
     if api_exists(api, os.path.join(syb_incdir, 'bkpublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
-for api in ('ct_cursor', 'ct_data_info', 'ct_send_data', 'ct_setparam', 'ct_diag',):
+for api in ('ct_cursor', 'ct_data_info', 'ct_dynamic', 'ct_send_data',
+            'ct_setparam',):
     if api_exists(api, os.path.join(syb_incdir, 'ctpublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
-for api in ('cs_ctx_global',):
+for api in ('cs_calc', 'cs_cmp', 'cs_ctx_global',):
     if api_exists(api, os.path.join(syb_incdir, 'cspublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
 
