@@ -221,11 +221,20 @@ class _Cmd:
         cmd = self._cmd
         cmd.ct_cancel(CS_CANCEL_ALL)
 
-CMD_PREPARED = 0                        # prepared command
-CMD_END_RESULTS = 1                     # all result sets fetched
-CMD_FETCHING = 2                        # fetching rows
-CMD_END_SET = 3                         # current set finished
+CUR_IDLE = 0                            # prepared command
+CUR_FETCHING = 1                        # fetching rows
+CUR_END_RESULT = 2                      # fetching rows
+CUR_CLOSED = 3                          # cursor closed
 
+# state      event      action                 next       
+# -----------------------------------------------------------------------
+# idle       execute    prepare,params,results fetching
+#                                              end_result
+# fetching   fetchone   fetch                  fetching 
+#                                              end_result
+# end_result nextset    results                fetching
+#                                              idle
+#            fetchone                          end_result
 class Cursor:
     def __init__(self, owner):
         '''Implements DB-API Cursor object
@@ -237,6 +246,7 @@ class Cursor:
         self._con = owner._con
         self._cmd = None
         self._sql = None
+        self._state = CUR_IDLE
         self._dyn_name = None
 
     def __del__(self):
@@ -248,34 +258,48 @@ class Cursor:
     def callproc(self, name, params = []):
         '''DB-API Cursor.callproc()
         '''
-        self._teardown()
-        cmd = self._cmd = _Cmd(self._con)
-        self._sql = -1
-        cmd.ct_command(CS_RPC_CMD, name)
-        for param in params:
-            buf = DataBuf(param)
-            cmd.ct_param(buf)
-        cmd.ct_send()
-        self._state = CMD_PREPARED
-        self._start_result_set()
+        if self_state == CUR_CLOSED:
+            raise ProgrammerError('cursor is closed')
+        if self._state in (CUR_FETCHING, CUR_END_RESULT):
+            while self._state != CUR_IDLE:
+                self._cancel_current()
+        if self._state == CUR_IDLE:
+            self._sql = -1
+            cmd.ct_command(CS_RPC_CMD, name)
+            for param in params:
+                buf = DataBuf(param)
+                cmd.ct_param(buf)
+            cmd.ct_send()
+            self._start_results()
+            self._state = CUR_FETCHING
 
     def close(self):
         '''DB-API Cursor.close()
         '''
-        self._teardown()
+        if self_state == CUR_CLOSED:
+            raise ProgrammerError('cursor is closed')
+        if self._state == CUR_IDLE:
+            self._state = CUR_CLOSED
+        elif self._state in (CUR_FETCHING, CUR_END_RESULT, CUR_END_SET):
+            self._cancel_all()
+            self._dealloc()
+            self._drop_cmd()
+        self._state = CUR_CLOSED
 
     def execute(self, sql, params = []):
         '''DB-API Cursor.execute()
         '''
-        if self._sql:
+        if self_state == CUR_CLOSED:
+            raise ProgrammerError('cursor is closed')
+        if self._state in (CUR_FETCHING, CUR_END_RESULT):
+            while self._state != CUR_IDLE:
+                self._cancel_current()
+        if self._state == CUR_IDLE:
             if self._sql != sql:
-                self._teardown()
-                self._sql = None
-            else:
-                self._discard_results()
-        if not self._sql:
-            self._new_cmd(sql)
-        self._send_params(params)
+                self._dealloc()
+                self._prepare(sql)
+            self._send_params()
+            self._start_results()
 
     def executemany(self, sql, params_seq = []):
         '''DB-API Cursor.executemany()
@@ -286,12 +310,14 @@ class Cursor:
     def fetchone(self):
         '''DB-API Cursor.fetchone()
         '''
+        if self_state == CUR_CLOSED:
+            raise ProgrammerError('cursor is closed')
         cmd = self._cmd
-        if self._state == CMD_FETCHING:
+        if self._state == CUR_FETCHING:
             row = cmd.fetch_rows(self._bufs)
             if row:
                 return row
-            self._state = CMD_END_SET
+            self._state = CUR_END_RESULT
 
     def fetchmany(self, num = -1):
         '''DB-API Cursor.fetchmany()
@@ -320,12 +346,14 @@ class Cursor:
     def nextset(self):
         '''DB-API Cursor.nextset()
         '''
-        if self._state == CMD_END_RESULTS:
+        if self_state == CUR_CLOSED:
+            raise ProgrammerError('cursor is closed')
+        if self._state == CUR_IDLE
             return
-        if self._state != CMD_END_SET:
-            self._cmd.ct_cancel(CS_CANCEL_CURRENT)
-        self._start_result_set()
-        return self._state != CMD_END_RESULTS or None
+        if self._state == CUR_END_RESULT:
+            self._cancel_current()
+        self._start_results()
+        return self._state != CUR_IDLE or None
 
     def setinputsizes(self):
         '''DB-API Cursor.setinputsizes()
@@ -337,27 +365,12 @@ class Cursor:
         '''
         pass
 
-    def _new_cmd(self, sql):
-        if self._dyn_name:
-            self._teardown()
-        self._dyn_name = 'dyn%s' % self._owner._next_dyn()
-        self._sql = sql
-        self._prepare()
-
-    def _discard_results(self):
-        '''Discard all pending results and prepare to execute again.
-        '''
-        while self._state != CMD_END_RESULTS:
-            self.nextset()
-
-    def _prepare(self):
+    def _prepare(self, sql):
         '''Prepare the statement to be executed for this cursor.
         '''
         con = self._con
-        if self._cmd:
-            self._cmd.ct_cancel(CS_CANCEL_ALL)
-            self._cmd.ct_cmd_drop()
-        cmd = self._cmd = _Cmd(con)
+        self._dyn_name = 'dyn%s' % self._owner._next_dyn()
+        self._sql = sql
         dyn_name = self._dyn_name
         # send command to server
         cmd.ct_dynamic(CS_PREPARE, dyn_name, self._sql)
@@ -386,22 +399,6 @@ class Cursor:
                 self._fmts = fmts
         if status != CS_END_RESULTS:
             raise InternalError(_build_ct_except(con, 'ct_results'))
-        self._state = CMD_PREPARED
-
-    def _teardown(self):
-        cmd = self._cmd
-        if not cmd or not self._dyn_name:
-            return
-        cmd.ct_cancel(CS_CANCEL_ALL)
-        cmd.ct_dynamic(CS_DEALLOC, self._dyn_name)
-        cmd.ct_send()
-        while 1:
-            status, result = cmd.ct_results()
-            if status != CS_SUCCEED:
-                break
-        if status != CS_END_RESULTS:
-            raise InternalError(_build_ct_except(con, 'ct_results'))
-        self._dyn_name = None
 
     def _send_params(self, params):
         '''Execute prepared statement, send parameters and prepare
@@ -415,15 +412,14 @@ class Cursor:
             buf[0] = param
             cmd.ct_param(buf)
         cmd.ct_send()
-        self._start_result_set()
 
-    def _start_result_set(self):
+    def _start_results(self):
         con = self._con
         cmd = self._cmd
         while 1:
             status, result = cmd.ct_results()
             if status == CS_END_RESULTS:
-                self._state = CMD_END_RESULTS
+                self._state = CUR_IDLE
                 return
             elif status != CS_SUCCEED:
                 raise InternalError(_build_ct_except(con, 'ct_results'))
@@ -442,6 +438,28 @@ class Cursor:
                 self.rowcount = cmd.ct_res_info(CS_ROW_COUNT)
             else:
                 raise InternalError(_build_ct_except(con, 'ct_results'))
+
+    def _cancel_current(self):
+        cmd = self._cmd
+        cmd.ct_cancel(CS_CANCEL_CURRENT)
+
+    def _cancel_all(self):
+        cmd = self._cmd
+        cmd.ct_cancel(CS_CANCEL_ALL)
+
+    def _dealloc(self):
+        if not self._dyn_name:
+            return
+        cmd = self._cmd
+        cmd.ct_dynamic(CS_DEALLOC, self._dyn_name)
+        cmd.ct_send()
+        while 1:
+            status, result = cmd.ct_results()
+            if status != CS_SUCCEED:
+                break
+        if status != CS_END_RESULTS:
+            raise InternalError(_build_ct_except(con, 'ct_results'))
+        self._dyn_name = None
 
 class Bulkcopy:
     def __init__(self, owner, table, direction):
