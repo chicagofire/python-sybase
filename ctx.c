@@ -353,9 +353,9 @@ static int ct_property_type(int property)
     case CS_NO_TRUNCATE:
     case CS_TEXTLIMIT:
     case CS_TIMEOUT:
+    case CS_VERSION:
 	return OPTION_INT;
     case CS_VER_STRING:
-    case CS_VERSION:
 	return OPTION_STRING;
     default:
 	return OPTION_UNKNOWN;
@@ -472,7 +472,7 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
 	    if (PyErr_Occurred())
 		return NULL;
 
-	    return Py_BuildValue("is#", status, str_buff, buff_len);
+	    return Py_BuildValue("is", status, str_buff);
 
 	default:
 	    PyErr_SetString(PyExc_TypeError, "unknown property value");
