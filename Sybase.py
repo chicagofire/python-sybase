@@ -18,10 +18,11 @@ import time
 import string
 import threading
 from sybasect import *
+from sybasect import __have_freetds__
 
 set_debug(sys.stderr)
 
-__version__ = '0.36pre4'
+__version__ = '0.36pre5'
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
