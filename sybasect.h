@@ -156,6 +156,7 @@ typedef struct {
 extern PyTypeObject NumericType;
 #define Numeric_Check(obj) (obj->ob_type == &NumericType)
 NumericObj *numeric_alloc(CS_NUMERIC *num);
+int numeric_from_value(CS_NUMERIC *num, int precision, int scale, PyObject *obj);
 int numeric_as_string(PyObject *obj, char *text);
 extern char NumericType_new__doc__[];
 PyObject *NumericType_new(PyObject *module, PyObject *args);
