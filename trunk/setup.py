@@ -149,7 +149,7 @@ class my_sdist(sdist):
         sdist.run(self)
 
 setup(name = "Sybase",
-      version = "0.35pre1",
+      version = "0.35pre2",
       maintainer = "Dave Cole",
       maintainer_email = " djc@object-craft.com.au",
       description = "Sybase Extension to Python",
