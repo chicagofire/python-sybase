@@ -212,7 +212,7 @@ MoneyObj *Money_FromInt(PyObject *obj, int type)
 {
     MoneyUnion money;
 
-    if (money_from_int(&money, PyInt_AsLong(obj), type))
+    if (money_from_int(&money, type, PyInt_AsLong(obj)))
 	return money_alloc(&money, type);
     return NULL;
 }
