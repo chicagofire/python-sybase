@@ -71,39 +71,38 @@ The type used to store Sybase \code{CS_DATETIME} and
 \end{datadesc}
 
 \begin{datadesc}{MoneyType}
-The type used to store Sybase \code{CS_MONEY} data values.
+The type used to store Sybase \code{CS_MONEY} and \code{CS_MONEY4}
+data values.
 \end{datadesc}
 
 \subsection{Functions}
 
 \begin{funcdesc}{cs_ctx_alloc}{\optional{version \code{= CS_VERSION_100}}}
-Execute the Sybase-CT function \function{cs_ctx_alloc()}.  The result
-is a tuple containing the Sybase result code and a new instance of the
-\class{CS_CONTEXT} class.  \code{None} is returned as the
-\class{CS_CONTEXT} object when the result code is not
-\code{CS_SUCCEED}.
+Calls the Sybase-CT \function{cs_ctx_alloc()} function:
 
 \begin{verbatim}
-from sybasect import *
-status, ctx = cs_ctx_alloc(CS_VERSION_100)
-if status != CS_SUCCEED:
-    raise 'cs_ctx_alloc'
+result = cs_ctx_alloc(version, &ctx)
 \end{verbatim}
+
+The result is a tuple containing the Sybase result code and a new
+instance of the \class{CS_CONTEXT} class constructed from the
+\var{ctx} value returned by Sybase.  \code{None} is returned as the
+\class{CS_CONTEXT} object when the result code is not
+\code{CS_SUCCEED}.
 \end{funcdesc}
 
 \begin{funcdesc}{cs_ctx_global}{\optional{version \code{= CS_VERSION_100}}}
-Execute the Sybase-CT function \function{cs_ctx_global()}.  The result
-is a tuple containing the Sybase result code and a new instance of the
-\class{CS_CONTEXT} class.  \code{None} is returned as the
-\class{CS_CONTEXT} object when the result code is not
-\code{CS_SUCCEED}.
+Calls the Sybase-CT \function{cs_ctx_global()} function:
 
 \begin{verbatim}
-from sybasect import *
-status, ctx = cs_ctx_global(CS_VERSION_100)
-if status != CS_SUCCEED:
-    raise 'cs_ctx_global'
+result = cs_ctx_global(version, &ctx)
 \end{verbatim}
+
+The result is a tuple containing the Sybase result code and a new
+instance of the \class{CS_CONTEXT} class constructed from the
+\var{ctx} value returned by Sybase.  \code{None} is returned as the
+\class{CS_CONTEXT} object when the result code is not
+\code{CS_SUCCEED}.
 \end{funcdesc}
 
 \begin{funcdesc}{DataBuf}{obj}
@@ -112,12 +111,6 @@ argument is used to initialise the \class{DataBuf} object.
 
 For all types of \var{obj} other than \class{CS_DATAFMT} a buffer will
 be initialised which contains a single value.
-
-\begin{verbatim}
-buf = DataBuf('hello')
-if cmd.ct_param(buf) != CS_SUCCEED:
-    raise 'ct_param'
-\end{verbatim}
 
 When \var{obj} is a \class{CS_DATAFMT} object an empty buffer will be
 created according to the attributes of the \class{CS_DATAFMT} object.
@@ -147,7 +140,7 @@ for i in range(num_cols):
 \end{funcdesc}
 
 \begin{funcdesc}{numeric}{obj \optional{, precision \code{= -1}} \optional{, scale \code{= -1}}}
-Return a new instance of the \class{NumericType} class.
+Return a new instance of the \class{Numeric} class.
 
 The \var{obj} argument can accept any of the following types;
 \code{IntType}, \code{LongType}, \code{FloatType}, \code{StringType},
@@ -169,6 +162,27 @@ Type & \var{precision} & \var{scale} \\
 \code{StringType}  & \# digits before decimal point & \# digits after decimal point \\
 \code{NumericType} & input precision & input scale \\
 \end{longtable}
+\end{funcdesc}
+
+\begin{funcdesc}{money}{obj \optional{, type \code{= CS_MONEY_TYPE}}}
+Return a new instance of the \class{Money} class.
+
+The \var{obj} argument can accept any of the following types;
+\code{IntType}, \code{LongType}, \code{FloatType}, \code{StringType},
+or \code{MoneyType}.
+
+Passing \code{CS_MONEY4_TYPE} in the \var{type} argument will create a
+\code{smallmoney} value instead of the default \code{money}.
+\end{funcdesc}
+
+\begin{funcdesc}{datetime}{str \optional{, type \code{= CS_DATETIME_TYPE}}}
+Return a new instance of the \class{DateTime} class.
+
+The \var{str} argument must be a string.
+
+Passing \code{CS_DATETIME4_TYPE} in the \var{type} argument will
+create a \code{smalldatetime} value instead of the default
+\code{datetime}.
 \end{funcdesc}
 
 \begin{funcdesc}{sizeof_type}{type_code}
