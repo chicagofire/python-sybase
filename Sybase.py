@@ -6,7 +6,7 @@ except:
 import time
 from sybasect import *
 
-__version__ = '0.31'
+__version__ = '0.32'
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
