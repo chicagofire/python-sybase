@@ -1,4 +1,4 @@
-use tempdb
+use pubs2
 go
 if exists ( select 1 from sysobjects where name = 'test_pubs')
 	drop table test_pubs
