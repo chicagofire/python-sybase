@@ -1501,7 +1501,7 @@ static int dict_add_type(PyObject *dict, PyTypeObject *type)
 
 void initsybasect(void)
 {
-    PyObject *m, *d;
+    PyObject *m, *d, *rev = NULL;
     value_desc *desc;
 
     /* Initialise the type of the new type objects here; doing it here
@@ -1526,19 +1526,30 @@ void initsybasect(void)
     m = Py_InitModule4(module, sybasect_methods,
 		       sybasect_module_documentation,
 		       (PyObject*)NULL, PYTHON_API_VERSION);
+    if (m == NULL)
+	goto error;
 
     /* Add some symbolic constants to the module */
     d = PyModule_GetDict(m);
+    if (d == NULL)
+	goto error;
     /* Add constants */
     for (desc = sybase_args; desc->name != NULL; desc++)
 	if (dict_add_int(d, desc->name, desc->value) < 0)
-	    break;
+	    goto error;
 
 #ifdef WANT_THREADS
-    dict_add_int(d, "__with_threads__", 1);
+    if (dict_add_int(d, "__with_threads__", 1) < 0)
+	goto error;
 #else
-    dict_add_int(d, "__with_threads__", 0);
+    if (dict_add_int(d, "__with_threads__", 0) < 0)
+	goto error;
 #endif
+
+    if ((rev = PyString_FromString("0.35")) == NULL)
+	goto error;
+    if (PyDict_SetItemString(d, "__version__", rev) < 0)
+	goto error;
 
     /* Set debug file to None */
     debug_file = Py_None;
@@ -1566,6 +1577,9 @@ void initsybasect(void)
 	|| copy_reg_money(d)
 	|| copy_reg_datetime(d))
 	;
+
+error:
+    Py_XDECREF(rev);
 
     /* Check for errors */
     if (PyErr_Occurred()) {
