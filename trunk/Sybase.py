@@ -402,17 +402,26 @@ class _FetchNowParams(_FetchNow):
                 self._raise_error(Error, 'ct_fetch')
             pos = -1
             for buf in bufs:
-                if buf.status & CS_RETURN:
-                    if type(self._params) is type({}):
-                        self._params[buf.name] = _column_value(buf[0])
-                    else:
-                        while 1:
-                            pos += 1
-                            param = self._params[pos]
-                            if (type(param) is DataBufType
-                                and param.status & CS_RETURN):
-                                break
-                        self._params[pos] = _column_value(buf[0])
+                if type(self._params) is type({}):
+                    self._params[buf.name] = _column_value(buf[0])
+                else:
+                    while 1:
+                        pos += 1
+                        param = self._params[pos]
+                        if (type(param) is DataBufType
+                            and param.status & CS_RETURN):
+                            break
+                    self._params[pos] = _column_value(buf[0])
+
+    def _status_result(self):
+        bufs = _row_bind(self._cmd, 1)
+        status_result = []
+        while _fetch_rows(self._cmd, bufs, status_result):
+            pass
+        if len(status_result) == 1:
+            row = status_result[0]
+            if len(row) == 1:
+                self.return_status = row[0]
 
 
 _LAZY_IDLE = 0                          # prepared command
@@ -683,6 +692,7 @@ class Cursor:
         try:
             # Discard any previous results
             self._fetcher = None
+            self.return_status = None
 
             # Prepare to retrieve new results.
             fetcher = self._fetcher = _FetchNowParams(self._owner)
@@ -716,6 +726,7 @@ class Cursor:
                         fetcher._raise_error(Error, 'ct_param')
             # Start retreiving results.
             self.description = fetcher.start(self.arraysize, out_params)
+            self.return_status = fetcher.return_status
             return out_params
         finally:
             self._unlock()
