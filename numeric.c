@@ -20,7 +20,7 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 **********************************************************************/
 
-#include "_sybase.h"
+#include "sybasect.h"
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
 

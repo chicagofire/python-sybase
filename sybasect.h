@@ -24,10 +24,12 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdarg.h>
 #include <ctpublic.h>
+#include <bkpublic.h>
 #include "Python.h"
 #include "structmember.h"
 
-enum { OPTION_BOOL, OPTION_INT, OPTION_STRING, OPTION_CMD, OPTION_UNKNOWN };
+enum { OPTION_BOOL, OPTION_INT, OPTION_STRING, OPTION_CMD,
+       OPTION_NUMERIC, OPTION_UNKNOWN };
 
 typedef struct {
     PyObject_HEAD
@@ -41,6 +43,14 @@ typedef struct {
     int strip;
     int debug;
 } CS_CONNECTIONObj;
+
+typedef struct {
+    PyObject_HEAD
+    CS_CONNECTIONObj *con;
+    CS_BLKDESC *blk;
+    CS_INT direction;
+    int debug;
+} CS_BLKDESCObj;
 
 typedef struct {
     PyObject_HEAD
@@ -83,6 +93,7 @@ typedef struct {
 
 extern PyTypeObject CS_CONTEXTType;
 extern PyTypeObject CS_CONNECTIONType;
+extern PyTypeObject CS_BLKDESCType;
 extern PyTypeObject CS_COMMANDType;
 extern PyTypeObject CS_DATAFMTType;
 extern PyTypeObject CS_CLIENTMSGType;
@@ -91,9 +102,9 @@ extern PyTypeObject BufferType;
 
 int first_tuple_int(PyObject *args, int *int_arg);
 
-enum { ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT, DYNAMIC,
-       PROPS, DIRSERV, SECURITY, NETIO, OPTION, DATEDAY, DATEFMT, DATAFMT,
-       LEVEL, TYPE, STATUS, STATUSFMT, };
+enum { CSVER, ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT,
+       BULK, BULKDIR, BULKPROPS, DYNAMIC, PROPS, DIRSERV, SECURITY, NETIO,
+       OPTION, DATEDAY, DATEFMT, DATAFMT, LEVEL, TYPE, STATUS, STATUSFMT, };
 
 char *value_str(int type, int value);
 
@@ -109,13 +120,15 @@ void float_datafmt(CS_DATAFMT *fmt);
 
 CS_CONTEXT *global_ctx();
 
-PyObject *ctx_alloc();
-PyObject *ctx_global();
+PyObject *ctx_alloc(CS_INT version);
+PyObject *ctx_global(CS_INT version);
 PyObject *con_alloc(CS_CONTEXTObj *ctx);
+PyObject *bulk_alloc(CS_CONNECTIONObj *con);
 PyObject *cmd_alloc(CS_CONNECTIONObj *con);
 PyObject *cmd_eed(CS_CONNECTIONObj *con, CS_COMMAND *eed);
 PyObject *clientmsg_alloc();
 PyObject *servermsg_alloc();
 PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip);
 PyObject *buffer_alloc(PyObject *obj);
+NumericObj *numeric_alloc(CS_NUMERIC *num);
 PyObject *NumericType_new(PyObject *module, PyObject *args);

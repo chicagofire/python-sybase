@@ -22,7 +22,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-#include "_sybase.h"
+#include "sybasect.h"
 
 static char CS_COMMAND_ct_send__doc__[] = 
 "ct_send() -> status";
@@ -40,6 +40,27 @@ static PyObject *CS_COMMAND_ct_send(CS_COMMANDObj *self, PyObject *args)
 
     if (self->debug)
 	fprintf(stderr, "ct_send() -> %s\n", value_str(STATUS, status));
+    return PyInt_FromLong(status);
+}
+
+static char CS_COMMAND_ct_send_data__doc__[] = 
+"ct_send_data(string) -> status";
+
+static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
+{
+    CS_RETCODE status;
+    char *str;
+    int str_len;
+
+    if (!PyArg_ParseTuple(args, "s#", &str, &str_len))
+	return NULL;
+
+    Py_BEGIN_ALLOW_THREADS;
+    status = ct_send_data(self->cmd, str, str_len);
+    Py_END_ALLOW_THREADS;
+
+    if (self->debug)
+	fprintf(stderr, "ct_send_data() -> %s\n", value_str(STATUS, status));
     return PyInt_FromLong(status);
 }
 
@@ -648,6 +669,7 @@ static struct PyMethodDef CS_COMMAND_methods[] = {
     { "ct_res_info", (PyCFunction)CS_COMMAND_ct_res_info, METH_VARARGS, CS_COMMAND_ct_res_info__doc__ },
     { "ct_results", (PyCFunction)CS_COMMAND_ct_results, METH_VARARGS, CS_COMMAND_ct_results__doc__ },
     { "ct_send", (PyCFunction)CS_COMMAND_ct_send, METH_VARARGS, CS_COMMAND_ct_send__doc__ },
+    { "ct_send_data", (PyCFunction)CS_COMMAND_ct_send_data, METH_VARARGS, CS_COMMAND_ct_send_data__doc__ },
     { "ct_setparam", (PyCFunction)CS_COMMAND_ct_setparam, METH_VARARGS, CS_COMMAND_ct_setparam__doc__ },
     { NULL }			/* sentinel */
 };

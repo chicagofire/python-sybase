@@ -22,20 +22,22 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-#include "_sybase.h"
+#include "sybasect.h"
 
 static char CS_CONTEXT_ct_init__doc__[] = 
 "ct_init() -> status";
 
 static PyObject *CS_CONTEXT_ct_init(CS_CONTEXTObj *self, PyObject *args)
 {
+    int version;
     CS_RETCODE status;
 
-    if (!PyArg_ParseTuple(args, ""))
+    version = CS_VERSION_100;
+    if (!PyArg_ParseTuple(args, "|i", &version))
 	return NULL;
 
     Py_BEGIN_ALLOW_THREADS;
-    status = ct_init(self->ctx, CS_VERSION_100);
+    status = ct_init(self->ctx, version);
     Py_END_ALLOW_THREADS;
 
     return PyInt_FromLong(status);
@@ -258,7 +260,7 @@ static struct PyMethodDef CS_CONTEXT_methods[] = {
     { NULL }			/* sentinel */
 };
 
-PyObject *ctx_alloc()
+PyObject *ctx_alloc(CS_INT version)
 {
     CS_CONTEXTObj *self;
     CS_RETCODE status;
@@ -270,7 +272,7 @@ PyObject *ctx_alloc()
     self->ctx = NULL;
 
     Py_BEGIN_ALLOW_THREADS;
-    status = cs_ctx_alloc(CS_VERSION_100, &ctx);
+    status = cs_ctx_alloc(version, &ctx);
     Py_END_ALLOW_THREADS;
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
@@ -281,7 +283,7 @@ PyObject *ctx_alloc()
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
-PyObject *ctx_global()
+PyObject *ctx_global(CS_INT version)
 {
     CS_CONTEXTObj *self;
     CS_RETCODE status;
@@ -293,7 +295,7 @@ PyObject *ctx_global()
     self->ctx = NULL;
 
     Py_BEGIN_ALLOW_THREADS;
-    status = cs_ctx_global(CS_VERSION_100, &ctx);
+    status = cs_ctx_global(version, &ctx);
     Py_END_ALLOW_THREADS;
     if (status != CS_SUCCEED) {
 	Py_DECREF(self);
