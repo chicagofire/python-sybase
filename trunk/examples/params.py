@@ -1,6 +1,27 @@
 #!/usr/bin/python
 #
-# From orig/params.c - sybase example program
+# From params.c - sybase example program
+#
+# Description:
+#    This program uses ct_command with variables to query the
+#    pubs2.dbo.titles table. It takes two INPUT parameters -
+#        Parameter               Type
+#        ---------               ----
+#        type of book (type)     character
+#        cost of book (price)    float
+#
+#    It then retrieves all title ids that cost more than or equal to
+#    the input price for the input type of book.  It makes use of the
+#    CS_FLOAT_TYPE for the 'price' variable, which corresponds to the
+#    'C' language 'double' type.
+#
+# References:
+#    Open Client/C Reference manual - check the pages for ct_command
+#    and ct_param.
+#
+# Notes:
+#    Also refer to the section on Data types to see how client types
+#    are implemented.
 #
 import sys
 from sybasect import *

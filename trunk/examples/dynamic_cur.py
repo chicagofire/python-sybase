@@ -1,6 +1,24 @@
 #!/usr/bin/python
 #
-# From orig/dynamic_cur.c - sybase example program
+# From dynamic_cur.c - sybase example program
+#
+# Description:
+#    This program uses Dynamic SQL to retrieve values from the
+#    'titles' table in the 'pubs2' database.  The select statement,
+#    which contains placeholders with identifiers, is sent to the
+#    server to be partially compiled and stored. Therefore, every time
+#    you call the select, you in effect only pass new values for the
+#    key value which determines the row to be retrieved.  The
+#    behaviour is similar to passing input parameters to stored
+#    procedures. The program also uses cursors to retrieve rows one by
+#    one, which can be manipulated as required.
+#
+# References:
+#    Open Client-Library/C reference manual. Refer to the sections on
+#    Dynamic SQL , ct_dynamic and ct_cursor.
+#
+# Note:
+#    Dynamic SQL is mainly intended for precompiler support.
 #
 import sys
 from sybasect import *

@@ -1,6 +1,24 @@
 #!/usr/bin/python
 #
-# From orig/rpc.c - sybase example program
+# From rpc.c - sybase example program
+#
+# Description:
+#    This program uses RPC calls to execute a pre-defined stored
+#    procedure (see rpc.sql). This stored procedure accepts two INPUT
+#    parameters:
+#        Parameter		Type
+#        ---------		----
+#        book type 		character
+#        total sales		integer
+#    It then returns the number of books of the input 'type' that have
+#    a 'total sales' of the input value or more.
+#
+# References:
+#    Open Client/C Reference manual - check the pages for ct_command
+#    and ct_param.
+#
+# Script file:
+#    rpc.sql 
 #
 import sys
 from sybasect import *
