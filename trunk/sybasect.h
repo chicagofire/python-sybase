@@ -6,13 +6,13 @@
 
 ******************************************************************/
 
+#include "Python.h"
+#include "pythread.h"
+#include "structmember.h"
 #include <stdarg.h>
 #include <cspublic.h>
 #include <ctpublic.h>
 #include <bkpublic.h>
-#include "Python.h"
-#include "pythread.h"
-#include "structmember.h"
 
 #ifdef HAVE_FREETDS
 #include "freetds.h"
