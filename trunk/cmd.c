@@ -605,7 +605,7 @@ static PyObject *CS_COMMAND_ct_fetch(CS_COMMANDObj *self, PyObject *args)
 }
 
 static char CS_COMMAND_ct_get_data__doc__[] = 
-"ct_get_data(num, buf) -> result, len";
+"ct_get_data(num, databuf) -> result, len";
 
 static PyObject *CS_COMMAND_ct_get_data(CS_COMMANDObj *self, PyObject *args)
 {
@@ -638,7 +638,7 @@ static PyObject *CS_COMMAND_ct_get_data(CS_COMMANDObj *self, PyObject *args)
 }
 
 static char CS_COMMAND_ct_param__doc__[] = 
-"ct_param(buf) -> status";
+"ct_param(param) -> status";
 
 static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 {
@@ -922,7 +922,7 @@ static PyObject *CS_COMMAND_ct_send(CS_COMMANDObj *self, PyObject *args)
 }
 
 static char CS_COMMAND_ct_send_data__doc__[] = 
-"ct_send_data(buf) -> status";
+"ct_send_data(databuf) -> status";
 
 static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
 {
@@ -950,7 +950,7 @@ static PyObject *CS_COMMAND_ct_send_data(CS_COMMANDObj *self, PyObject *args)
 }
 
 static char CS_COMMAND_ct_setparam__doc__[] = 
-"ct_setparam(buf) -> status";
+"ct_setparam(databuf) -> status";
 
 static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
 {
