@@ -171,8 +171,3 @@ PyTypeObject CS_IODESCType = {
     0L, 0L, 0L, 0L,
     CS_IODESCType__doc__	/* Documentation string */
 };
-
-int CS_IODESC_Check(PyObject *obj)
-{
-    return obj->ob_type == &CS_IODESCType;
-}
