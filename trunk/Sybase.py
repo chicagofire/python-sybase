@@ -21,7 +21,7 @@ from sybasect import *
 
 set_debug(sys.stderr)
 
-__version__ = '0.35'
+__version__ = '0.36pre1'
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
