@@ -1,3 +1,9 @@
+2002-10-29 10:31  djc
+
+	* ChangeLog, MANIFEST.in, Sybase.py, setup.py,
+	dist/release-0.35pre3, doc/sybase.tex: Oops - forgot to distribute
+	freetds.h and sybasect.h 
+
 2002-10-28 22:35  djc
 
 	* dist/release-0.35pre2: More cleanup.  
