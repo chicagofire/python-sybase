@@ -24,6 +24,16 @@ PERFORMANCE OF THIS SOFTWARE.
 
 #include "sybasect.h"
 
+void money_datafmt(CS_DATAFMT *fmt)
+{
+    fmt->datatype = CS_MONEY_TYPE;
+    fmt->maxlength = sizeof(CS_MONEY);
+    fmt->locale = NULL;
+    fmt->format = CS_FMT_NULLTERM;
+    fmt->precision = 0;
+    fmt->scale = 0;
+}
+
 void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale)
 {
     fmt->datatype = CS_NUMERIC_TYPE;
@@ -192,8 +202,3 @@ PyTypeObject CS_DATAFMTType = {
     0L, 0L, 0L, 0L,
     CS_DATAFMTType__doc__	/* Documentation string */
 };
-
-int CS_DATAFMT_Check(PyObject *obj)
-{
-    return obj->ob_type == &CS_DATAFMTType;
-}

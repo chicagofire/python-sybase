@@ -198,9 +198,7 @@ static PyObject *DataBuf_item(DataBufObj *self, int i)
 	return PyInt_FromLong(*(CS_INT*)item);
 
     case CS_MONEY_TYPE:
-    case CS_MONEY4_TYPE:
-	PyErr_SetString(PyExc_TypeError, "unsupported data format");
-	return NULL;
+	return (PyObject*)money_alloc(item);
 
     case CS_REAL_TYPE:
 	return PyFloat_FromDouble(*(CS_REAL*)item);
@@ -318,9 +316,13 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	break;
 
     case CS_MONEY_TYPE:
-    case CS_MONEY4_TYPE:
-	PyErr_SetString(PyExc_TypeError, "unsupported data format");
-	return -1;
+	if (!Money_Check(v)) {
+	    PyErr_SetString(PyExc_TypeError, "money expected");
+	    return -1;
+	}
+	*(CS_MONEY*)item = ((MoneyObj*)v)->num;
+	self->copied[i] = self->fmt.maxlength;
+	break;
 
     case CS_FLOAT_TYPE:
 	if (!PyFloat_Check(v)) {
@@ -466,8 +468,3 @@ PyTypeObject DataBufType = {
     0L, 0L, 0L, 0L,
     DataBufType__doc__		/* Documentation string */
 };
-
-int DataBuf_Check(PyObject *obj)
-{
-    return obj->ob_type == &DataBufType;
-}
