@@ -1,12 +1,17 @@
 try:
     import DateTime
     use_datetime = 1
-except:
-    use_datetime = 0
+except ImportError:
+    try:
+        import mx.DateTime
+        DateTime = mx.DateTime
+        use_datetime = 1
+    except ImportError:
+        use_datetime = 0
 import time
 from sybasect import *
 
-__version__ = '0.32'
+__version__ = '0.32a'
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported

@@ -520,6 +520,22 @@ static PyObject *CS_CONTEXT_ct_config(CS_CONTEXTObj *self, PyObject *args)
     }
 }
 
+static char CS_CONTEXT_cs_loc_alloc__doc__[] = 
+"cs_loc_alloc() -> status, locale";
+
+static PyObject *CS_CONTEXT_cs_loc_alloc(CS_CONTEXTObj *self, PyObject *args)
+{
+    if (!PyArg_ParseTuple(args, ""))
+	return NULL;
+
+    if (self->ctx == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_CONTEXT has been dropped");
+	return NULL;
+    }
+
+    return locale_alloc(self);
+}
+
 static char CS_CONTEXT_ct_con_alloc__doc__[] = 
 "ct_con_alloc() -> status, conn";
 
@@ -754,6 +770,7 @@ static PyObject *CS_CONTEXT_cs_ctx_drop(CS_CONTEXTObj *self, PyObject *args)
 }
 
 static struct PyMethodDef CS_CONTEXT_methods[] = {
+    { "cs_loc_alloc", (PyCFunction)CS_CONTEXT_cs_loc_alloc, METH_VARARGS, CS_CONTEXT_cs_loc_alloc__doc__ },
 #ifndef WANT_THREADS
     { "ct_callback", (PyCFunction)CS_CONTEXT_ct_callback, METH_VARARGS, CS_CONTEXT_ct_callback__doc__ },
 #endif

@@ -626,6 +626,9 @@ static value_desc sybase_args[] = {
 #ifdef CS_BULK_LOGIN
     SYVAL(PROPS, CS_BULK_LOGIN),
 #endif
+#ifdef CS_LOC_PROP
+    SYVAL(PROPS, CS_LOC_PROP),
+#endif
 #ifdef CS_EED_CMD
     SYVAL(PROPS, CS_EED_CMD),
 #endif
@@ -1224,6 +1227,156 @@ static value_desc sybase_args[] = {
     SYVAL(CURSTAT, CS_CURSTAT_DEALLOC),
 #endif
 
+#ifdef CS_LC_COLLATE
+    SYVAL(LOCVAL, CS_LC_COLLATE),
+#endif
+#ifdef CS_LC_CTYPE
+    SYVAL(LOCVAL, CS_LC_CTYPE),
+#endif
+#ifdef CS_LC_MESSAGE
+    SYVAL(LOCVAL, CS_LC_MESSAGE),
+#endif
+#ifdef CS_LC_MONETARY
+    SYVAL(LOCVAL, CS_LC_MONETARY),
+#endif
+#ifdef CS_LC_NUMERIC
+    SYVAL(LOCVAL, CS_LC_NUMERIC),
+#endif
+#ifdef CS_LC_TIME
+    SYVAL(LOCVAL, CS_LC_TIME),
+#endif
+#ifdef CS_LC_ALL
+    SYVAL(LOCVAL, CS_LC_ALL),
+#endif
+#ifdef CS_SYB_LANG
+    SYVAL(LOCVAL, CS_SYB_LANG),
+#endif
+#ifdef CS_SYB_CHARSET
+    SYVAL(LOCVAL, CS_SYB_CHARSET),
+#endif
+#ifdef CS_SYB_SORTORDER
+    SYVAL(LOCVAL, CS_SYB_SORTORDER),
+#endif
+#ifdef CS_SYB_COLLATE
+    SYVAL(LOCVAL, CS_SYB_COLLATE),
+#endif
+#ifdef CS_SYB_LANG_CHARSET
+    SYVAL(LOCVAL, CS_SYB_LANG_CHARSET),
+#endif
+#ifdef CS_SYB_TIME
+    SYVAL(LOCVAL, CS_SYB_TIME),
+#endif
+#ifdef CS_SYB_MONETARY
+    SYVAL(LOCVAL, CS_SYB_MONETARY),
+#endif
+#ifdef CS_SYB_NUMERIC
+    SYVAL(LOCVAL, CS_SYB_NUMERIC),
+#endif
+#ifdef CS_MONTH
+    SYVAL(DTINFO, CS_MONTH),
+#endif
+#ifdef CS_SHORTMONTH
+    SYVAL(DTINFO, CS_SHORTMONTH),
+#endif
+#ifdef CS_DAYNAME
+    SYVAL(DTINFO, CS_DAYNAME),
+#endif
+#ifdef CS_DATEORDER
+    SYVAL(DTINFO, CS_DATEORDER),
+#endif
+#ifdef CS_12HOUR
+    SYVAL(DTINFO, CS_12HOUR),
+#endif
+#ifdef CS_DT_CONVFMT
+    SYVAL(DTINFO, CS_DT_CONVFMT),
+#endif
+#ifdef CS_DATES_SHORT
+    SYVAL(CSDATES, CS_DATES_SHORT),
+#endif
+#ifdef CS_DATES_MDY1
+    SYVAL(CSDATES, CS_DATES_MDY1),
+#endif
+#ifdef CS_DATES_YMD1
+    SYVAL(CSDATES, CS_DATES_YMD1),
+#endif
+#ifdef CS_DATES_DMY1
+    SYVAL(CSDATES, CS_DATES_DMY1),
+#endif
+#ifdef CS_DATES_DMY2
+    SYVAL(CSDATES, CS_DATES_DMY2),
+#endif
+#ifdef CS_DATES_DMY3
+    SYVAL(CSDATES, CS_DATES_DMY3),
+#endif
+#ifdef CS_DATES_DMY4
+    SYVAL(CSDATES, CS_DATES_DMY4),
+#endif
+#ifdef CS_DATES_MDY2
+    SYVAL(CSDATES, CS_DATES_MDY2),
+#endif
+#ifdef CS_DATES_HMS
+    SYVAL(CSDATES, CS_DATES_HMS),
+#endif
+#ifdef CS_DATES_LONG
+    SYVAL(CSDATES, CS_DATES_LONG),
+#endif
+#ifdef CS_DATES_MDY3
+    SYVAL(CSDATES, CS_DATES_MDY3),
+#endif
+#ifdef CS_DATES_YMD2
+    SYVAL(CSDATES, CS_DATES_YMD2),
+#endif
+#ifdef CS_DATES_YMD3
+    SYVAL(CSDATES, CS_DATES_YMD3),
+#endif
+#ifdef CS_DATES_YDM1
+    SYVAL(CSDATES, CS_DATES_YDM1),
+#endif
+#ifdef CS_DATES_MYD1
+    SYVAL(CSDATES, CS_DATES_MYD1),
+#endif
+#ifdef CS_DATES_DYM1
+    SYVAL(CSDATES, CS_DATES_DYM1),
+#endif
+#ifdef CS_DATES_SHORT_ALT
+    SYVAL(CSDATES, CS_DATES_SHORT_ALT),
+#endif
+#ifdef CS_DATES_MDY1_YYYY
+    SYVAL(CSDATES, CS_DATES_MDY1_YYYY),
+#endif
+#ifdef CS_DATES_YMD1_YYYY
+    SYVAL(CSDATES, CS_DATES_YMD1_YYYY),
+#endif
+#ifdef CS_DATES_DMY1_YYYY
+    SYVAL(CSDATES, CS_DATES_DMY1_YYYY),
+#endif
+#ifdef CS_DATES_DMY2_YYYY
+    SYVAL(CSDATES, CS_DATES_DMY2_YYYY),
+#endif
+#ifdef CS_DATES_DMY3_YYYY
+    SYVAL(CSDATES, CS_DATES_DMY3_YYYY),
+#endif
+#ifdef CS_DATES_DMY4_YYYY
+    SYVAL(CSDATES, CS_DATES_DMY4_YYYY),
+#endif
+#ifdef CS_DATES_MDY2_YYYY
+    SYVAL(CSDATES, CS_DATES_MDY2_YYYY),
+#endif
+#ifdef CS_DATES_HMS_ALT
+    SYVAL(CSDATES, CS_DATES_HMS_ALT),
+#endif
+#ifdef CS_DATES_LONG_ALT
+    SYVAL(CSDATES, CS_DATES_LONG_ALT),
+#endif
+#ifdef CS_DATES_MDY3_YYYY
+    SYVAL(CSDATES, CS_DATES_MDY3_YYYY),
+#endif
+#ifdef CS_DATES_YMD2_YYYY
+    SYVAL(CSDATES, CS_DATES_YMD2_YYYY),
+#endif
+#ifdef CS_DATES_YMD3_YYYY
+    SYVAL(CSDATES, CS_DATES_YMD3_YYYY),
+#endif
     {0,0,0}
 };
 
@@ -1304,6 +1457,7 @@ void initsybasect(void)
     CS_CONTEXTType.ob_type = &PyType_Type;
     CS_DATAFMTType.ob_type = &PyType_Type;
     CS_IODESCType.ob_type = &PyType_Type;
+    CS_LOCALEType.ob_type = &PyType_Type;
     CS_CLIENTMSGType.ob_type = &PyType_Type;
     CS_SERVERMSGType.ob_type = &PyType_Type;
     NumericType.ob_type = &PyType_Type;

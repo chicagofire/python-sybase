@@ -26,6 +26,3 @@
 - Bulkcopy copy out
 
 - DataBuf[n] = val should do more conversions
-
-- Ensure module compiles with 11.0.3
-
