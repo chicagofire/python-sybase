@@ -195,8 +195,9 @@ static int property_type(int property)
 #ifdef BLK_NOAPI_CHK
     case BLK_NOAPI_CHK:
 #endif
+#ifdef BLK_SENSITIVITY_LBL
     case BLK_SENSITIVITY_LBL:
-
+#endif
 #ifdef HAS_ARRAY_INSERT
     case ARRAY_INSERT:
 #endif
@@ -434,6 +435,7 @@ static PyObject *CS_BLKDESC_blk_rowxfer(CS_BLKDESCObj *self, PyObject *args)
     return PyInt_FromLong(status);
 }
 
+#ifdef BLK_ROWXFER_MULT
 static char CS_BLKDESC_blk_rowxfer_mult__doc__[] = 
 "blk_rowxfer_mult([row_count]) -> status, row_count";
 
@@ -464,6 +466,7 @@ static PyObject *CS_BLKDESC_blk_rowxfer_mult(CS_BLKDESCObj *self, PyObject *args
 
     return Py_BuildValue("ii", status, row_count);
 }
+#endif
 
 static char CS_BLKDESC_blk_textxfer__doc__[] = 
 "blk_textxfer(str) -> status\n"
@@ -526,7 +529,9 @@ static struct PyMethodDef CS_BLKDESC_methods[] = {
     { "blk_init", (PyCFunction)CS_BLKDESC_blk_init, METH_VARARGS, CS_BLKDESC_blk_init__doc__ },
     { "blk_props", (PyCFunction)CS_BLKDESC_blk_props, METH_VARARGS, CS_BLKDESC_blk_props__doc__ },
     { "blk_rowxfer", (PyCFunction)CS_BLKDESC_blk_rowxfer, METH_VARARGS, CS_BLKDESC_blk_rowxfer__doc__ },
+#ifdef BLK_ROWXFER_MULT
     { "blk_rowxfer_mult", (PyCFunction)CS_BLKDESC_blk_rowxfer_mult, METH_VARARGS, CS_BLKDESC_blk_rowxfer_mult__doc__ },
+#endif
     { "blk_textxfer", (PyCFunction)CS_BLKDESC_blk_textxfer, METH_VARARGS, CS_BLKDESC_blk_textxfer__doc__ },
     
     { NULL }			/* sentinel */

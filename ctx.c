@@ -347,16 +347,32 @@ static PyObject *CS_CONTEXT_ct_callback(CS_CONTEXTObj *self, PyObject *args)
 static int ct_property_type(int property)
 {
     switch (property) {
+#ifdef CS_LOGIN_TIMEOUT
     case CS_LOGIN_TIMEOUT:
+#endif
+#ifdef CS_MAX_CONNECT
     case CS_MAX_CONNECT:
+#endif
+#ifdef CS_NETIO
     case CS_NETIO:
+#endif
+#ifdef CS_NO_TRUNCATE
     case CS_NO_TRUNCATE:
+#endif
+#ifdef CS_TEXTLIMIT
     case CS_TEXTLIMIT:
+#endif
+#ifdef CS_TIMEOUT
     case CS_TIMEOUT:
+#endif
+#ifdef CS_VERSION
     case CS_VERSION:
+#endif
 	return OPTION_INT;
+#ifdef CS_VER_STRING
     case CS_VER_STRING:
 	return OPTION_STRING;
+#endif
     default:
 	return OPTION_UNKNOWN;
     }

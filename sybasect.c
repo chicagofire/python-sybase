@@ -338,13 +338,27 @@ static value_desc sybase_args[] = {
 #ifdef CS_CACHE
     SYVAL(ACTION, CS_CACHE),
 #endif
+#ifdef CS_CLEAR
     SYVAL(ACTION, CS_CLEAR),
+#endif
+#ifdef CS_GET
     SYVAL(ACTION, CS_GET),
+#endif
+#ifdef CS_INIT
     SYVAL(ACTION, CS_INIT),
+#endif
+#ifdef CS_MSGLIMIT
     SYVAL(ACTION, CS_MSGLIMIT),
+#endif
+#ifdef CS_SEND
     SYVAL(ACTION, CS_SEND),
+#endif
+#ifdef CS_SET
     SYVAL(ACTION, CS_SET),
+#endif
+#ifdef CS_STATUS
     SYVAL(ACTION, CS_STATUS),
+#endif
 #ifdef CS_SUPPORTED
     SYVAL(ACTION, CS_SUPPORTED),
 #endif
@@ -359,30 +373,64 @@ static value_desc sybase_args[] = {
     SYVAL(CANCEL, CS_CANCEL_CURRENT),
 #endif
 
+#ifdef CS_CMD_DONE
     SYVAL(RESULT, CS_CMD_DONE),
+#endif
+#ifdef CS_CMD_FAIL
     SYVAL(RESULT, CS_CMD_FAIL),
+#endif
+#ifdef CS_CMD_SUCCEED
     SYVAL(RESULT, CS_CMD_SUCCEED),
+#endif
+#ifdef CS_COMPUTEFMT_RESULT
     SYVAL(RESULT, CS_COMPUTEFMT_RESULT),
+#endif
+#ifdef CS_COMPUTE_RESULT
     SYVAL(RESULT, CS_COMPUTE_RESULT),
+#endif
+#ifdef CS_CURSOR_RESULT
     SYVAL(RESULT, CS_CURSOR_RESULT),
+#endif
+#ifdef CS_DESCRIBE_RESULT
     SYVAL(RESULT, CS_DESCRIBE_RESULT),
+#endif
+#ifdef CS_MSG_RESULT
     SYVAL(RESULT, CS_MSG_RESULT),
+#endif
+#ifdef CS_PARAM_RESULT
     SYVAL(RESULT, CS_PARAM_RESULT),
+#endif
+#ifdef CS_ROWFMT_RESULT
     SYVAL(RESULT, CS_ROWFMT_RESULT),
+#endif
+#ifdef CS_ROW_RESULT
     SYVAL(RESULT, CS_ROW_RESULT),
+#endif
+#ifdef CS_STATUS_RESULT
     SYVAL(RESULT, CS_STATUS_RESULT),
+#endif
 
+#ifdef CS_ROW_COUNT
     SYVAL(RESINFO, CS_ROW_COUNT),
+#endif
 #ifdef CS_CMD_NUMBER
     SYVAL(RESINFO, CS_CMD_NUMBER),
 #endif
 #ifdef CS_NUM_COMPUTES
     SYVAL(RESINFO, CS_NUM_COMPUTES),
 #endif
+#ifdef CS_NUMDATA
     SYVAL(RESINFO, CS_NUMDATA),
+#endif
+#ifdef CS_ORDERBY_COLS
     SYVAL(RESINFO, CS_ORDERBY_COLS),
+#endif
+#ifdef CS_NUMORDERCOLS
     SYVAL(RESINFO, CS_NUMORDERCOLS),
+#endif
+#ifdef CS_MSGTYPE
     SYVAL(RESINFO, CS_MSGTYPE),
+#endif
 #ifdef CS_BROWSE_INFO
     SYVAL(RESINFO, CS_BROWSE_INFO),
 #endif
@@ -390,9 +438,15 @@ static value_desc sybase_args[] = {
     SYVAL(RESINFO, CS_TRANS_STATE),
 #endif
 
+#ifdef CS_LANG_CMD
     SYVAL(CMD, CS_LANG_CMD),
+#endif
+#ifdef CS_RPC_CMD
     SYVAL(CMD, CS_RPC_CMD),
+#endif
+#ifdef CS_MSG_CMD
     SYVAL(CMD, CS_MSG_CMD),
+#endif
 #ifdef CS_SEND_DATA_CMD
     SYVAL(CMD, CS_SEND_DATA_CMD),
 #endif
@@ -403,19 +457,43 @@ static value_desc sybase_args[] = {
     SYVAL(CMD, CS_SEND_BULK_CMD),
 #endif
 
+#ifdef CS_CURSOR_DECLARE
     SYVAL(CURSOR, CS_CURSOR_DECLARE),
+#endif
+#ifdef CS_CURSOR_OPEN
     SYVAL(CURSOR, CS_CURSOR_OPEN),
+#endif
+#ifdef CS_CURSOR_ROWS
     SYVAL(CURSOR, CS_CURSOR_ROWS),
+#endif
+#ifdef CS_CURSOR_UPDATE
     SYVAL(CURSOR, CS_CURSOR_UPDATE),
+#endif
+#ifdef CS_CURSOR_DELETE
     SYVAL(CURSOR, CS_CURSOR_DELETE),
+#endif
+#ifdef CS_CURSOR_CLOSE
     SYVAL(CURSOR, CS_CURSOR_CLOSE),
+#endif
+#ifdef CS_CURSOR_OPTION
     SYVAL(CURSOR, CS_CURSOR_OPTION),
+#endif
+#ifdef CS_CURSOR_DEALLOC
     SYVAL(CURSOR, CS_CURSOR_DEALLOC),
+#endif
 
+#ifdef CS_FOR_UPDATE
     SYVAL(CURSOROPT, CS_FOR_UPDATE),
+#endif
+#ifdef CS_READ_ONLY
     SYVAL(CURSOROPT, CS_READ_ONLY),
+#endif
+#ifdef CS_DYNAMIC
     SYVAL(CURSOROPT, CS_DYNAMIC),
+#endif
+#ifdef CS_RESTORE_OPEN
     SYVAL(CURSOROPT, CS_RESTORE_OPEN),
+#endif
 #ifdef CS_MORE
     SYVAL(CURSOROPT, CS_MORE),
 #endif
@@ -491,8 +569,12 @@ static value_desc sybase_args[] = {
     SYVAL(DYNAMIC, CS_DEALLOC),
 #endif
 
+#ifdef CS_USERNAME
     SYVAL(PROPS, CS_USERNAME),
+#endif
+#ifdef CS_PASSWORD
     SYVAL(PROPS, CS_PASSWORD),
+#endif
 #ifdef CS_APPNAME
     SYVAL(PROPS, CS_APPNAME),
 #endif
@@ -792,20 +874,46 @@ static value_desc sybase_args[] = {
     SYVAL(OPTION, CS_OPT_STR_RTRUNC),
 #endif
 
+#ifdef CS_OPT_MONDAY
     SYVAL(DATEDAY, CS_OPT_MONDAY),
+#endif
+#ifdef CS_OPT_TUESDAY
     SYVAL(DATEDAY, CS_OPT_TUESDAY),
+#endif
+#ifdef CS_OPT_WEDNESDAY
     SYVAL(DATEDAY, CS_OPT_WEDNESDAY),
+#endif
+#ifdef CS_OPT_THURSDAY
     SYVAL(DATEDAY, CS_OPT_THURSDAY),
+#endif
+#ifdef CS_OPT_FRIDAY
     SYVAL(DATEDAY, CS_OPT_FRIDAY),
+#endif
+#ifdef CS_OPT_SATURDAY
     SYVAL(DATEDAY, CS_OPT_SATURDAY),
+#endif
+#ifdef CS_OPT_SUNDAY
     SYVAL(DATEDAY, CS_OPT_SUNDAY),
+#endif
 
+#ifdef CS_OPT_FMTMDY
     SYVAL(DATEFMT, CS_OPT_FMTMDY),
+#endif
+#ifdef CS_OPT_FMTDMY
     SYVAL(DATEFMT, CS_OPT_FMTDMY),
+#endif
+#ifdef CS_OPT_FMTYMD
     SYVAL(DATEFMT, CS_OPT_FMTYMD),
+#endif
+#ifdef CS_OPT_FMTYDM
     SYVAL(DATEFMT, CS_OPT_FMTYDM),
+#endif
+#ifdef CS_OPT_FMTMYD
     SYVAL(DATEFMT, CS_OPT_FMTMYD),
+#endif
+#ifdef CS_OPT_FMTDYM
     SYVAL(DATEFMT, CS_OPT_FMTDYM),
+#endif
 
 #ifdef CS_HIDDEN
     SYVAL(STATUSFMT, CS_HIDDEN),
@@ -863,27 +971,69 @@ static value_desc sybase_args[] = {
     SYVAL(LEVEL, CS_OPT_LEVEL3),
 #endif
 
+#ifdef CS_CHAR_TYPE
     SYVAL(TYPE, CS_CHAR_TYPE),
+#endif
+#ifdef CS_BINARY_TYPE
     SYVAL(TYPE, CS_BINARY_TYPE),
+#endif
+#ifdef CS_LONGCHAR_TYPE
     SYVAL(TYPE, CS_LONGCHAR_TYPE),
+#endif
+#ifdef CS_LONGBINARY_TYPE
     SYVAL(TYPE, CS_LONGBINARY_TYPE),
+#endif
+#ifdef CS_TEXT_TYPE
     SYVAL(TYPE, CS_TEXT_TYPE),
+#endif
+#ifdef CS_IMAGE_TYPE
     SYVAL(TYPE, CS_IMAGE_TYPE),
+#endif
+#ifdef CS_TINYINT_TYPE
     SYVAL(TYPE, CS_TINYINT_TYPE),
+#endif
+#ifdef CS_SMALLINT_TYPE
     SYVAL(TYPE, CS_SMALLINT_TYPE),
+#endif
+#ifdef CS_INT_TYPE
     SYVAL(TYPE, CS_INT_TYPE),
+#endif
+#ifdef CS_REAL_TYPE
     SYVAL(TYPE, CS_REAL_TYPE),
+#endif
+#ifdef CS_FLOAT_TYPE
     SYVAL(TYPE, CS_FLOAT_TYPE),
+#endif
+#ifdef CS_BIT_TYPE
     SYVAL(TYPE, CS_BIT_TYPE),
+#endif
+#ifdef CS_DATETIME_TYPE
     SYVAL(TYPE, CS_DATETIME_TYPE),
+#endif
+#ifdef CS_DATETIME4_TYPE
     SYVAL(TYPE, CS_DATETIME4_TYPE),
+#endif
+#ifdef CS_MONEY_TYPE
     SYVAL(TYPE, CS_MONEY_TYPE),
+#endif
+#ifdef CS_MONEY4_TYPE
     SYVAL(TYPE, CS_MONEY4_TYPE),
+#endif
+#ifdef CS_NUMERIC_TYPE
     SYVAL(TYPE, CS_NUMERIC_TYPE),
+#endif
+#ifdef CS_DECIMAL_TYPE
     SYVAL(TYPE, CS_DECIMAL_TYPE),
+#endif
+#ifdef CS_VARCHAR_TYPE
     SYVAL(TYPE, CS_VARCHAR_TYPE),
+#endif
+#ifdef CS_VARBINARY_TYPE
     SYVAL(TYPE, CS_VARBINARY_TYPE),
+#endif
+#ifdef CS_LONG_TYPE
     SYVAL(TYPE, CS_LONG_TYPE),
+#endif
 #ifdef CS_SENSITIVITY_TYPE
     SYVAL(TYPE, CS_SENSITIVITY_TYPE),
 #endif
@@ -897,12 +1047,22 @@ static value_desc sybase_args[] = {
     SYVAL(TYPE, CS_USHORT_TYPE),
 #endif
 
+#ifdef CS_CLIENTMSG_TYPE
     SYVAL(TYPE, CS_CLIENTMSG_TYPE),
+#endif
+#ifdef CS_SERVERMSG_TYPE
     SYVAL(TYPE, CS_SERVERMSG_TYPE),
+#endif
+#ifdef CS_ALLMSG_TYPE
     SYVAL(TYPE, CS_ALLMSG_TYPE),
+#endif
 
+#ifdef CS_SUCCEED
     SYVAL(STATUS, CS_SUCCEED),
+#endif
+#ifdef CS_FAIL
     SYVAL(STATUS, CS_FAIL),
+#endif
 #ifdef CS_MEM_ERROR
     SYVAL(STATUS, CS_MEM_ERROR),
 #endif
@@ -930,9 +1090,15 @@ static value_desc sybase_args[] = {
 #ifdef CS_CANCELED
     SYVAL(STATUS, CS_CANCELED),
 #endif
+#ifdef CS_ROW_FAIL
     SYVAL(STATUS, CS_ROW_FAIL),
+#endif
+#ifdef CS_END_DATA
     SYVAL(STATUS, CS_END_DATA),
+#endif
+#ifdef CS_END_RESULTS
     SYVAL(STATUS, CS_END_RESULTS),
+#endif
 #ifdef CS_END_ITEM
     SYVAL(STATUS, CS_END_ITEM),
 #endif
@@ -1019,9 +1185,15 @@ static value_desc sybase_args[] = {
     SYVAL(CBTYPE, CS_SERVERMSG_CB),
 #endif
 
+#ifdef CS_TRUE
     SYVAL(RESULT, CS_TRUE),
+#endif
+#ifdef CS_FALSE
     SYVAL(RESULT, CS_FALSE),
+#endif
+#ifdef CS_MAX_PREC
     SYVAL(RESULT, CS_MAX_PREC),
+#endif
 
 #ifdef CS_CONSTAT_CONNECTED
     SYVAL(CONSTAT, CS_CONSTAT_CONNECTED),
