@@ -27,18 +27,17 @@
       TimeFromTicks(ticks)
       TimestampFromTicks(ticks)
       Binary(string)
-      STRING
-      BINARY
-      NUMBER
-      DATETIME
-      ROWID
+
+- Expose value_str() to Python.
+
+- BLOB columns
+
+- CS_MONEY4!!!
 
 - Document numeric, money, datetime
 
 - Check Py_BuildValue("is#", status, str_buff, buff_len) for props GET.
 
 - PyUnit
-
-- Installation instructions
 
 - Bulkcopy copy out
