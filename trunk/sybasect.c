@@ -155,21 +155,20 @@ static PyObject *sybasect_cs_ctx_alloc(PyObject *module, PyObject *args)
     return ctx_alloc(version);
 }
 
-#ifdef HAVE_CS_CTX_GLOBAL
-static char sybasect_cs_ctx_global__doc__[] =
-"cs_ctx_global([version]) -> ctx\n"
+static char sybasect_set_global_ctx__doc__[] =
+"set_global_ctx(ctx)\n"
 "\n"
-"Allocate or return global Sybase library context object.";
+"Set the internal Sybase library context object.";
 
-static PyObject *sybasect_cs_ctx_global(PyObject *module, PyObject *args)
+static PyObject *sybasect_set_global_ctx(PyObject *module, PyObject *args)
 {
-    int version = CS_VERSION_100;
+    CS_CONTEXTObj *ctx;
 
-    if (!PyArg_ParseTuple(args, "|i", &version))
+    if (!PyArg_ParseTuple(args, "O!", &CS_CONTEXTType, &ctx))
 	return NULL;
-    return ctx_global(version);
+
+    return set_global_ctx(ctx);
 }
-#endif
 
 static char sybasect_DataBuf__doc__[] =
 "DataBuf(obj) -> buffer\n"
@@ -353,9 +352,7 @@ static struct PyMethodDef sybasect_methods[] = {
     { "leaks", (PyCFunction)report_leaks, METH_VARARGS, "" },
 #endif
     { "cs_ctx_alloc", (PyCFunction)sybasect_cs_ctx_alloc, METH_VARARGS, sybasect_cs_ctx_alloc__doc__ },
-#ifdef HAVE_CS_CTX_GLOBAL
-    { "cs_ctx_global", (PyCFunction)sybasect_cs_ctx_global, METH_VARARGS, sybasect_cs_ctx_global__doc__ },
-#endif
+    { "set_global_ctx", (PyCFunction)sybasect_set_global_ctx, METH_VARARGS, sybasect_set_global_ctx__doc__ },
     { "DataBuf", (PyCFunction)sybasect_DataBuf, METH_VARARGS, sybasect_DataBuf__doc__ },
     { "numeric", (PyCFunction)NumericType_new, METH_VARARGS, NumericType_new__doc__ },
     { "money", (PyCFunction)MoneyType_new, METH_VARARGS, MoneyType_new__doc__ },
@@ -1501,16 +1498,16 @@ char *value_str(int type, int value)
     return num_str;
 }
 
-static int dict_add_int(PyObject *dict, char *key, int value)
+static int dict_add_int(PyObject *dict, char *name, int value)
 {
-    int err;
+    int status;
     PyObject *obj = PyInt_FromLong(value);
     if (obj == NULL)
-	return 0;
+	return -1;
 
-    err = PyDict_SetItemString(dict, key, obj);
+    status = PyDict_SetItemString(dict, name, obj);
     Py_DECREF(obj);
-    return !err;
+    return status;
 }
 
 static int dict_add_type(PyObject *dict, PyTypeObject *type)
@@ -1550,7 +1547,7 @@ void initsybasect(void)
     d = PyModule_GetDict(m);
     /* Add constants */
     for (desc = sybase_args; desc->name != NULL; desc++)
-	if (!dict_add_int(d, desc->name, desc->value))
+	if (dict_add_int(d, desc->name, desc->value) < 0)
 	    break;
 
 #ifdef WANT_THREADS
@@ -1578,13 +1575,13 @@ void initsybasect(void)
 	|| dict_add_type(d, &NumericType)
 	|| dict_add_type(d, &MoneyType)
 	|| dict_add_type(d, &DateTimeType)
-	|| dict_add_type(d, &DataBufType))
-	;
+	|| dict_add_type(d, &DataBufType)
 
-    /* Register pickler functions */
-    copy_reg_numeric(d);
-    copy_reg_money(d);
-    copy_reg_datetime(d);
+	/* Register pickler functions */
+	|| copy_reg_numeric(d)
+	|| copy_reg_money(d)
+	|| copy_reg_datetime(d))
+	;
 
     /* Check for errors */
     if (PyErr_Occurred()) {

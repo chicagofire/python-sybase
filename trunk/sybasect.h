@@ -39,10 +39,12 @@ PERFORMANCE OF THIS SOFTWARE.
     PyThread_type_lock lock;
 #define SY_THREAD_STATE \
     PyThreadState *thread_state; \
-    int entry_count;
+    int released_lock; \
+    int reenter_count;
 #define SY_THREAD_INIT(self) \
     self->thread_state = NULL; \
-    self->entry_count = 0;
+    self->released_lock = 0; \
+    self->reenter_count = 0;
 #define SY_LOCK_CLEAR(self) \
     self->lock = NULL
 #define SY_LOCK_ALLOC(self) \
@@ -115,7 +117,6 @@ typedef struct CS_CONTEXTObj {
     PyObject *cslib_cb;
     PyObject *servermsg_cb;
     PyObject *clientmsg_cb;
-    int is_global;
     int debug;
     int serial;
     SY_DECLARE_LOCK
@@ -125,9 +126,9 @@ typedef struct CS_CONTEXTObj {
 
 extern PyTypeObject CS_CONTEXTType;
 CS_CONTEXT *global_ctx(void);
+PyObject *set_global_ctx(CS_CONTEXTObj *ctx);
 PyObject *ctx_find_object(CS_CONTEXT *cs_ctx);
 PyObject *ctx_alloc(CS_INT version);
-PyObject *ctx_global(CS_INT version);
 
 typedef struct CS_CONNECTIONObj {
     PyObject_HEAD
@@ -146,9 +147,9 @@ PyObject *conn_alloc(CS_CONTEXTObj *ctx, int enable_lock);
 PyObject *conn_find_object(CS_CONNECTION *conn);
 
 #ifdef WANT_THREADS
-void ctx_acquire_gil(CS_CONTEXTObj *ctx);
+int ctx_acquire_gil(CS_CONTEXTObj *ctx);
 void ctx_release_gil(CS_CONTEXTObj *ctx);
-void conn_acquire_gil(CS_CONNECTIONObj *conn);
+int conn_acquire_gil(CS_CONNECTIONObj *conn);
 void conn_release_gil(CS_CONNECTIONObj *conn);
 #endif
 
@@ -250,7 +251,7 @@ int numeric_from_value(CS_NUMERIC *num, int precision, int scale, PyObject *obj)
 int numeric_as_string(PyObject *obj, char *text);
 extern char NumericType_new__doc__[];
 PyObject *NumericType_new(PyObject *module, PyObject *args);
-void copy_reg_numeric(PyObject *dict);
+int copy_reg_numeric(PyObject *dict);
 extern char pickle_numeric__doc__[];
 PyObject *pickle_numeric(PyObject *module, PyObject *args);
 
@@ -272,7 +273,7 @@ int money_from_value(MoneyUnion *money, int type, PyObject *obj);
 int money_as_string(PyObject *obj, char *text);
 extern char MoneyType_new__doc__[];
 PyObject *MoneyType_new(PyObject *module, PyObject *args);
-void copy_reg_money(PyObject *dict);
+int copy_reg_money(PyObject *dict);
 extern char pickle_money__doc__[];
 PyObject *pickle_money(PyObject *module, PyObject *args);
 
@@ -296,7 +297,7 @@ int datetime_assign(PyObject *obj, int type, void *buff);
 int datetime_as_string(PyObject *obj, char *text);
 extern char DateTimeType_new__doc__[];
 PyObject *DateTimeType_new(PyObject *module, PyObject *args);
-void copy_reg_datetime(PyObject *dict);
+int copy_reg_datetime(PyObject *dict);
 extern char pickle_datetime__doc__[];
 PyObject *pickle_datetime(PyObject *module, PyObject *args);
 

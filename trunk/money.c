@@ -32,12 +32,16 @@ int money_as_string(PyObject *obj, char *text)
 {
     CS_DATAFMT money_fmt;
     CS_DATAFMT char_fmt;
+    CS_CONTEXT *ctx;
     CS_INT char_len;
 
     money_datafmt(&money_fmt, ((MoneyObj*)obj)->type);
     char_datafmt(&char_fmt);
 
-    return cs_convert(global_ctx(), &money_fmt, &((MoneyObj*)obj)->v,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return CS_FAIL;
+    return cs_convert(ctx, &money_fmt, &((MoneyObj*)obj)->v,
 		      &char_fmt, text, &char_len);
 }
 
@@ -62,6 +66,7 @@ static int money_from_int(MoneyUnion *money, int type, long num)
 {
     CS_RETCODE conv_result;
     CS_DATAFMT int_fmt;
+    CS_CONTEXT *ctx;
     CS_INT int_value;
     CS_DATAFMT money_fmt;
     CS_INT money_len;
@@ -71,7 +76,10 @@ static int money_from_int(MoneyUnion *money, int type, long num)
     int_value = num;
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &int_fmt, &int_value,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    conv_result = cs_convert(ctx, &int_fmt, &int_value,
 			     &money_fmt, money, &money_len);
     if (PyErr_Occurred())
 	return 0;
@@ -87,6 +95,7 @@ static int money_from_string(MoneyUnion *money, int type, char *str)
     CS_RETCODE conv_result;
     CS_DATAFMT char_fmt;
     CS_DATAFMT money_fmt;
+    CS_CONTEXT *ctx;
     CS_INT money_len;
     
     money_datafmt(&money_fmt, type);
@@ -94,7 +103,10 @@ static int money_from_string(MoneyUnion *money, int type, char *str)
     char_fmt.maxlength = strlen(str);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &char_fmt, str,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    conv_result = cs_convert(ctx, &char_fmt, str,
 			     &money_fmt, money, &money_len);
     if (PyErr_Occurred())
 	return 0;
@@ -110,6 +122,7 @@ static int money_from_long(MoneyUnion *money, int type, PyObject *obj)
 {
     CS_DATAFMT char_fmt;
     CS_DATAFMT money_fmt;
+    CS_CONTEXT *ctx;
     CS_INT money_len;
     CS_RETCODE conv_result;
     PyObject *strobj = PyObject_Str(obj);
@@ -127,7 +140,10 @@ static int money_from_long(MoneyUnion *money, int type, PyObject *obj)
     money_datafmt(&money_fmt, type);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &char_fmt, str,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    conv_result = cs_convert(ctx, &char_fmt, str,
 			     &money_fmt, money, &money_len);
     Py_DECREF(strobj);
     if (PyErr_Occurred())
@@ -144,13 +160,17 @@ static int money_from_float(MoneyUnion *money, int type, CS_FLOAT value)
     CS_RETCODE conv_result;
     CS_DATAFMT float_fmt;
     CS_DATAFMT money_fmt;
+    CS_CONTEXT *ctx;
     CS_INT money_len;
 
     float_datafmt(&float_fmt);
     money_datafmt(&money_fmt, type);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &float_fmt, &value,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    conv_result = cs_convert(ctx, &float_fmt, &value,
 			     &money_fmt, money, &money_len);
     if (PyErr_Occurred())
 	return 0;
@@ -165,6 +185,7 @@ static int money_from_money(MoneyUnion *money, int type, PyObject *obj)
 {
     CS_DATAFMT src_fmt;
     CS_DATAFMT dest_fmt;
+    CS_CONTEXT *ctx;
     CS_RETCODE conv_result;
     CS_INT money_len;
 
@@ -180,7 +201,10 @@ static int money_from_money(MoneyUnion *money, int type, PyObject *obj)
     money_datafmt(&dest_fmt, type);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(),
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    conv_result = cs_convert(ctx,
 			     &src_fmt, &((MoneyObj*)obj)->v,
 			     &dest_fmt, &money, &money_len);
     if (PyErr_Occurred())
@@ -260,18 +284,23 @@ static void money_promote(MoneyUnion *from, MoneyUnion *to)
 {
     CS_DATAFMT src_fmt;
     CS_DATAFMT dest_fmt;
+    CS_CONTEXT *ctx;
     CS_INT money_len;
 
     money_datafmt(&src_fmt, CS_MONEY4_TYPE);
     money_datafmt(&dest_fmt, CS_MONEY_TYPE);
 
-    cs_convert(global_ctx(), &src_fmt, from, &dest_fmt, to, &money_len);
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return;
+    cs_convert(ctx, &src_fmt, from, &dest_fmt, to, &money_len);
 }
 
 static int Money_compare(MoneyObj *v, MoneyObj *w)
 {
     MoneyUnion tmp, *m1, *m2;
     int type;
+    CS_CONTEXT *ctx;
     CS_RETCODE cmp_result;
     CS_INT result;
 
@@ -291,7 +320,10 @@ static int Money_compare(MoneyObj *v, MoneyObj *w)
     }
 
     PyErr_Clear();
-    cmp_result = cs_cmp(global_ctx(), type, m1, m2, &result);
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    cmp_result = cs_cmp(ctx, type, m1, m2, &result);
     if (PyErr_Occurred())
 	return 0;
     if (cmp_result != CS_SUCCEED) {
@@ -374,6 +406,7 @@ static PyObject *Money_arithmetic(int op, MoneyObj *v, MoneyObj *w)
 {
     MoneyUnion result, tmp, *m1, *m2;
     int type;
+    CS_CONTEXT *ctx;
 
     m1 = &v->v;
     m2 = &w->v;
@@ -391,7 +424,10 @@ static PyObject *Money_arithmetic(int op, MoneyObj *v, MoneyObj *w)
     }
 
     PyErr_Clear();
-    if (cs_calc(global_ctx(), op, type, m1, m2, &result) != CS_SUCCEED) {
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    if (cs_calc(ctx, op, type, m1, m2, &result) != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "money arithmetic failed");
 	return NULL;
     }
@@ -472,6 +508,7 @@ static PyObject *Money_int(MoneyObj *v)
     CS_RETCODE conv_result;
     CS_DATAFMT money_fmt;
     CS_DATAFMT int_fmt;
+    CS_CONTEXT *ctx;
     CS_INT int_value;
     CS_INT int_len;
 
@@ -479,7 +516,10 @@ static PyObject *Money_int(MoneyObj *v)
     int_datafmt(&int_fmt);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &money_fmt, &v->v,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    conv_result = cs_convert(ctx, &money_fmt, &v->v,
 			     &int_fmt, &int_value, &int_len);
     if (PyErr_Occurred())
 	return NULL;
@@ -514,6 +554,7 @@ static PyObject *Money_float(MoneyObj *v)
     CS_RETCODE conv_result;
     CS_DATAFMT money_fmt;
     CS_DATAFMT float_fmt;
+    CS_CONTEXT *ctx;
     CS_FLOAT float_value;
     CS_INT float_len;
 
@@ -521,7 +562,10 @@ static PyObject *Money_float(MoneyObj *v)
     float_datafmt(&float_fmt);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &money_fmt, &v->v,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    conv_result = cs_convert(ctx, &money_fmt, &v->v,
 			     &float_fmt, &float_value, &float_len);
     if (PyErr_Occurred())
 	return NULL;
@@ -707,7 +751,7 @@ error:
 
 /* Register Money type pickler
  */
-void copy_reg_money(PyObject *dict)
+int copy_reg_money(PyObject *dict)
 {
     PyObject *module = NULL,
 	*pickle_func = NULL,
@@ -730,4 +774,6 @@ error:
     Py_XDECREF(obj);
     Py_XDECREF(pickle_func);
     Py_XDECREF(module);
+
+    return (obj == NULL) ? -1 : 0;
 }

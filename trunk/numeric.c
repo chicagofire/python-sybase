@@ -34,12 +34,16 @@ int numeric_as_string(PyObject *obj, char *text)
 {
     CS_DATAFMT numeric_fmt;
     CS_DATAFMT char_fmt;
+    CS_CONTEXT *ctx;
     CS_INT char_len;
 
     numeric_datafmt(&numeric_fmt, CS_SRC_VALUE, CS_SRC_VALUE);
     char_datafmt(&char_fmt);
 
-    return cs_convert(global_ctx(), &numeric_fmt, &((NumericObj*)obj)->num,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return CS_FAIL;
+    return cs_convert(ctx, &numeric_fmt, &((NumericObj*)obj)->num,
 		      &char_fmt, text, &char_len);
 }
 
@@ -60,6 +64,7 @@ static int numeric_from_int(CS_NUMERIC *num, int precision, int scale, CS_INT va
 {
     CS_DATAFMT int_fmt;
     CS_DATAFMT numeric_fmt;
+    CS_CONTEXT *ctx;
     CS_INT numeric_len;
     CS_RETCODE conv_result;
 
@@ -71,7 +76,10 @@ static int numeric_from_int(CS_NUMERIC *num, int precision, int scale, CS_INT va
     numeric_datafmt(&numeric_fmt, precision, scale);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &int_fmt, &value,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    conv_result = cs_convert(ctx, &int_fmt, &value,
 			     &numeric_fmt, num, &numeric_len);
     if (PyErr_Occurred())
 	return 0;
@@ -86,6 +94,7 @@ static int numeric_from_long(CS_NUMERIC *num, int precision, int scale, PyObject
 {
     CS_DATAFMT char_fmt;
     CS_DATAFMT numeric_fmt;
+    CS_CONTEXT *ctx;
     CS_INT numeric_len;
     CS_RETCODE conv_result;
     PyObject *strobj = PyObject_Str(obj);
@@ -110,7 +119,10 @@ static int numeric_from_long(CS_NUMERIC *num, int precision, int scale, PyObject
     numeric_datafmt(&numeric_fmt, precision, scale);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &char_fmt, str,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    conv_result = cs_convert(ctx, &char_fmt, str,
 			     &numeric_fmt, num, &numeric_len);
     Py_DECREF(strobj);
     if (conv_result != CS_SUCCEED) {
@@ -126,6 +138,7 @@ static int numeric_from_float(CS_NUMERIC *num, int precision, int scale, CS_FLOA
 {
     CS_DATAFMT float_fmt;
     CS_DATAFMT numeric_fmt;
+    CS_CONTEXT *ctx;
     CS_INT numeric_len;
     CS_RETCODE conv_result;
 
@@ -137,7 +150,10 @@ static int numeric_from_float(CS_NUMERIC *num, int precision, int scale, CS_FLOA
     numeric_datafmt(&numeric_fmt, precision, scale);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &float_fmt, &value,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    conv_result = cs_convert(ctx, &float_fmt, &value,
 			     &numeric_fmt, num, &numeric_len);
     if (PyErr_Occurred())
 	return 0;
@@ -152,6 +168,7 @@ static int numeric_from_string(CS_NUMERIC *num, int precision, int scale, char *
 {
     CS_DATAFMT char_fmt;
     CS_DATAFMT numeric_fmt;
+    CS_CONTEXT *ctx;
     CS_INT numeric_len;
     char *dp = strchr(str, '.');
     int len = strlen(str);
@@ -176,7 +193,10 @@ static int numeric_from_string(CS_NUMERIC *num, int precision, int scale, char *
     numeric_datafmt(&numeric_fmt, precision, scale);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &char_fmt, str,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    conv_result = cs_convert(ctx, &char_fmt, str,
 			     &numeric_fmt, num, &numeric_len);
     if (PyErr_Occurred())
 	return 0;
@@ -191,6 +211,7 @@ static int numeric_from_numeric(CS_NUMERIC *num, int precision, int scale, CS_NU
 {
     CS_DATAFMT src_numeric_fmt;
     CS_DATAFMT numeric_fmt;
+    CS_CONTEXT *ctx;
     CS_INT numeric_len;
     CS_RETCODE conv_result;
 
@@ -207,7 +228,10 @@ static int numeric_from_numeric(CS_NUMERIC *num, int precision, int scale, CS_NU
     numeric_datafmt(&numeric_fmt, precision, scale);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &src_numeric_fmt, value,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    conv_result = cs_convert(ctx, &src_numeric_fmt, value,
 			     &numeric_fmt, num, &numeric_len);
     if (PyErr_Occurred())
 	return 0;
@@ -296,10 +320,14 @@ static void Numeric_dealloc(NumericObj *self)
 static int Numeric_compare(NumericObj *v, NumericObj *w)
 {
     CS_INT result;
+    CS_CONTEXT *ctx;
     CS_RETCODE cmp_result;
 
     PyErr_Clear();
-    cmp_result = cs_cmp(global_ctx(), CS_NUMERIC_TYPE,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return 0;
+    cmp_result = cs_cmp(ctx, CS_NUMERIC_TYPE,
 			&v->num, &w->num, &result);
     if (PyErr_Occurred())
 	return 0;
@@ -340,6 +368,7 @@ static long Numeric_hash(NumericObj *self)
     long hash;
     CS_DATAFMT numeric_fmt;
     CS_DATAFMT int_fmt;
+    CS_CONTEXT *ctx;
     CS_INT int_value;
     CS_INT int_len;
     CS_RETCODE conv_result;
@@ -360,7 +389,10 @@ static long Numeric_hash(NumericObj *self)
     numeric_datafmt(&numeric_fmt, CS_SRC_VALUE, CS_SRC_VALUE);
     int_datafmt(&int_fmt);
 
-    conv_result = cs_convert(global_ctx(), &numeric_fmt, &self->num,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return -1;
+    conv_result = cs_convert(ctx, &numeric_fmt, &self->num,
 			     &int_fmt, &int_value, &int_len);
     if (conv_result == CS_SUCCEED)
 	return (int_value == -1) ? -2 : int_value;
@@ -412,6 +444,7 @@ static NumericObj *numeric_zero(void)
 static PyObject *Numeric_add(NumericObj *v, NumericObj *w)
 {
     CS_NUMERIC result;
+    CS_CONTEXT *ctx;
     CS_RETCODE calc_result;
 
     result.precision = maxv(v->num.precision, w->num.precision) + 1;
@@ -420,7 +453,10 @@ static PyObject *Numeric_add(NumericObj *v, NumericObj *w)
     result.scale = maxv(v->num.scale, w->num.scale);
 
     PyErr_Clear();
-    calc_result = cs_calc(global_ctx(), CS_ADD, CS_NUMERIC_TYPE,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    calc_result = cs_calc(ctx, CS_ADD, CS_NUMERIC_TYPE,
 			  &v->num, &w->num, &result);
     if (PyErr_Occurred())
 	return NULL;
@@ -435,6 +471,7 @@ static PyObject *Numeric_add(NumericObj *v, NumericObj *w)
 static PyObject *Numeric_sub(NumericObj *v, NumericObj *w)
 {
     CS_NUMERIC result;
+    CS_CONTEXT *ctx;
     CS_RETCODE calc_result;
 
     result.precision = maxv(v->num.precision, w->num.precision) + 1;
@@ -443,7 +480,10 @@ static PyObject *Numeric_sub(NumericObj *v, NumericObj *w)
     result.scale = maxv(v->num.scale, w->num.scale);
 
     PyErr_Clear();
-    calc_result = cs_calc(global_ctx(), CS_SUB, CS_NUMERIC_TYPE,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    calc_result = cs_calc(ctx, CS_SUB, CS_NUMERIC_TYPE,
 			  &v->num, &w->num, &result);
     if (PyErr_Occurred())
 	return NULL;
@@ -458,6 +498,7 @@ static PyObject *Numeric_sub(NumericObj *v, NumericObj *w)
 static PyObject *Numeric_mul(NumericObj *v, NumericObj *w)
 {
     CS_NUMERIC result;
+    CS_CONTEXT *ctx;
     CS_RETCODE calc_result;
 
     result.precision = v->num.precision + w->num.precision;
@@ -468,7 +509,10 @@ static PyObject *Numeric_mul(NumericObj *v, NumericObj *w)
 	result.scale = CS_MAX_SCALE;
 
     PyErr_Clear();
-    calc_result = cs_calc(global_ctx(), CS_MULT, CS_NUMERIC_TYPE,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    calc_result = cs_calc(ctx, CS_MULT, CS_NUMERIC_TYPE,
 			  &v->num, &w->num, &result);
     if (PyErr_Occurred())
 	return NULL;
@@ -483,6 +527,7 @@ static PyObject *Numeric_mul(NumericObj *v, NumericObj *w)
 static PyObject *Numeric_div(NumericObj *v, NumericObj *w)
 {
     CS_NUMERIC result;
+    CS_CONTEXT *ctx;
     CS_RETCODE calc_result;
 
     result.precision = v->num.precision + w->num.precision;
@@ -493,7 +538,10 @@ static PyObject *Numeric_div(NumericObj *v, NumericObj *w)
 	result.scale = CS_MAX_SCALE;
 
     PyErr_Clear();
-    calc_result = cs_calc(global_ctx(), CS_DIV, CS_NUMERIC_TYPE,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    calc_result = cs_calc(ctx, CS_DIV, CS_NUMERIC_TYPE,
 			  &v->num, &w->num, &result);
     if (PyErr_Occurred())
 	return NULL;
@@ -554,6 +602,7 @@ static PyObject *Numeric_int(NumericObj *v)
 {
     CS_DATAFMT numeric_fmt;
     CS_DATAFMT int_fmt;
+    CS_CONTEXT *ctx;
     CS_INT int_value;
     CS_INT int_len;
     CS_RETCODE conv_result;
@@ -562,7 +611,10 @@ static PyObject *Numeric_int(NumericObj *v)
     int_datafmt(&int_fmt);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &numeric_fmt, &v->num,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    conv_result = cs_convert(ctx, &numeric_fmt, &v->num,
 			     &int_fmt, &int_value, &int_len);
     if (PyErr_Occurred())
 	return NULL;
@@ -596,6 +648,7 @@ static PyObject *Numeric_float(NumericObj *v)
 {
     CS_DATAFMT numeric_fmt;
     CS_DATAFMT float_fmt;
+    CS_CONTEXT *ctx;
     CS_FLOAT float_value;
     CS_INT float_len;
     CS_RETCODE conv_result;
@@ -604,7 +657,10 @@ static PyObject *Numeric_float(NumericObj *v)
     float_datafmt(&float_fmt);
 
     PyErr_Clear();
-    conv_result = cs_convert(global_ctx(), &numeric_fmt, &v->num,
+    ctx = global_ctx();
+    if (ctx == NULL)
+	return NULL;
+    conv_result = cs_convert(ctx, &numeric_fmt, &v->num,
 			     &float_fmt, &float_value, &float_len);
     if (PyErr_Occurred())
 	return NULL;
@@ -796,7 +852,7 @@ error:
 
 /* Register Numeric type pickler
  */
-void copy_reg_numeric(PyObject *dict)
+int copy_reg_numeric(PyObject *dict)
 {
     PyObject *module = NULL,
 	*pickle_func = NULL,
@@ -819,4 +875,6 @@ error:
     Py_XDECREF(obj);
     Py_XDECREF(pickle_func);
     Py_XDECREF(module);
+
+    return (obj == NULL) ? -1 : 0;
 }

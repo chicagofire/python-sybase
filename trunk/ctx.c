@@ -48,44 +48,52 @@ static void release_ctx_lock(void)
  */
 void ctx_release_gil(CS_CONTEXTObj *ctx)
 {
-    ctx->entry_count++;
-    if (ctx->entry_count == 1) {
+    if (ctx->released_lock)
+	ctx->reenter_count++;
+    else {
+	ctx->released_lock = 1;
+	ctx->reenter_count = 0;
 	ctx->thread_state = PyEval_SaveThread();
     }
 }
 
-void ctx_acquire_gil(CS_CONTEXTObj *ctx)
+int ctx_acquire_gil(CS_CONTEXTObj *ctx)
 {
-    if (ctx->entry_count >= 1) {
-	ctx->entry_count--;
-	if (ctx->entry_count == 0) {
-	    if (ctx->thread_state != NULL) {
-		PyEval_RestoreThread(ctx->thread_state);
-		ctx->thread_state = NULL;
-	    }
-	}
-    }
+    if (!ctx->released_lock)
+	return 0;
+
+    if (ctx->reenter_count == 0) {
+	ctx->released_lock = 0;
+	PyEval_RestoreThread(ctx->thread_state);
+	ctx->thread_state = NULL;
+    } else
+	ctx->reenter_count--;
+    return 1;
 }
 
 void conn_release_gil(CS_CONNECTIONObj *conn)
 {
-    conn->entry_count++;
-    if (conn->entry_count == 1) {
+    if (conn->released_lock)
+	conn->reenter_count++;
+    else {
+	conn->released_lock = 1;
+	conn->reenter_count = 0;
 	conn->thread_state = PyEval_SaveThread();
     }
 }
 
-void conn_acquire_gil(CS_CONNECTIONObj *conn)
+int conn_acquire_gil(CS_CONNECTIONObj *conn)
 {
-    if (conn->entry_count >= 1) {
-	conn->entry_count--;
-	if (conn->entry_count == 0) {
-	    if (conn->thread_state != NULL) {
-		PyEval_RestoreThread(conn->thread_state);
-		conn->thread_state = NULL;
-	    }
-	}
-    }
+    if (!conn->released_lock)
+	return 0;
+
+    if (conn->reenter_count == 0) {
+	conn->released_lock = 0;
+	PyEval_RestoreThread(conn->thread_state);
+	conn->thread_state = NULL;
+    } else
+	conn->reenter_count--;
+    return 1;
 }
 #else
 static void acquire_ctx_lock(void)
@@ -96,16 +104,18 @@ static void release_ctx_lock(void)
 {
 }
 
-void ctx_acquire_gil(CS_CONTEXTObj *ctx)
+int ctx_acquire_gil(CS_CONTEXTObj *ctx)
 {
+    return 0;
 }
 
 void ctx_release_gil(CS_CONTEXTObj *ctx)
 {
 }
 
-void conn_acquire_gil(CS_CONNECTIONObj *conn)
+int conn_acquire_gil(CS_CONNECTIONObj *conn)
 {
+    return 0;
 }
 
 void conn_release_gil(CS_CONNECTIONObj *conn)
@@ -211,6 +221,7 @@ static CS_RETCODE clientmsg_cb(CS_CONTEXT *cs_ctx,
     PyObject *args = NULL, *result = NULL;
     CS_CLIENTMSGObj *client_msg = NULL;
     CS_RETCODE retcode = CS_SUCCEED;
+    int acquire_gil;
 
     ctx = (CS_CONTEXTObj *)ctx_find_object(cs_ctx);
     if (ctx == NULL || ctx->clientmsg_cb == NULL)
@@ -221,7 +232,7 @@ static CS_RETCODE clientmsg_cb(CS_CONTEXT *cs_ctx,
 
     /* Grab the GIL before doing any Python things
      */
-    conn_acquire_gil(conn);
+    acquire_gil = conn_acquire_gil(conn);
 
     if (ctx->debug || conn->debug)
 	debug_msg("clientmsg_cb\n");
@@ -244,7 +255,8 @@ error:
     Py_XDECREF(args);
     Py_XDECREF(result);
 
-    conn_release_gil(conn);
+    if (acquire_gil)
+	conn_release_gil(conn);
     return retcode;
 }
 
@@ -257,6 +269,7 @@ static CS_RETCODE servermsg_cb(CS_CONTEXT *cs_ctx,
     PyObject *args = NULL, *result = NULL;
     CS_SERVERMSGObj *server_msg = NULL;
     CS_RETCODE retcode = CS_SUCCEED;
+    int acquire_gil;
 
     ctx = (CS_CONTEXTObj *)ctx_find_object(cs_ctx);
     if (ctx == NULL || ctx->servermsg_cb == NULL)
@@ -267,7 +280,7 @@ static CS_RETCODE servermsg_cb(CS_CONTEXT *cs_ctx,
 
     /* Grab the GIL before doing any Python things
      */
-    conn_acquire_gil(conn);
+    acquire_gil = conn_acquire_gil(conn);
 
     if (ctx->debug || conn->debug)
 	debug_msg("servermsg_cb\n");
@@ -290,7 +303,8 @@ error:
     Py_XDECREF(args);
     Py_XDECREF(result);
 
-    conn_release_gil(conn);
+    if (acquire_gil)
+	conn_release_gil(conn);
     return retcode;
 }
 
@@ -453,6 +467,7 @@ static CS_RETCODE cslib_cb(CS_CONTEXT *cs_ctx, CS_CLIENTMSG *cs_msg)
     PyObject *args = NULL, *result = NULL;
     CS_CLIENTMSGObj *client_msg = NULL;
     CS_RETCODE retcode = CS_SUCCEED;
+    int acquire_gil;
 
     ctx = (CS_CONTEXTObj *)ctx_find_object(cs_ctx);
     if (ctx == NULL || ctx->cslib_cb == NULL)
@@ -460,7 +475,7 @@ static CS_RETCODE cslib_cb(CS_CONTEXT *cs_ctx, CS_CLIENTMSG *cs_msg)
 
     /* Grab the GIL before doing any Python things
      */
-    ctx_acquire_gil(ctx);
+    acquire_gil = ctx_acquire_gil(ctx);
 
     if (ctx->debug)
 	debug_msg("cslib_cb\n");
@@ -483,7 +498,8 @@ error:
     Py_XDECREF(args);
     Py_XDECREF(result);
 
-    ctx_release_gil(ctx);
+    if (acquire_gil)
+	ctx_release_gil(ctx);
     return retcode;
 }
 
@@ -533,14 +549,12 @@ static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
 {
     int action, property;
     PyObject *obj = NULL;
-    PyObject *func;
     CS_RETCODE status;
     CS_BOOL bool_value;
     int int_value;
     char *str_value;
     char str_buff[10240];
     CS_INT buff_len;
-    void *cb_func;
 
     if (!first_tuple_int(args, &action))
 	return NULL;
@@ -650,23 +664,18 @@ static PyObject *CS_CONTEXT_cs_config(CS_CONTEXTObj *self, PyObject *args)
 	    return PyInt_FromLong(status);
 
 	case OPTION_CALLBACK:
-	    func = Py_None;
-	    if (!PyArg_ParseTuple(args, "ii|O", &action, &property, &func))
-		return NULL;
-
-	    if (func == Py_None) {
+	    if (obj == Py_None) {
 		Py_XDECREF(self->cslib_cb);
 		self->cslib_cb = NULL;
-		cb_func = NULL;
 	    } else {
-		if (!PyCallable_Check(func)) {
+		if (!PyCallable_Check(obj)) {
 		    PyErr_SetString(PyExc_TypeError,
 				    "parameter must be callable");
 		    return NULL;
 		}
 		Py_XDECREF(self->cslib_cb);
-		Py_XINCREF(func);
-		self->cslib_cb = func;
+		Py_INCREF(obj);
+		self->cslib_cb = obj;
 	    }
 
 	    PyErr_Clear();
@@ -1350,7 +1359,6 @@ PyObject *ctx_alloc(CS_INT version)
     self->servermsg_cb = NULL;
     self->clientmsg_cb = NULL;
     self->debug = 0;
-    self->is_global = 0;
     self->serial = ctx_serial++;
     SY_LOCK_ALLOC(self);
     SY_THREAD_INIT(self);
@@ -1386,79 +1394,32 @@ PyObject *ctx_alloc(CS_INT version)
     return Py_BuildValue("iN", CS_SUCCEED, self);
 }
 
+static CS_CONTEXTObj *global_ctx_object;
+
 CS_CONTEXT *global_ctx()
 {
-    static CS_CONTEXT *ctx;
-
-    if (ctx == NULL) {
-	acquire_ctx_lock();
-#ifdef HAVE_CS_CTX_GLOBAL
-	cs_ctx_global(CS_VERSION_100, &ctx);
-#else
-	cs_ctx_alloc(CS_VERSION_100, &ctx);
-#endif
-	release_ctx_lock();
+    if (global_ctx_object == NULL) {
+	PyErr_SetString(PyExc_ValueError, "no globla context defined");
+	return NULL;
     }
-    return ctx;
+    return global_ctx_object->ctx;
 }
 
-#ifdef HAVE_CS_CTX_GLOBAL
-/* Threading:
- *    "SAFE: All calls after the first call has completed."
- */
-PyObject *ctx_global(CS_INT version)
+PyObject *set_global_ctx(CS_CONTEXTObj *ctx)
 {
-    CS_CONTEXTObj *self;
-    CS_RETCODE status;
-    CS_CONTEXT *ctx;
+    PyObject *old_ctx;
 
-    self = PyObject_NEW(CS_CONTEXTObj, &CS_CONTEXTType);
-    if (self == NULL)
-	return NULL;
+    if (global_ctx_object == NULL) {
+	old_ctx = Py_None;
+	Py_INCREF(Py_None);
+    } else
+	old_ctx = (PyObject*)global_ctx_object;
 
-    SY_LEAK_REG(self);
-    self->ctx = NULL;
-    self->cslib_cb = NULL;
-    self->servermsg_cb = NULL;
-    self->clientmsg_cb = NULL;
-    self->debug = 0;
-    self->is_global = 1;
-    self->serial = ctx_serial++;
-    SY_LOCK_ALLOC(self);
-    SY_THREAD_INIT(self);
+    global_ctx_object = ctx;
+    Py_INCREF(ctx);
 
-    PyErr_Clear();
-
-    acquire_ctx_lock();
-    status = cs_ctx_global(version, &ctx);
-    release_ctx_lock();
-
-    if (self->debug)
-	debug_msg("cs_ctx_global(%s) -> %s",
-		  value_str(VAL_CSVER, version),
-		  value_str(VAL_STATUS, status));
-    if (PyErr_Occurred()) {
-	if (self->debug)
-	    debug_msg("\n");
-	Py_DECREF(self);
-	return NULL;
-    }
-
-    if (status != CS_SUCCEED) {
-	Py_DECREF(self);
-	if (self->debug)
-	    debug_msg(", None\n");
-	return Py_BuildValue("iO", status, Py_None);
-    }
-
-    self->ctx = ctx;
-    ctx_add_object(self);
-    if (self->debug)
-	debug_msg(", ctx%d\n", self->serial);
-
-    return Py_BuildValue("iN", CS_SUCCEED, self);
+    return old_ctx;
 }
-#endif
 
 /* Threading:
  *    "Calls to cs_ctx_alloc() and cs_ctx_drop() must not occur
@@ -1469,7 +1430,7 @@ static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
 {
     SY_LEAK_UNREG(self);
 
-    if (self->ctx && !self->is_global) {
+    if (self->ctx) {
 	CS_RETCODE status;
 	/* should check return == CS_SUCCEED, but we can't handle failure
 	   here */
@@ -1479,7 +1440,9 @@ static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
 		      self->serial, value_str(VAL_STATUS, status));
     }
     SY_LOCK_FREE(self);
+    Py_XDECREF(self->cslib_cb);
     Py_XDECREF(self->servermsg_cb);
+    Py_XDECREF(self->clientmsg_cb);
     ctx_del_object(self);
 
     PyMem_DEL(self);
