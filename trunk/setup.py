@@ -148,7 +148,7 @@ class my_sdist(sdist):
         self.announce("Pre-release checks pass!")
         sdist.run(self)
 
-setup(name = "Sybase",
+setup(name = "sybase",
       version = "0.35pre2",
       maintainer = "Dave Cole",
       maintainer_email = " djc@object-craft.com.au",
