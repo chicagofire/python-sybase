@@ -1,55 +1,37 @@
 \subsection{CS_CLIENTMSG Objects}
 
-CS_CLIENTMSG objects have the following interface:
+\class{CS_CLIENTMSG} objects are a very thing wrapper around the
+Sybase \code{CS_CLIENTMSG} structure.  The have the following
+readonly attributes:
 
-\begin{memberdesc}[CS_CLIENTMSG]{severity}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{msgnumber}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{msgstring}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{osnumber}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{osstring}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{status}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_CLIENTMSG]{sqlstate}
-\end{memberdesc}
+\begin{tabular}{l|l}
+attribute & type \\
+\hline
+\code{severity}  & \code{int} \\
+\code{msgnumber} & \code{int} \\
+\code{msgstring} & \code{string} \\
+\code{osnumber}  & \code{int} \\
+\code{osstring}  & \code{string} \\
+\code{status}    & \code{int} \\
+\code{sqlstate}  & \code{string} \\
+\end{tabular}
 
 \subsection{CS_SERVERMSG Objects}
 
-CS_SERVERMSG objects have the following interface:
+\class{CS_SERVERMSG} objects are a very thing wrapper around the
+Sybase \code{CS_SERVERMSG} structure.  The have the following
+readonly attributes:
 
-\begin{memberdesc}[CS_SERVERMSG]{msgnumber}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{state}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{severity}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{text}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{svrname}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{proc}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{line}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{status}
-\end{memberdesc}
-
-\begin{memberdesc}[CS_SERVERMSG]{sqlstate}
-\end{memberdesc}
+\begin{tabular}{l|l}
+attribute & type \\
+\hline
+\code{msgnumber} & \code{int} \\
+\code{state}     & \code{int} \\
+\code{severity}  & \code{int} \\
+\code{text}      & \code{string} \\
+\code{svrname}   & \code{string} \\
+\code{proc}      & \code{string} \\
+\code{line}      & \code{int} \\
+\code{status}    & \code{int} \\
+\code{sqlstate}  & \code{string} \\
+\end{tabular}
