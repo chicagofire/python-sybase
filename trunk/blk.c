@@ -36,6 +36,11 @@ static PyObject *CS_BLKDESC_blk_bind(CS_BLKDESCObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "iO!", &colnum, &BufferType, &buffer))
 	return NULL;
 
+    if (self->blk == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_BLKDESC has been dropped");
+	return NULL;
+    }
+
     SY_BEGIN_THREADS;
     status = blk_bind(self->blk, colnum, &buffer->fmt,
 		      buffer->buff, buffer->copied, buffer->indicator);
@@ -58,6 +63,11 @@ static PyObject *CS_BLKDESC_blk_describe(CS_BLKDESCObj *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "i", &colnum))
 	return NULL;
+
+    if (self->blk == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_BLKDESC has been dropped");
+	return NULL;
+    }
 
     memset(&datafmt, 0, sizeof(datafmt));
     SY_BEGIN_THREADS;
@@ -89,6 +99,11 @@ static PyObject *CS_BLKDESC_blk_done(CS_BLKDESCObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i", &type))
 	return NULL;
 
+    if (self->blk == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_BLKDESC has been dropped");
+	return NULL;
+    }
+
     /* blk_done(type) -> status, outrow */
     SY_BEGIN_THREADS;
     status = blk_done(self->blk, type, &outrow);
@@ -98,6 +113,34 @@ static PyObject *CS_BLKDESC_blk_done(CS_BLKDESCObj *self, PyObject *args)
 		value_str(BULK, type), value_str(STATUS, status), (int)outrow);
 
     return Py_BuildValue("ii", status, outrow);
+}
+
+static char CS_BLKDESC_blk_drop__doc__[] = 
+"blk_drop() -> status";
+
+static PyObject *CS_BLKDESC_blk_drop(CS_BLKDESCObj *self, PyObject *args)
+{
+    CS_RETCODE status;
+
+    if (!PyArg_ParseTuple(args, ""))
+	return NULL;
+
+    if (self->blk == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_BLKDESC has been dropped");
+	return NULL;
+    }
+
+    /* blk_drop() -> status */
+    SY_BEGIN_THREADS;
+    status = blk_drop(self->blk);
+    SY_END_THREADS;
+    if (self->debug)
+	fprintf(stderr, "blk_drop() -> %s\n", value_str(STATUS, status));
+
+    if (status == CS_SUCCEED)
+	self->blk = NULL;
+
+    return PyInt_FromLong(status);
 }
 
 static char CS_BLKDESC_blk_init__doc__[] = 
@@ -111,6 +154,11 @@ static PyObject *CS_BLKDESC_blk_init(CS_BLKDESCObj *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "is", &direction, &table))
 	return NULL;
+
+    if (self->blk == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_BLKDESC has been dropped");
+	return NULL;
+    }
 
     SY_BEGIN_THREADS;
     status = blk_init(self->blk, direction, table, CS_NULLTERM);
@@ -167,6 +215,11 @@ static PyObject *CS_BLKDESC_blk_props(CS_BLKDESCObj *self, PyObject *args)
 
     if (!first_tuple_int(args, &action))
 	return NULL;
+
+    if (self->blk == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_BLKDESC has been dropped");
+	return NULL;
+    }
 
     switch (action) {
     case CS_SET:
@@ -279,6 +332,11 @@ static PyObject *CS_BLKDESC_blk_rowxfer(CS_BLKDESCObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, ""))
 	return NULL;
 
+    if (self->blk == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_BLKDESC has been dropped");
+	return NULL;
+    }
+
     SY_BEGIN_THREADS;
     status = blk_rowxfer(self->blk);
     SY_END_THREADS;
@@ -301,6 +359,11 @@ static PyObject *CS_BLKDESC_blk_rowxfer_mult(CS_BLKDESCObj *self, PyObject *args
 	return NULL;
     row_count = orig_count;
 
+    if (self->blk == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_BLKDESC has been dropped");
+	return NULL;
+    }
+
     SY_BEGIN_THREADS;
     status = blk_rowxfer_mult(self->blk, &row_count);
     SY_END_THREADS;
@@ -318,6 +381,11 @@ static char CS_BLKDESC_blk_textxfer__doc__[] =
 static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 {
     CS_RETCODE status;
+
+    if (self->blk == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_BLKDESC has been dropped");
+	return NULL;
+    }
 
     if (self->direction == CS_BLK_IN) {
 	char *buff;
@@ -357,6 +425,7 @@ static struct PyMethodDef CS_BLKDESC_methods[] = {
     { "blk_bind", (PyCFunction)CS_BLKDESC_blk_bind, METH_VARARGS, CS_BLKDESC_blk_bind__doc__ },
     { "blk_describe", (PyCFunction)CS_BLKDESC_blk_describe, METH_VARARGS, CS_BLKDESC_blk_describe__doc__ },
     { "blk_done", (PyCFunction)CS_BLKDESC_blk_done, METH_VARARGS, CS_BLKDESC_blk_done__doc__ },
+    { "blk_drop", (PyCFunction)CS_BLKDESC_blk_drop, METH_VARARGS, CS_BLKDESC_blk_drop__doc__ },
     { "blk_init", (PyCFunction)CS_BLKDESC_blk_init, METH_VARARGS, CS_BLKDESC_blk_init__doc__ },
     { "blk_props", (PyCFunction)CS_BLKDESC_blk_props, METH_VARARGS, CS_BLKDESC_blk_props__doc__ },
     { "blk_rowxfer", (PyCFunction)CS_BLKDESC_blk_rowxfer, METH_VARARGS, CS_BLKDESC_blk_rowxfer__doc__ },
