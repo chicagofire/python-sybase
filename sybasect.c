@@ -1023,6 +1023,7 @@ void initsybasect(void)
     CS_CLIENTMSGType.ob_type = &PyType_Type;
     CS_SERVERMSGType.ob_type = &PyType_Type;
     NumericType.ob_type = &PyType_Type;
+    MoneyType.ob_type = &PyType_Type;
     DataBufType.ob_type = &PyType_Type;
 
     /* Create the module and add the functions */
@@ -1047,11 +1048,13 @@ void initsybasect(void)
 	|| dict_add_type(d, &CS_CLIENTMSGType)
 	|| dict_add_type(d, &CS_SERVERMSGType)
 	|| dict_add_type(d, &NumericType)
+	|| dict_add_type(d, &MoneyType)
 	|| dict_add_type(d, &DataBufType))
 	;
 
-    /* Register the numeric pickler */
+    /* Register pickler functions */
     copy_reg_numeric(d);
+    copy_reg_money(d);
 
     /* Check for errors */
     if (PyErr_Occurred()) {
