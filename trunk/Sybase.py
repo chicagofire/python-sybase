@@ -51,12 +51,16 @@ paramstyle = 'named'                    # Named style,
 class Warning(StandardError):
     pass
 
+
 class Error(StandardError):
+
     def append(self, other):
         self.args = (self.args[0] + other.args[0],)
 
+
 class InterfaceError(Error):
     pass
+
 
 class DatabaseError(Error):
     pass
@@ -64,22 +68,29 @@ class DatabaseError(Error):
 class DataError(DatabaseError):
     pass
 
+
 class OperationalError(DatabaseError):
     pass
+
 
 class IntegrityError(DatabaseError):
     pass
 
+
 class InternalError(DatabaseError):
     pass
+
 
 class ProgrammingError(DatabaseError):
     pass
 
+
 class NotSupportedError(DatabaseError):
     pass
 
+
 class DBAPITypeObject:
+
     def __init__(self, *values):
 	self.values = values
 
@@ -90,6 +101,7 @@ class DBAPITypeObject:
 	    return 1
 	else:
 	    return -1
+
 
 STRING = DBAPITypeObject(CS_LONGCHAR_TYPE, CS_VARCHAR_TYPE,
                          CS_TEXT_TYPE, CS_CHAR_TYPE)
@@ -102,32 +114,44 @@ NUMBER = DBAPITypeObject(CS_BIT_TYPE, CS_TINYINT_TYPE,
 DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE)
 ROWID = DBAPITypeObject(CS_DECIMAL_TYPE, CS_NUMERIC_TYPE)
 
+
 def OUTPUT(value):
     buf = DataBuf(value)
     buf.status = CS_RETURN
     return buf
 
+
 def Date(year, month, day):
     return datetime('%s-%s-%s' % (year, month, day))
 
+
 def Time(hour, minute, second):
     return datetime('%d:%d:%d' % (hour, minute, second))
+
 
 def Timestamp(year, month, day, hour, minute, second):
     return datetime('%s-%s-%s %d:%d:%d' % (year, month, day,
                                            hour, minute, second))
 
+
 def DateFromTicks(ticks):
     return apply(Date, time.localtime(ticks)[:3])
+
 
 def TimeFromTicks(ticks):
     return apply(Time, time.localtime(ticks)[3:6])
 
+
 def TimestampFromTicks(ticks):
     return apply(Timestamp, time.localtime(ticks)[:6])
 
+
 def Binary(str):
     return str
+
+
+_output_hooks = {}
+
 
 def _fmt_server(msg):
     parts = []
@@ -143,6 +167,7 @@ def _fmt_server(msg):
     _ctx.debug_msg(text)
     return text
 
+
 def _fmt_client(msg):
     text = 'Layer: %s, Origin: %s\n' \
            '%s' % (CS_LAYER(msg.msgnumber), CS_ORIGIN(msg.msgnumber),
@@ -150,15 +175,30 @@ def _fmt_client(msg):
     _ctx.debug_msg(text)
     return text
 
+
 def _cslib_cb(ctx, msg):
     raise Error(_fmt_client(msg))
+
 
 def _clientmsg_cb(ctx, conn, msg):
     raise DatabaseError(_fmt_client(msg))
 
+
 def _servermsg_cb(ctx, conn, msg):
-    if msg.msgnumber not in (5701, 5703):
+    mn = msg.msgnumber
+    if mn in (0, 5701, 5703, 5704) or ((mn >= 6200) and (mn < 6300)):
+        # Non-errors:
+        #    0      PRINT
+        # 5701      Changed db context
+        # 5703      Changed language
+        # 5704      Changed character set (Sybase)
+        # 6200-6299 SHOWPLAN output (Sybase)
+        hook = _output_hooks.get(conn)
+        if hook:
+            hook(conn, msg)
+    else:
         raise DatabaseError(_fmt_server(msg))
+
 
 def _row_bind(cmd, count = 1):
     '''Bind buffers for count rows of column data.
@@ -182,6 +222,7 @@ def _row_bind(cmd, count = 1):
         bufs.append(buf)
     return bufs
 
+
 def _column_value(val):
     if use_datetime and type(val) is DateTimeType:
         return DateTime.DateTime(val.year, val.month + 1, val.day,
@@ -189,6 +230,7 @@ def _column_value(val):
                                  val.second + val.msecond / 1000.0)
     else:
         return val
+
 
 def _extract_row(bufs, n):
     '''Extract a row tuple from buffers.
@@ -199,6 +241,7 @@ def _extract_row(bufs, n):
         row[col] = _column_value(buf[n])
         col = col + 1
     return tuple(row)
+
 
 def _fetch_rows(cmd, bufs, rows):
     '''Fetch rows into bufs.
@@ -223,6 +266,7 @@ def _fetch_rows(cmd, bufs, rows):
         rows.append(_extract_row(bufs, 0))
         return 1
 
+
 def _bufs_description(bufs):
     desc = []
     for buf in bufs:
@@ -230,6 +274,7 @@ def _bufs_description(bufs):
                      buf.maxlength, buf.precision, buf.scale,
                      buf.status & CS_CANBENULL))
     return desc
+
 
 # Setup global library context
 status, _ctx = cs_ctx_alloc()
@@ -244,7 +289,9 @@ _ctx.ct_callback(CS_SET, CS_SERVERMSG_CB, _servermsg_cb)
 if _ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
     raise Error('ct_config')
 
+
 class _FetchNow:
+
     def __init__(self, owner):
         self._owner = owner
         self._conn = owner._conn
@@ -336,7 +383,9 @@ class _FetchNow:
             return self._description_list[0]
         return None
 
+
 class _FetchNowParams(_FetchNow):
+
     def start(self, arraysize, params):
         self._params = params
         return _FetchNow.start(self, arraysize)
@@ -358,6 +407,7 @@ class _FetchNowParams(_FetchNow):
                     else:
                         self._params.append(_column_value(buf[0]))
 
+
 _LAZY_IDLE = 0                          # prepared command
 _LAZY_FETCHING = 1                      # fetching rows
 _LAZY_END_RESULT = 2                    # fetching rows
@@ -367,7 +417,9 @@ _state_names = { _LAZY_IDLE: '_LAZY_IDLE',
                  _LAZY_END_RESULT: '_LAZY_END_RESULT',
                  _LAZY_CLOSED: '_LAZY_CLOSED' }
 
+
 class _FetchLazy:
+
     def __init__(self, owner):
         self._owner = owner
         self._conn = owner._conn
@@ -595,7 +647,9 @@ class _FetchLazy:
             else:
                 self._raise_error(Error, 'ct_results')
 
+
 class Cursor:
+
     def __init__(self, owner):
         '''Implements DB-API Cursor object
         '''
@@ -759,7 +813,9 @@ class Cursor:
         '''
         pass
 
+
 class Connection:
+
     def __init__(self, dsn, user, passwd, database = None,
                  strip = 0, auto_commit = 0, delay_connect = 0, locking = 1):
         '''DB-API Sybase.Connect()
@@ -842,11 +898,22 @@ class Connection:
         finally:
             self._unlock()
 
+    def set_output_hook(self, hook):
+        if hook is None:
+            if _output_hooks.has_key(self._conn):
+                del _output_hooks[self._conn]
+        else:
+            _output_hooks[self._conn] = hook
+
+    def get_output_hook(self):
+        return _output_hooks.get(self._conn)
+
     def __del__(self):
-        try:
-            self.close()
-        except:
-            pass
+        if self._conn:
+            try:
+                self.close()
+            except:
+                pass
 
     def close(self):
         '''DBI-API Connection.close()
@@ -911,6 +978,7 @@ class Connection:
             return fetcher.result_list()
         finally:
             self._unlock()
+
 
 def connect(dsn, user, passwd, database = None,
             strip = 0, auto_commit = 0, delay_connect = 0, locking = 1):
