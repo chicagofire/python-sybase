@@ -1,7 +1,7 @@
 2002-10-28 20:50  djc
 
-	* Sybase.py: Optimise fetchmany() - increases speed over fivefold
-	in some cases.  
+	* Sybase.py: Optimise fetchmany() - increases speed over threefold
+	in some cases.
 
 2002-10-28 16:04  djc
 
