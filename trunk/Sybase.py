@@ -232,6 +232,7 @@ class Cursor:
         self._con = owner._con
         self._cmd = None
         self._sql = None
+        self._dyn_name = None
 
     def __del__(self):
         self._cancel()
@@ -329,6 +330,8 @@ class Cursor:
         pass
 
     def _new_cmd(self, sql):
+        if self._dyn_name:
+            cmd.ct_dynamic(CS_DEALLOC, self._dyn_name)
         self._dyn_name = 'dyn%s' % self._owner._next_dyn()
         self._sql = sql
         self._prepare()
