@@ -2,7 +2,7 @@
 
 \localmoduletable
 
-\section{\module{Sybase} --- Provide interface to Sybase}
+\section{\module{Sybase} --- Provide interface to Sybase relational database}
 
 \declaremodule{standard}{Sybase}
 
@@ -49,12 +49,22 @@ the \var{table} argument, the bulkcopy direction must be either
 This is an extension of the DB-API 2.0 specification.
 \end{classdesc}
 
-\begin{classdesc}{Connection}{dsn, user, passwd \optional{, database \code{= None}} \optional{, strip \code{= 0}} \optional{, auto_commit \code{ = 0}} \optional{, bulkcopy \code{ = 0}} \optional{, delay_connect \code{ = 0}}}
+\begin{classdesc}{Connection}{dsn, user, passwd \optional{, \ldots}}
 Return a new instance of the \class{Connection} class which implements
 the DB-API 2.0 connection functionality.
 
 The \var{dsn} argument identifies the Sybase server, \var{user} and
-\var{passwd} are the Sybase username and password respectively.  The
+\var{passwd} are the Sybase username and password respectively.
+
+The optional argument are the same as those supported by the
+\function{connect()} function.
+\end{classdesc}
+
+\begin{funcdesc}{connect}{dsn, user, passwd \optional{, \ldots}}
+Implements the DB-API 2.0 \function{connect()} function.
+
+Creates a new \class{Connection} object passing the function arguments
+to the \class{Connection} constructor.  The
 optional arguments and their effect are:
 
 \begin{description}
@@ -102,11 +112,67 @@ db.set_property(Sybase.CS_HOSTNAME, 'secret')
 db.connect()
 \end{verbatim}
 \end{description}
-\end{classdesc}
-
-\begin{funcdesc}{connect}{dsn, user, passwd \optional{, database \code{= None}} \optional{, strip \code{ = 0}} \optional{, auto_commit \code{ = 0}} \optional{, bulkcopy \code{ = 0}} \optional{, delay_connect \code{ = 0}}}
-Implements the DB-API 2.0 \function{connect()} function.
-
-Creates a new \class{Connection} object passing the function arguments
-to the \class{Connection} constructor.
 \end{funcdesc}
+
+\subsection{Connection Objects}
+
+Implements the DB-API 2.0 \class{Connection} class.
+
+\class{Connection} objects have the following interface:
+
+\begin{methoddesc}[Connection]{close}{}
+Implements the DB-API 2.0 connection \method{close()} method.
+
+Forces the database connection to be closed immediately.  Any
+operation on the connection (including cursors) after calling this
+method will raise an exception.
+
+This method is called by the \method{__del__()} method.
+\end{methoddesc}
+
+\begin{methoddesc}[Connection]{commit}{\optional{name \code{= None}}}
+Implements the DB-API 2.0 connection \method{commit()} method.
+
+Calling this method commits any pending transaction to the database.
+By default Sybase transaction chaining is enabled.  If you pass
+\code{auto_commit = 1} to the \function{connect()} function when
+creating this \class{Connection} object then chained transaction mode
+will be turned off.
+
+From the Sybase manual:
+\begin{quote}
+If you set chained transaction mode, Adaptive Server implicitly
+invokes a begin transaction before the following statements: delete,
+insert, open, fetch, select, and update. You must still explicitly
+close the transaction with a commit.
+\end{quote}
+
+The optional \var{name} argument is an extension of the DB-API 2.0
+specification.  Sybase allows you to nest and name transactions.
+\end{methoddesc}
+
+\begin{methoddesc}[Connection]{rollback}{\optional{name \code{= None}}}
+\end{methoddesc}
+
+\begin{methoddesc}[Connection]{cursor}{}
+\end{methoddesc}
+
+\begin{methoddesc}[Connection]{begin}{\optional{name \code{= None}}}
+This is an extension of the DB-API 2.0 specification.
+\end{methoddesc}
+
+\begin{methoddesc}[Connection]{get_property}{prop}
+This is an extension of the DB-API 2.0 specification.
+\end{methoddesc}
+
+\begin{methoddesc}[Connection]{set_property}{prop, value}
+This is an extension of the DB-API 2.0 specification.
+\end{methoddesc}
+
+\begin{methoddesc}[Connection]{execute}{sql}
+This is an extension of the DB-API 2.0 specification.
+\end{methoddesc}
+
+\begin{methoddesc}[Connection]{bulkcopy}{table \optional{, copy_out\code{ = 0}}}
+This is an extension of the DB-API 2.0 specification.
+\end{methoddesc}
