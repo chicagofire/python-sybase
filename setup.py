@@ -22,8 +22,8 @@ else:
         'mail to djc@object-craft.com.au so you can help other people.\n')
     sys.exit(1)
 
-syb_incdir = os.path.join( sybase, 'include' )
-syb_libdir = os.path.join( sybase, 'lib' )
+syb_incdir = os.path.join(sybase, 'include')
+syb_libdir = os.path.join(sybase, 'lib')
 
 # The version is set in Lib/numeric_version.py
 
