@@ -16,7 +16,7 @@ from sybasect import *
 
 set_debug(sys.stderr)
 
-__version__ = '0.33pre2'
+__version__ = '0.33pre3'
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
@@ -25,8 +25,8 @@ threadsafety = 2                        # Threads may share the module
                                         # and connections.
 
 
-paramstyle = 'format'                   # ANSI C printf format codes, 
-                                        # e.g. '...WHERE name=%s'
+paramstyle = 'named'                    # Named style, 
+                                        # e.g. '...WHERE name=@name'
 
 # DB-API exceptions
 #
@@ -255,8 +255,8 @@ class Cursor:
                 pass
 
     def _raise_error(self, exc, text):
+        text = _ct_errors(self._owner._conn, text)
         if self._state not in (_CUR_IDLE, _CUR_CLOSED):
-            text = _ct_errors(self._owner._conn, text)
             if self._owner._conn.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
                 self._state = _CUR_IDLE
                 self._lock.release()
@@ -279,11 +279,19 @@ class Cursor:
                 status = self._cmd.ct_command(CS_RPC_CMD, name)
                 if status != CS_SUCCEED:
                     self._raise_error(Error, 'ct_command')
-                for param in params:
-                    buf = DataBuf(param)
-                    status = self._cmd.ct_param(buf)
-                    if status != CS_SUCCEED:
-                        self._raise_error(Error, 'ct_param')
+                if type(params) is type({}):
+                    for name, value in params.items():
+                        buf = DataBuf(value)
+                        buf.name = name
+                        status = self._cmd.ct_param(buf)
+                        if status != CS_SUCCEED:
+                            self._raise_error(Error, 'ct_param')
+                else:
+                    for value in params:
+                        buf = DataBuf(value)
+                        status = self._cmd.ct_param(buf)
+                        if status != CS_SUCCEED:
+                            self._raise_error(Error, 'ct_param')
                 status = self._cmd.ct_send()
                 if status != CS_SUCCEED:
                     self._raise_error(Error, 'ct_send')
@@ -308,7 +316,7 @@ class Cursor:
         finally:
             self._lock.release()
 
-    def execute(self, sql, params = ()):
+    def execute(self, sql, params = {}):
         '''DB-API Cursor.execute()
         '''
         self._lock.acquire()
@@ -321,7 +329,13 @@ class Cursor:
             # the cursor is idle again the extra lock will be
             # released.
             self._lock.acquire()
-            self._cmd.ct_command(CS_LANG_CMD, sql % tuple(params))
+            self._cmd.ct_command(CS_LANG_CMD, sql)
+            for name, value in params.items():
+                buf = DataBuf(value)
+                buf.name = name
+                status = self._cmd.ct_param(buf)
+                if status != CS_SUCCEED:
+                    self._raise_error(Error, 'ct_param')
             self._cmd.ct_send()
             self._start_results()
         finally:
