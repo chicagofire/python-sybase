@@ -75,7 +75,7 @@ static int money_from_int(MoneyUnion *money, int type, long num)
     money_datafmt(&money_fmt, type);
     int_value = num;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -102,7 +102,7 @@ static int money_from_string(MoneyUnion *money, int type, char *str)
     char_datafmt(&char_fmt);
     char_fmt.maxlength = strlen(str);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -139,7 +139,7 @@ static int money_from_long(MoneyUnion *money, int type, PyObject *obj)
     char_fmt.maxlength = num_digits;
     money_datafmt(&money_fmt, type);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -166,7 +166,7 @@ static int money_from_float(MoneyUnion *money, int type, CS_FLOAT value)
     float_datafmt(&float_fmt);
     money_datafmt(&money_fmt, type);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -200,7 +200,7 @@ static int money_from_money(MoneyUnion *money, int type, PyObject *obj)
     money_datafmt(&src_fmt, ((MoneyObj*)obj)->type);
     money_datafmt(&dest_fmt, type);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -319,7 +319,7 @@ static int Money_compare(MoneyObj *v, MoneyObj *w)
 	}
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return 0;
@@ -340,7 +340,7 @@ static PyObject *Money_repr(MoneyObj *self)
     CS_RETCODE conv_result;
     char text[MONEY_LEN];
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     conv_result = money_as_string((PyObject*)self, text);
     if (PyErr_Occurred())
 	return NULL;
@@ -423,7 +423,7 @@ static PyObject *Money_arithmetic(int op, MoneyObj *v, MoneyObj *w)
 	}
     }
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -515,7 +515,7 @@ static PyObject *Money_int(MoneyObj *v)
     money_datafmt(&money_fmt, v->type);
     int_datafmt(&int_fmt);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -537,7 +537,7 @@ static PyObject *Money_long(MoneyObj *v)
     char *end;
     char text[MONEY_LEN];
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     conv_result = money_as_string((PyObject*)v, text);
     if (PyErr_Occurred())
 	return NULL;
@@ -561,7 +561,7 @@ static PyObject *Money_float(MoneyObj *v)
     money_datafmt(&money_fmt, v->type);
     float_datafmt(&float_fmt);
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     ctx = global_ctx();
     if (ctx == NULL)
 	return NULL;
@@ -731,7 +731,7 @@ PyObject *pickle_money(PyObject *module, PyObject *args)
     if (!PyArg_ParseTuple(args, "O!", &MoneyType, &obj))
 	goto error;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     conv_result = money_as_string((PyObject*)obj, text);
     if (PyErr_Occurred())
 	return NULL;

@@ -108,10 +108,10 @@ void debug_msg(char *fmt, ...)
 
     res = PyObject_CallMethod(debug_file, "write", "s", buff);
     Py_XDECREF(res);
-    PyErr_Clear();
+    /* PyErr_Clear(); */
     res = PyObject_CallMethod(debug_file, "flush", "");
     Py_XDECREF(res);
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 }
 
 static char sybasect_set_debug__doc__[] = 

@@ -41,7 +41,7 @@ PyObject *locale_alloc(CS_CONTEXTObj *ctx)
     self->debug = ctx->debug;
     self->serial = locale_serial++;
 
-    PyErr_Clear();
+    /* PyErr_Clear(); */
 
     SY_CTX_BEGIN_THREADS(ctx);
     status = cs_loc_alloc(ctx->ctx, &loc);
@@ -270,7 +270,7 @@ static PyObject *CS_LOCALE_cs_locale(CS_LOCALEObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "iis", &action, &type, &str))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 
 	status = cs_locale(self->ctx->ctx, CS_SET, self->locale,
 			   type, str, CS_NULLTERM, NULL);
@@ -285,7 +285,7 @@ static PyObject *CS_LOCALE_cs_locale(CS_LOCALEObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii", &action, &type))
 	    return NULL;
 
-	PyErr_Clear();
+	/* PyErr_Clear(); */
 	status = cs_locale(self->ctx->ctx, CS_GET, self->locale,
 			   type, buff, sizeof(buff), &str_len);
 	if (PyErr_Occurred())
