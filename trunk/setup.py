@@ -24,12 +24,17 @@ def api_exists(func, filename):
     if re.search(r'CS_PUBLIC %s' % func, text):
         return 1
 
+sybase = None
+if os.environ.has_key('SYBASE'):
+    sybase = os.environ['SYBASE']
+    if os.environ.has_key('SYBASE_OCS'):
+        ocs = os.environ['SYBASE_OCS']
+        sybase = os.path.join(sybase, ocs)
+
 if os.name == 'posix':                  # unix
     # Most people will define the location of their Sybase
     # installation in their environment.
-    if os.environ.has_key('SYBASE'):
-        sybase = os.environ['SYBASE']
-    else:
+    if sybase is None:
         # Not in environment - assume /opt/sybase
         sybase = '/opt/sybase'
         if not os.access(sybase, os.F_OK):
@@ -52,9 +57,7 @@ if os.name == 'posix':                  # unix
 
 elif os.name == 'nt':                   # win32
     # Not sure how the installation location is specified under NT
-    if os.environ.has_key('SYBASE'):
-        sybase = os.environ['SYBASE']
-    else:
+    if sybase is None:
         sybase = r'i:\sybase\sql11.5'
         if not os.access(sybase, os.F_OK):
             sys.stderr.write(
@@ -72,10 +75,6 @@ else:                                   # unknown
         'figure out how to get it working for your platform, please send\n'
         'mail to djc@object-craft.com.au so you can help other people.\n')
     sys.exit(1)
-
-if os.environ.has_key('SYBASE_OCS'):
-    ocs = os.environ['SYBASE_OCS']
-    sybase = os.path.join(sybase, ocs)
 
 syb_incdir = os.path.join(sybase, 'include')
 syb_libdir = os.path.join(sybase, 'lib')
