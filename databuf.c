@@ -28,22 +28,9 @@ static struct PyMethodDef Buffer_methods[] = {
     { NULL }			/* sentinel */
 };
 
-PyObject *buffer_alloc(CS_DATAFMTObj *datafmt)
+static PyObject *allocate_buffers(BufferObj *self)
 {
-    BufferObj *self;
     int i;
-
-    self = PyObject_NEW(BufferObj, &BufferType);
-    if (self == NULL)
-	return NULL;
-    self->strip = datafmt->strip;
-    self->fmt = datafmt->fmt;
-    self->buff = NULL;
-    self->copied = NULL;
-    self->indicator = NULL;
-
-    if (self->fmt.count == 0)
-	self->fmt.count = 1;
 
     self->buff = malloc(self->fmt.maxlength * self->fmt.count);
     if (self->buff == NULL)
@@ -57,6 +44,60 @@ PyObject *buffer_alloc(CS_DATAFMTObj *datafmt)
 
     for (i = 0; i < self->fmt.count; i++)
 	self->indicator[i] = CS_NULLDATA;
+
+    return (PyObject*)self;
+}
+
+static int Buffer_ass_item(BufferObj *self, int i, PyObject *v);
+
+PyObject *buffer_alloc(PyObject *obj)
+{
+    BufferObj *self;
+
+    self = PyObject_NEW(BufferObj, &BufferType);
+    if (self == NULL)
+	return NULL;
+
+    self->buff = NULL;
+    self->copied = NULL;
+    self->indicator = NULL;
+
+    if (CS_DATAFMT_Check(obj)) {
+	self->strip = ((CS_DATAFMTObj*)obj)->strip;
+	self->fmt = ((CS_DATAFMTObj*)obj)->fmt;
+	if (self->fmt.count == 0)
+	    self->fmt.count = 1;
+
+	if (allocate_buffers(self) == NULL) {
+	    Py_DECREF(self);
+	    return NULL;
+	}
+    } else {
+	memset(&self->fmt, 0, sizeof(self->fmt));
+	self->fmt.status = CS_INPUTVALUE;
+	self->fmt.count = 1;
+
+	if (PyInt_Check(obj) || PyLong_Check(obj) || obj == Py_None)
+	    int_datafmt(&self->fmt);
+	else if (PyFloat_Check(obj))
+	    float_datafmt(&self->fmt);
+	else if (Numeric_Check(obj))
+	    numeric_datafmt(&self->fmt);
+	else if (PyString_Check(obj)) {
+	    char_datafmt(&self->fmt);
+	    self->fmt.maxlength = PyString_Size(obj) + 1;
+	} else {
+	    PyErr_SetString(PyExc_TypeError, "unsupported parameter type");
+	    Py_DECREF(self);
+	    return NULL;
+	}
+
+	if (allocate_buffers(self) == NULL
+	    || Buffer_ass_item(self, 0, obj) < 0) {
+	    Py_DECREF(self);
+	    return NULL;
+	}
+    }
 
     return (PyObject*)self;
 }

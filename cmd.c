@@ -526,7 +526,7 @@ static PyObject *CS_COMMAND_ct_bind(CS_COMMANDObj *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "iO!", &item, &CS_DATAFMTType, &datafmt))
 	return NULL;
 
-    buffer = (BufferObj *)buffer_alloc(datafmt);
+    buffer = (BufferObj *)buffer_alloc((PyObject*)datafmt);
     if (buffer == NULL)
 	return NULL;
 

@@ -72,12 +72,12 @@ static char _sybase_Buffer__doc__[] =
 
 static PyObject *_sybase_Buffer(PyObject *module, PyObject *args)
 {
-    CS_DATAFMTObj *datafmt;
+    PyObject *obj;
 
-    if (!PyArg_ParseTuple(args, "O!", &CS_DATAFMTType, &datafmt))
+    if (!PyArg_ParseTuple(args, "O", &obj))
 	return NULL;
 
-    return buffer_alloc(datafmt);
+    return buffer_alloc(obj);
 }
 
 /* List of methods defined in the module */

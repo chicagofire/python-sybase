@@ -231,6 +231,101 @@ class Cursor:
         self._cmd = None
         self._sql = None
 
+    def __del__(self):
+        self._cancel()
+
+    def callproc(self, name, params = []):
+        '''DB-API Cursor.callproc()
+        '''
+        self._cancel()
+        cmd = self._cmd = Cmd(self._con)
+        self._sql = -1
+        cmd.ct_command(CS_RPC_CMD, name)
+        for param in params:
+            buf = Buffer(param)
+            cmd.ct_param(buf)
+        cmd.ct_send()
+        self._state = CMD_PREPARED
+        self._start_result_set()
+
+    def close(self):
+        '''DB-API Cursor.close()
+        '''
+        self._cancel()
+
+    def execute(self, sql, params = []):
+        '''DB-API Cursor.execute()
+        '''
+        if self._sql:
+            if self._sql != sql:
+                self._cancel()
+                self._sql = None
+            else:
+                self._discard_results()
+        if not self._sql:
+            self._new_cmd(sql)
+        self._send_params(params)
+
+    def executemany(self, sql, params_seq = []):
+        '''DB-API Cursor.executemany()
+        '''
+        for params in params_seq:
+            self.execute(sql, params)
+
+    def fetchone(self):
+        '''DB-API Cursor.fetchone()
+        '''
+        cmd = self._cmd
+        if self._state == CMD_FETCHING:
+            row = cmd.fetch_rows(self._bufs)
+            if row:
+                return row
+            self._state = CMD_END_SET
+
+    def fetchmany(self, num = -1):
+        '''DB-API Cursor.fetchmany()
+        '''
+        if num == -1:
+            num = self.arraysize
+        rows = []
+        for i in xrange(num):
+            row = self.fetchone()
+            if not row:
+                break
+            rows.append(row)
+        return rows
+
+    def fetchall(self):
+        '''DB-API Cursor.fetchall()
+        '''
+        rows = []
+        while 1:
+            row = self.fetchone()
+            if not row:
+                break
+            rows.append(row)
+        return rows
+
+    def nextset(self):
+        '''DB-API Cursor.nextset()
+        '''
+        if self._state == CMD_END_RESULTS:
+            return
+        if self._state != CMD_END_SET:
+            self._cmd.ct_cancel(CS_CANCEL_CURRENT)
+        self._start_result_set()
+        return self._state != CMD_END_RESULTS or None
+
+    def setinputsizes(self):
+        '''DB-API Cursor.setinputsizes()
+        '''
+        pass
+
+    def setoutputsize(self, size, column = None):
+        '''DB-API Cursor.setoutputsize()
+        '''
+        pass
+
     def _new_cmd(self, sql):
         self._dyn_name = 'dyn%s' % self._owner._next_dyn()
         self._sql = sql
@@ -295,32 +390,6 @@ class Cursor:
         cmd.ct_send()
         self._start_result_set()
 
-    def __del__(self):
-        self._cancel()
-
-    def callproc(self, name, params = []):
-        '''DB-API Cursor.callproc()
-        '''
-        self.execute('exec %s' % name, params)
-
-    def close(self):
-        '''DB-API Cursor.close()
-        '''
-        self._cancel()
-
-    def execute(self, sql, params = []):
-        '''DB-API Cursor.execute()
-        '''
-        if self._sql:
-            if self._sql != sql:
-                self._cancel()
-                self._sql = None
-            else:
-                self._discard_results()
-        if not self._sql:
-            self._new_cmd(sql)
-        self._send_params(params)
-
     def _start_result_set(self):
         con = self._con
         cmd = self._cmd
@@ -346,66 +415,6 @@ class Cursor:
                 self.rowcount = cmd.ct_res_info(CS_ROW_COUNT)
             else:
                 raise InternalError(build_ct_except(con, 'ct_results'))
-
-    def executemany(self, sql, params_seq = []):
-        '''DB-API Cursor.executemany()
-        '''
-        for params in params_seq:
-            self.execute(sql, params)
-
-    def fetchone(self):
-        '''DB-API Cursor.fetchone()
-        '''
-        cmd = self._cmd
-        if self._state == CMD_FETCHING:
-            row = cmd.fetch_rows(self._bufs)
-            if row:
-                return row
-            self._state = CMD_END_SET
-
-    def fetchmany(self, num = -1):
-        '''DB-API Cursor.fetchmany()
-        '''
-        if num == -1:
-            num = self.arraysize
-        rows = []
-        for i in xrange(num):
-            row = self.fetchone()
-            if not row:
-                break
-            rows.append(row)
-        return rows
-
-    def fetchall(self):
-        '''DB-API Cursor.fetchall()
-        '''
-        rows = []
-        while 1:
-            row = self.fetchone()
-            if not row:
-                break
-            rows.append(row)
-        return rows
-
-    def nextset(self):
-        '''DB-API Cursor.nextset()
-        '''
-        if self._state == CMD_END_RESULTS:
-            return
-        if self._state != CMD_END_SET:
-            self._cmd.ct_cancel(CS_CANCEL_CURRENT)
-        self._start_result_set()
-        return self._state != CMD_END_RESULTS or None
-
-    def setinputsizes(self):
-        '''DB-API Cursor.setinputsizes()
-        '''
-        pass
-
-    def setoutputsize(self, size, column = None):
-        '''DB-API Cursor.setoutputsize()
-        '''
-        pass
 
 class Connection:
     def __init__(self, dsn, user, passwd, database = None, strip = 0):
