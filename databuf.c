@@ -337,7 +337,8 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
             PyErr_SetString(PyExc_TypeError, "datetime expected");
             return -1;
         }
-        *(CS_DATETIME*)self->buff = ((DateTimeObj*)v)->v.datetime;
+	if (datetime_assign(v, CS_DATETIME_TYPE, self->buff) != CS_SUCCEED)
+	    return -1;
 	self->copied[i] = self->fmt.maxlength;
         break;
 
@@ -346,7 +347,8 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
             PyErr_SetString(PyExc_TypeError, "datetime expected");
             return -1;
         }
-        *(CS_DATETIME4*)self->buff = ((DateTimeObj*)v)->v.datetime4;
+	if (datetime_assign(v, CS_DATETIME4_TYPE, self->buff) != CS_SUCCEED)
+	    return -1;
 	self->copied[i] = self->fmt.maxlength;
         break;
 

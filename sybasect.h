@@ -194,6 +194,7 @@ typedef struct {
 extern PyTypeObject DateTimeType;
 #define DateTime_Check(obj) (obj->ob_type == &DateTimeType)
 PyObject *datetime_alloc(void *value, int type);
+int datetime_assign(PyObject *obj, int type, void *buff);
 int datetime_as_string(PyObject *obj, char *text);
 extern char DateTimeType_new__doc__[];
 PyObject *DateTimeType_new(PyObject *module, PyObject *args);

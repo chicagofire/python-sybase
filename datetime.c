@@ -42,6 +42,40 @@ static struct PyMethodDef DateTime_methods[] = {
     { NULL }			/* sentinel */
 };
 
+int datetime_assign(PyObject *obj, int type, void *buff)
+{
+    CS_DATAFMT src_fmt;
+    CS_DATAFMT dest_fmt;
+    void *src_buff;
+    CS_RETCODE conv_result;
+    CS_INT datetime_len;
+
+    if (((DateTimeObj*)obj)->type == type) {
+	if (type == CS_DATETIME_TYPE)
+	    *(CS_DATETIME*)buff = ((DateTimeObj*)obj)->v.datetime;
+	else
+	    *(CS_DATETIME4*)buff = ((DateTimeObj*)obj)->v.datetime4;
+	return CS_SUCCEED;
+    }
+    datetime_datafmt(&src_fmt, ((DateTimeObj*)obj)->type);
+    datetime_datafmt(&dest_fmt, type);
+
+    if (((DateTimeObj*)obj)->type == CS_DATETIME_TYPE)
+	src_buff = &((DateTimeObj*)obj)->v.datetime;
+    else
+	src_buff = &((DateTimeObj*)obj)->v.datetime4;
+
+    PyErr_Clear();
+    conv_result = cs_convert(global_ctx(),
+			     &src_fmt, src_buff,
+			     &dest_fmt, &buff, &datetime_len);
+    if (PyErr_Occurred())
+	return CS_FAIL;
+    if (conv_result != CS_SUCCEED)
+	PyErr_SetString(PyExc_TypeError, "datetime conversion failed");
+    return conv_result;
+}
+
 int datetime_as_string(PyObject *obj, char *text)
 {
     CS_DATAFMT datetime_fmt;
