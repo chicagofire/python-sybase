@@ -1,0 +1,5 @@
+include ChangeLog LICENCE TODO
+include doc/*.tex doc/pstumble doc/Makefile
+recursive-include examples README *.py *.sql *.readme
+global-include .cvsignore
+global-exclude *.pyc

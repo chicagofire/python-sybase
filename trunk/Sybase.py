@@ -1,3 +1,8 @@
+#
+# Copyright 2001 by Object Craft P/L, Melbourne, Australia.
+#
+# LICENCE - see LICENCE file distributed with this software for details.
+#
 try:
     import DateTime
     use_datetime = 1

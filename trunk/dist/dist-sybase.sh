@@ -1,5 +1,6 @@
 #!/bin/sh
 REL=$1
+EXT=$2
 
 if [ "x$REL" = "x" ]; then
     echo "usage: dist-sybase release"
@@ -7,27 +8,15 @@ if [ "x$REL" = "x" ]; then
     exit 1
 fi
 
-echo "Packaging release $REL"
+if [ "x$EXT" != "x" ]; then
+    SSH_PORT=-p22002
+    SCP_PORT=-P22002
+fi
+
+echo "Packaging release $REL from $CVSROOT"
 
 # Get tag from release number
 TAG=`echo $REL | sed -e 's/\./_/;s/^/r/'`
-
-check_rev() {
-    echo -n Checking $1
-    ver=`grep "$2" $1 | sed -e "$3"`
-    if [ ! $? -o ! "$REL" = "$ver" ]; then
-	echo " - version in $1 is $ver"
-	exit 1
-    fi
-    echo " - found $ver"
-}
-
-# Check that the release number exists in all necessary places
-check_rev setup.py 'version' 's/.* "//;s/".*//'
-check_rev doc/sybase.tex '^.release' 's/.*{//;s/}.*//'
-check_rev Sybase.py 'version' "s/.* = '//;s/'.*//"
-
-echo "Ready to build!"
 
 cd /tmp
 
@@ -40,12 +29,19 @@ if [ ! -f sybase-$REL/setup.py ]; then
     echo "Could not export code"
     exit 1
 fi
-# do not distribute the distribution parts
-mv sybase-$REL/dist .
-tar czf sybase-$REL.tar.gz sybase-$REL
+
+# Use setup.py to create source distribution
+cd sybase-$REL
+python setup.py sdist
+if [ "$?" != "0" ]; then
+    echo "Fix up release numbers!"
+    exit 1
+fi
+
+cp dist/sybase-$REL.tar.gz ..
 
 echo "Building documentation"
-cd sybase-$REL/doc
+cd doc
 DISPLAY=:0 PATH=$HOME/bin:$PATH make html pdf booklet
 
 echo "Moving documentation to /tmp/sybase-dist"
@@ -62,18 +58,16 @@ echo "New version of Sybase is available in /tmp/sybase-dist"
 
 echo "Moving new release to web server"
 tmpdir=/var/www/projects/sybase/.new
-www=www.object-craft.com.au
-ssh $www mkdir $tmpdir
-scp sybase-$REL.tar.gz sybase.pdf sybase-booklet.ps.gz sybase-html.tar.gz dist/make_webpage.py dist/index.ahtml $www:$tmpdir
-ssh $www \
+www=numbat
+ssh $SSH_PORT $www mkdir $tmpdir
+scp $SCP_PORT sybase-$REL.tar.gz sybase.pdf sybase-booklet.ps.gz sybase-html.tar.gz $www:$tmpdir
+ssh $SSH_PORT $www \
 "(cd $tmpdir
   tar xzf sybase-html.tar.gz
-  mv sybase-$REL.tar.gz sybase.pdf sybase-booklet.ps.gz sybase-html.tar.gz ..
+  mv sybase-$REL.tar.gz sybase.pdf sybase-booklet.ps.gz sybase-html.tar.gz ../download
   mv ../sybase ../sybase-
   mv sybase ..
   rm -rf ../sybase-
-  python make_webpage.py .. > index.html
-  mv index.html ..
   cd ..
   rm -rf $tmpdir)"
 

@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+#
+# Copyright 2001 by Object Craft P/L, Melbourne, Australia.
+#
+# LICENCE - see LICENCE file distributed with this software for details.
+#
 # To use:
 #       python setup.py install
 #
@@ -9,6 +14,7 @@ import sys
 import string
 import re
 from distutils.core import setup, Extension
+from distutils.command.sdist import sdist
 
 def api_exists(func, filename):
     try:
@@ -99,6 +105,49 @@ for api in ('cs_calc', 'cs_cmp',):
     if api_exists(api, os.path.join(syb_incdir, 'cspublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
 
+class PreReleaseCheck:
+    def __init__(self, distribution):
+        self.distribution = distribution
+        self.check_rev('doc/sybase.tex', r'^\\release{(.*)}')
+        self.check_rev('Sybase.py', r'__version__ = \'(.*)\'')
+
+    def _extract_rev(self, filename, pattern):
+        regexp = re.compile(pattern)
+        match = None
+        revs = []
+        line_num = 0
+        f = open(filename)
+        try:
+            for line in f.readlines():
+                line_num += 1
+                match = regexp.search(line)
+                if match:
+                    revs.append((line_num, match.group(1)))
+        finally:
+            f.close()
+        return revs
+
+    def check_rev(self, filename, pattern):
+        file_revs = self._extract_rev(filename, pattern)
+        if not file_revs:
+            sys.exit("Could not locate version in %s" % filename)
+        line_num, file_rev = file_revs[0]
+        for num, rev in file_revs[1:]:
+            if rev != file_rev:
+                sys.exit("%s:%d inconsistent version on line %d" % \
+                         (filename, line_num, num))
+        setup_rev = self.distribution.get_version()
+        if file_rev != setup_rev:
+            sys.exit("%s:%d version %s does not match setup.py version %s" % \
+                     (filename, line_num, file_rev, setup_rev))
+
+
+class my_sdist(sdist):
+    def run(self):
+        PreReleaseCheck(self.distribution)
+        self.announce("Pre-release checks pass!")
+        sdist.run(self)
+
 setup(name = "Sybase",
       version = "0.35pre1",
       maintainer = "Dave Cole",
@@ -120,5 +169,6 @@ setup(name = "Sybase",
                     extra_objects = extra_objects
                     )
           ],
+      cmdclass = {'sdist': my_sdist},
       )
 

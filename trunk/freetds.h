@@ -1,3 +1,10 @@
+/******************************************************************
+
+ Copyright 2001 by Object Craft P/L, Melbourne, Australia.
+
+ LICENCE - see LICENCE file distributed with this software for details.
+
+******************************************************************/
 #define CS_USERNAME CS_USERNAME
 #define CS_PASSWORD CS_PASSWORD
 #define CS_APPNAME CS_APPNAME
