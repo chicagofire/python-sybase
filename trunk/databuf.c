@@ -75,10 +75,6 @@ PyObject *databuf_alloc(PyObject *obj)
 	    return NULL;
 	}
     } else {
-	memset(&self->fmt, 0, sizeof(self->fmt));
-	self->fmt.status = CS_INPUTVALUE;
-	self->fmt.count = 1;
-
 	if (PyInt_Check(obj) || PyLong_Check(obj) || obj == Py_None)
 	    int_datafmt(&self->fmt);
 	else if (PyFloat_Check(obj))
@@ -97,6 +93,8 @@ PyObject *databuf_alloc(PyObject *obj)
 	    Py_DECREF(self);
 	    return NULL;
 	}
+	self->fmt.status = CS_INPUTVALUE;
+	self->fmt.count = 1;
 
 	if (allocate_buffers(self) == NULL
 	    || DataBuf_ass_item(self, 0, obj) < 0) {
