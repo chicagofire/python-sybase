@@ -33,7 +33,11 @@ if os.name == 'posix':                  # unix
             sys.exit(1)
     # On Linux the Sybase tcl library is distributed as sybtcl
     syb_libs = []
-    for name in ['blk', 'ct', 'cs', 'sybtcl', 'tcl', 'comn', 'intl']:
+    if os.uname()[0] == 'Linux':
+        lib_names = ['blk', 'ct', 'cs', 'sybtcl', 'insck', 'comn', 'intl']
+    else:
+        lib_names = ['blk', 'ct', 'cs', 'tcl', 'comn', 'intl']
+    for name in lib_names:
         lib_name = os.path.join(sybase, 'lib', 'lib%s.a' % name)
         if os.access(lib_name, os.R_OK):
             syb_libs.append(name)
