@@ -641,40 +641,30 @@ char NumericType_new__doc__[] =
  */
 PyObject *NumericType_new(PyObject *module, PyObject *args)
 {
-    NumericObj *self;
     int precision, scale;
     PyObject *obj;
+    NumericObj *num = NULL;
 
-    self = PyObject_NEW(NumericObj, &NumericType);
-    if (self == NULL)
-	return NULL;
-
-    SY_LEAK_REG(self);
     precision = -1;
     scale = -1;
-    if (PyArg_ParseTuple(args, "O|ii", &obj, &precision, &scale)) {
-	NumericObj *num = NULL;
+    if (!PyArg_ParseTuple(args, "O|ii", &obj, &precision, &scale))
+	return NULL;
 
-	if (PyInt_Check(obj))
-	    num = Numeric_FromInt(obj, precision, scale);
-	else if (PyLong_Check(obj))
-	    num = Numeric_FromLong(obj, precision, scale);
-	else if (PyFloat_Check(obj))
-	    num = Numeric_FromFloat(obj, precision, scale);
-	else if (PyString_Check(obj))
-	    num = Numeric_FromString(obj, precision, scale);
-	else if (Numeric_Check(obj))
-	    num = Numeric_FromNumeric(obj, precision, scale);
-	else {
-	    PyErr_SetString(PyExc_TypeError, "could not convert to Numeric");
-	    return NULL;
-	}
-	if (num)
-	    return (PyObject*)num;
+    if (PyInt_Check(obj))
+	num = Numeric_FromInt(obj, precision, scale);
+    else if (PyLong_Check(obj))
+	num = Numeric_FromLong(obj, precision, scale);
+    else if (PyFloat_Check(obj))
+	num = Numeric_FromFloat(obj, precision, scale);
+    else if (PyString_Check(obj))
+	num = Numeric_FromString(obj, precision, scale);
+    else if (Numeric_Check(obj))
+	num = Numeric_FromNumeric(obj, precision, scale);
+    else {
+	PyErr_SetString(PyExc_TypeError, "could not convert to Numeric");
+	return NULL;
     }
-
-    Py_DECREF(self);
-    return NULL;
+    return (PyObject*)num;
 }
 
 /* Used in unpickler
