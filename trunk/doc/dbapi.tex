@@ -42,14 +42,14 @@ uses question marks as parameter place holders.
 \begin{excdesc}{Warning}
 Exception raised for important warnings like data truncations while
 inserting, etc.  It is a subclass of the Python \class{StandardError}
-(defined in the module exceptions).
+(defined in the module \module{exceptions}).
 \end{excdesc}
 
 \begin{excdesc}{Error}
 Exception that is the base class of all other error exceptions.  You
 can use this to catch all errors with one single \code{except}
 statement.  It is a subclass of the Python \class{StandardError}
-(defined in the module exceptions).
+(defined in the module \module{exceptions}).
 \end{excdesc}
 
 \begin{excdesc}{InterfaceError}
@@ -209,9 +209,6 @@ the \var{table} argument, the bulkcopy direction must be either
 \code{CS_BLK_IN} or \code{CS_BLK_OUT} as defined in the
 \module{Sybase} module.
 
-The \var{owner} argument must be an instance of the \class{Connection}
-class.
-
 \class{Bulkcopy} objects are usually created via the
 \method{bulkcopy()} method of the \class{Connection} object.
 
@@ -225,7 +222,7 @@ the DB-API 2.0 connection functionality.
 The \var{dsn} argument identifies the Sybase server, \var{user} and
 \var{passwd} are the Sybase username and password respectively.
 
-The optional argument are the same as those supported by the
+The optional arguments are the same as those supported by the
 \function{connect()} function.
 \end{classdesc}
 
@@ -237,7 +234,7 @@ to the \class{Connection} constructor.  The
 optional arguments and their effect are:
 
 \begin{description}
-\item{\var{database}}
+\item{\var{database \code{= None}}}
 
 Specifies the database to use - has the same effect as the following
 SQL.
@@ -246,12 +243,12 @@ SQL.
 use database
 \end{verbatim}
 
-\item{\var{strip}}
+\item{\var{strip \code{= 0}}}
 
 If non-zero then all \code{char} columns will be right stripped of
 whitespace.
 
-\item{\var{auto_commit}}
+\item{\var{auto_commit \code{= 0}}}
 
 Controls Sybase chained transaction mode.  When non-zero, chained
 transaction mode is turned off.  From the Sybase SQL manual:
@@ -263,12 +260,12 @@ insert, open, fetch, select, and update. You must still explicitly
 close the transaction with a commit.
 \end{quote}
 
-\item{\var{bulkcopy}}
+\item{\var{bulkcopy \code{= 0}}}
 
 Must be non-zero if you are going to perform bulkcopy operations on
 the connection.
 
-\item{\var{delay_connect}}
+\item{\var{delay_connect \code{= 0}}}
 
 If non-zero the returned \class{Connection} object will be initialised
 but not connected.  This allows you to set additional options on the
@@ -287,7 +284,7 @@ The \module{Sybase} module imports the low level \module{sybasect}
 extension module via
 
 \begin{verbatim}
-from sybasect import *}
+from sybasect import *
 \end{verbatim}
 
 which means that the \module{Sybase} module inherits all of the
@@ -295,15 +292,15 @@ objects defined in that module.
 
 Some of the functions will be useful in your programs.
 
-\begin{funcdesc}{datetime}{str \optional{, type \code{= Sybase.CS_DATETIME_TYPE}}}
+\begin{funcdesc}{datetime}{str \optional{, type \code{= CS_DATETIME_TYPE}}}
 Creates a new instance of the \class{DateTime} class.  This is used to
-handle native Sybase \code{datetime} and \code{smalldatetime} values.
+construct native Sybase \code{datetime} and \code{smalldatetime} values.
 
 The string passed in the \var{str} argument is converted to a datetime
-value of the type specifed in the optional \var{type} argument.
+value of the type specified in the optional \var{type} argument.
 
-\code{Sybase.CS_DATETIME_TYPE} represents the \code{datetime} Sybase
-type and \code{Sybase.CS_DATETIME4_TYPE} represents
+\code{CS_DATETIME_TYPE} represents the \code{datetime} Sybase
+type and \code{CS_DATETIME4_TYPE} represents
 \code{smalldatetime}.
 
 The \class{DateTime} class is described in the \module{sybasect}
@@ -312,7 +309,7 @@ module.
 
 \begin{funcdesc}{money}{num}
 Creates a new instance of the \class{Money} class.  This is
-used to handle native Sybase \code{money} values.
+used to construct native Sybase \code{money} values.
 
 The value passed in the \var{num} argument is converted to a native
 Sybase money value.
@@ -323,7 +320,7 @@ module.
 
 \begin{funcdesc}{numeric}{num, \optional{precision \code{= -1} \optional{, scale \code{= -1}}}}
 Creates a new instance of the \class{Numeric} class.  This is used to
-handle native Sybase \code{numeric} and \code{decimal} values.
+construct native Sybase \code{numeric} and \code{decimal} values.
 
 Converts the value passed in the \var{num} argument to a native Sybase
 numeric value.  The \var{precision} and \var{scale} arguments control
@@ -523,7 +520,7 @@ Implements the DB-API 2.0 cursor \method{execute()} method.
 Prepares a dynamic SQL command on the Sybase server and executes it.
 The optional \var{params} argument is a sequence of parameters which
 are bound as parameters to the dynamic SQL command.  Sybase uses
-question mark (\code{?}) placeholders to specify which the parameters
+question mark (\code{?}) place holders to specify which the parameters
 will be used by the SQL command.
 
 \begin{verbatim}
@@ -622,7 +619,7 @@ functionality.
 \begin{methoddesc}[Bulkcopy]{rowxfer}{\optional{data}}
 If the \class{Bulkcopy} object direction is \code{CS_BLK_IN} then the
 sequence passed as the \var{data} argument is sent as one row to the
-server.  If the direction is \code{CS_BLK_OUT} thenone row will be
+server.  If the direction is \code{CS_BLK_OUT} then one row will be
 returned from the server.
 \end{methoddesc}
 

@@ -87,8 +87,7 @@ result = cs_ctx_alloc(version, &ctx);
 Returns a tuple containing the Sybase result code and a new instance
 of the \class{CS_CONTEXT} class constructed from the \var{ctx} value
 returned by \function{cs_ctx_alloc()}.  \code{None} is returned as the
-\class{CS_CONTEXT} object when the result code is not
-\code{CS_SUCCEED}.
+\class{CS_CONTEXT} object if the result code is not \code{CS_SUCCEED}.
 \end{funcdesc}
 
 \begin{funcdesc}{cs_ctx_global}{\optional{version \code{= CS_VERSION_100}}}
@@ -101,8 +100,7 @@ result = cs_ctx_global(version, &ctx);
 Returns a tuple containing the Sybase result code and a new instance
 of the \class{CS_CONTEXT} class constructed from the \var{ctx} value
 returned by \function{cs_ctx_global()}.  \code{None} is returned as the
-\class{CS_CONTEXT} object when the result code is not
-\code{CS_SUCCEED}.
+\class{CS_CONTEXT} object if the result code is not \code{CS_SUCCEED}.
 \end{funcdesc}
 
 \begin{funcdesc}{DataBuf}{obj}
@@ -194,12 +192,12 @@ The values expected for the \var{type_code} argument things like;
 \end{funcdesc}
 
 \begin{funcdesc}{CS_DATAFMT}{}
-Return a new instance of the \class{DataFmtType} class.  This is used
+Return a new instance of the \class{CS_DATAFMT} class.  This is used
 to wrap the Sybase \code{CS_DATAFMT} structure.
 \end{funcdesc}
 
 \begin{funcdesc}{CS_IODESC}{}
-Return a new instance of the \class{IODescType} class.  This is used
+Return a new instance of the \class{CS_IODESC} class.  This is used
 to wrap the Sybase \code{CS_IODESC} structure.
 \end{funcdesc}
 

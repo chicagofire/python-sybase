@@ -102,10 +102,9 @@ def print_all_msgs(conn):
 \end{methoddesc}
 
 \begin{methoddesc}[CS_CONNECTION]{ct_cancel}{type}
-Calls the Sybase \function{ct_cancel()} function passing the wrapped
-\code{CS_CONNECTION} pointer, a \code{NULL} \code{CS_COOMAND}, and the
-integer \var{type} argument and returns the Sybase result code.  The Sybase
-\function{ct_cancel()} function is called like this:
+Calls the Sybase \function{ct_cancel()} function and returns the
+Sybase result code.  The Sybase \function{ct_cancel()} function is
+called like this:
 
 \begin{verbatim}
 status = ct_cancel(conn, NULL, type);
@@ -113,9 +112,9 @@ status = ct_cancel(conn, NULL, type);
 \end{methoddesc}
 
 \begin{methoddesc}[CS_CONNECTION]{ct_connect}{\optional{server \code{= None}}}
-Calls the Sybase \function{ct_connect()} function passing the
-\var{server} argument and returns the Sybase result code.  The Sybase
-\function{ct_connect()} function is called like this:
+Calls the Sybase \function{ct_connect()} function and returns the
+Sybase result code.  The Sybase \function{ct_connect()} function is
+called like this:
 
 \begin{verbatim}
 status = ct_connect(conn, server, CS_NULLTERM);
@@ -313,7 +312,7 @@ def connect_db(ctx, server, user, passwd):
 \end{verbatim}
 \end{methoddesc}
 
-\begin{methoddesc}[CS_CONNECTION]{ct_options}{action, property \optional{, value}}
+\begin{methoddesc}[CS_CONNECTION]{ct_options}{action, option \optional{, value}}
 Sets, retrieves and clears server query processing options for
 connection.
 
@@ -333,7 +332,7 @@ status = ct_options(conn, CS_SET, option, str_value, CS_NULLTERM, NULL);
 \end{verbatim}
 
 When \var{action} is \code{CS_GET} the method returns a tuple
-containing the Sybase result code and the property value.  The
+containing the Sybase result code and the option value.  The
 Sybase-CT \function{ct_options()} function is called like this:
 
 \begin{verbatim}
@@ -358,7 +357,7 @@ status = ct_options(conn, CS_CLEAR, option, NULL, CS_UNUSED, NULL);
 The recognised options are:
 
 \begin{longtable}{l|l}
-\var{property} & type \\
+\var{option} & type \\
 \hline
 \code{CS_OPT_ANSINULL}       & \code{bool} \\
 \code{CS_OPT_ANSIPERM}       & \code{bool} \\
