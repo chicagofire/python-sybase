@@ -26,6 +26,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 void money_datafmt(CS_DATAFMT *fmt)
 {
+    memset(fmt, 0, sizeof(*fmt));
     fmt->datatype = CS_MONEY_TYPE;
     fmt->maxlength = sizeof(CS_MONEY);
     fmt->locale = NULL;
@@ -34,8 +35,9 @@ void money_datafmt(CS_DATAFMT *fmt)
     fmt->scale = 0;
 }
 
-void datetime_datafmt(int type, CS_DATAFMT *fmt)
+void datetime_datafmt(CS_DATAFMT *fmt, int type)
 {
+    memset(fmt, 0, sizeof(*fmt));
     fmt->datatype = type;
     if (type == CS_DATETIME_TYPE)
 	fmt->maxlength = sizeof(CS_DATETIME);
@@ -49,16 +51,18 @@ void datetime_datafmt(int type, CS_DATAFMT *fmt)
 
 void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale)
 {
+    memset(fmt, 0, sizeof(*fmt));
     fmt->datatype = CS_NUMERIC_TYPE;
     fmt->maxlength = sizeof(CS_NUMERIC);
     fmt->locale = NULL;
-    fmt->format = CS_FMT_NULLTERM;
+    fmt->format = CS_FMT_UNUSED;
     fmt->precision = (precision < 0) ? CS_SRC_VALUE : precision;
     fmt->scale = (scale < 0) ? CS_SRC_VALUE : scale;
 }
 
 void char_datafmt(CS_DATAFMT *fmt)
 {
+    memset(fmt, 0, sizeof(*fmt));
     fmt->datatype = CS_CHAR_TYPE;
     fmt->maxlength = NUMERIC_LEN;
     fmt->locale = NULL;
@@ -69,6 +73,7 @@ void char_datafmt(CS_DATAFMT *fmt)
 
 void int_datafmt(CS_DATAFMT *fmt)
 {
+    memset(fmt, 0, sizeof(*fmt));
     fmt->datatype = CS_INT_TYPE;
     fmt->maxlength = sizeof(CS_INT);
     fmt->locale = NULL;
@@ -79,6 +84,7 @@ void int_datafmt(CS_DATAFMT *fmt)
 
 void float_datafmt(CS_DATAFMT *fmt)
 {
+    memset(fmt, 0, sizeof(*fmt));
     fmt->datatype = CS_FLOAT_TYPE;
     fmt->maxlength = sizeof(CS_FLOAT);
     fmt->locale = NULL;

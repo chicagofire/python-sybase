@@ -86,7 +86,7 @@ PyObject *databuf_alloc(PyObject *obj)
 	else if (Numeric_Check(obj))
 	    numeric_datafmt(&self->fmt, CS_SRC_VALUE, CS_SRC_VALUE);
 	else if (DateTime_Check(obj))
-	    datetime_datafmt(((DateTimeObj*)obj)->type, &self->fmt);
+	    datetime_datafmt(&self->fmt, ((DateTimeObj*)obj)->type);
 	else if (PyString_Check(obj)) {
 	    char_datafmt(&self->fmt);
 	    self->fmt.maxlength = PyString_Size(obj) + 1;
@@ -196,10 +196,10 @@ static PyObject *DataBuf_item(DataBufObj *self, int i)
 	return PyFloat_FromDouble(*(CS_FLOAT*)item);
 
     case CS_DATETIME4_TYPE:
-        return datetime_alloc(CS_DATETIME4_TYPE, self->buff);
+        return datetime_alloc(self->buff, CS_DATETIME4_TYPE);
 
     case CS_DATETIME_TYPE:
-        return datetime_alloc(CS_DATETIME_TYPE, self->buff);
+        return datetime_alloc(self->buff, CS_DATETIME_TYPE);
 
     case CS_DECIMAL_TYPE:
     case CS_NUMERIC_TYPE:

@@ -39,7 +39,7 @@ setup (name = "Sybase",
            Extension('sybasect',
                      ['blk.c', 'databuf.c', 'cmd.c', 'conn.c', 'ctx.c',
                       'datafmt.c', 'iodesc.c', 'msgs.c',
-                      'numeric.c', 'money.c', 'sybasect.c'],
+                      'numeric.c', 'money.c', 'datetime.c', 'sybasect.c'],
                      libraries = syb_libs,
                      library_dirs = [syb_libdir]
                      )

@@ -20,17 +20,22 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 **********************************************************************/
 
-#include "mssqldb.h"
+#include "sybasect.h"
 
 PyTypeObject DateTimeType;
 
-static void datetime_crack(DateTimeObj *self)
+static int datetime_crack(DateTimeObj *self)
 {
+    CS_RETCODE crack_result = CS_SUCCEED;
+
     if (self->type == CS_DATETIME_TYPE)
-	cs_dt_crack(global_ctx(), self->type, &self->v.datetime, &date_rec);
+	crack_result = cs_dt_crack(global_ctx(), self->type,
+				   &self->v.datetime, &self->daterec);
     else
-	cs_dt_crack(global_ctx(), self->type, &self->v.datetime4, &date_rec);
+	crack_result = cs_dt_crack(global_ctx(), self->type,
+				   &self->v.datetime4, &self->daterec);
     self->cracked = 1;
+    return crack_result;
 }
 
 static struct PyMethodDef DateTime_methods[] = {
@@ -45,20 +50,20 @@ int datetime_as_string(PyObject *obj, char *text)
     int type;
     void *data;
 
-    type = ((DateTimeObj*)self)->type;
+    type = ((DateTimeObj*)obj)->type;
     datetime_datafmt(&datetime_fmt, type);
     char_datafmt(&char_fmt);
 
     if (type == CS_DATETIME_TYPE)
-	data = &((DateTimeObj*)self)->v.datetime;
+	data = &((DateTimeObj*)obj)->v.datetime;
     else
-	data = &((DateTimeObj*)self)->v.datetime4;
+	data = &((DateTimeObj*)obj)->v.datetime4;
     return cs_convert(global_ctx(),
 		      &datetime_fmt, data,
 		      &char_fmt, text, &char_len);
 }
 
-PyObject *datetime_alloc(int type, void *value)
+PyObject *datetime_alloc(void *value, int type)
 {
     DateTimeObj *self;
 
@@ -66,6 +71,7 @@ PyObject *datetime_alloc(int type, void *value)
     if (self == NULL)
 	return NULL;
 
+    SY_LEAK_REG(self);
     self->type = type;
     if (type == CS_DATETIME_TYPE)
 	memcpy(&self->v.datetime, value, sizeof(self->v.datetime));
@@ -83,36 +89,46 @@ PyObject *DateTime_FromString(PyObject *obj)
     CS_DATETIME datetime;
     CS_INT datetime_len;
     char *str = PyString_AsString(obj);
-    
+    CS_RETCODE conv_result;
+
     datetime_datafmt(&datetime_fmt, CS_DATETIME_TYPE);
     char_datafmt(&char_fmt);
+    char_fmt.maxlength = strlen(str);
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(),
-		   &char_fmt, str,
-		   &datetime_fmt, &datetime, &datetime_len) <= 0) {
+    conv_result = cs_convert(global_ctx(),
+			     &char_fmt, str,
+			     &datetime_fmt, &datetime, &datetime_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "datetime from string conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
-    return datetime_alloc(CS_DATETIME_TYPE, &datetime);
+    return datetime_alloc(&datetime, CS_DATETIME_TYPE);
 }
 
 static void DateTime_dealloc(DateTimeObj *self)
 {
+    SY_LEAK_UNREG(self);
+
     PyMem_DEL(self);
 }
 
 static PyObject *DateTime_repr(DateTimeObj *self)
 {
     char text[DATETIME_LEN];
+    CS_RETCODE conv_result;
 
     PyErr_Clear();
-    datetime_as_string((PyObject*)self, text);
+    conv_result = datetime_as_string((PyObject*)self, text);
     if (PyErr_Occurred())
 	return NULL;
+    if (conv_result != CS_SUCCEED) {
+	PyErr_SetString(PyExc_TypeError, "datetime to string conversion failed");
+	return NULL;
+    }
 
     return PyString_FromString(text);
 }
@@ -124,23 +140,25 @@ static PyObject *DateTime_int(DateTimeObj *v)
     CS_INT int_value;
     CS_INT int_len;
     void *value;
+    CS_RETCODE conv_result;
 
-    datetime_datafmt(&datetime_fmt, self->type);
+    datetime_datafmt(&datetime_fmt, v->type);
     int_datafmt(&int_fmt);
 
-    if (type == CS_DATETIME_TYPE)
-	value = &self->v.datetime;
+    if (v->type == CS_DATETIME_TYPE)
+	value = &v->v.datetime;
     else
-	value = &self->v.datetime4;
+	value = &v->v.datetime4;
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &datetime_fmt, value,
-		   &int_fmt, &int_value, &int_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &datetime_fmt, value,
+			     &int_fmt, &int_value, &int_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "int conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return PyInt_FromLong(int_value);
 }
@@ -149,11 +167,16 @@ static PyObject *DateTime_long(DateTimeObj *v)
 {
     char *end;
     char text[DATETIME_LEN];
+    CS_RETCODE conv_result;
 
     PyErr_Clear();
-    datetime_as_string((PyObject*)v, text);
+    conv_result = datetime_as_string((PyObject*)v, text);
     if (PyErr_Occurred())
 	return NULL;
+    if (conv_result != CS_SUCCEED) {
+	PyErr_SetString(PyExc_TypeError, "datetime to string conversion failed");
+	return NULL;
+    }
 
     return PyLong_FromString(text, &end, 10);
 }
@@ -165,23 +188,25 @@ static PyObject *DateTime_float(DateTimeObj *v)
     CS_FLOAT float_value;
     CS_INT float_len;
     void *value;
+    CS_RETCODE conv_result;
 
     datetime_datafmt(&datetime_fmt, v->type);
     float_datafmt(&float_fmt);
 
-    if (type == CS_DATETIME_TYPE)
-	value = &self->v.datetime;
+    if (v->type == CS_DATETIME_TYPE)
+	value = &v->v.datetime;
     else
-	value = &self->v.datetime4;
+	value = &v->v.datetime4;
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(), &datetime_fmt, value,
-		   &float_fmt, &float_value, &float_len) != CS_SUCCEED) {
+    conv_result = cs_convert(global_ctx(), &datetime_fmt, value,
+			     &float_fmt, &float_value, &float_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "float conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
     return PyFloat_FromDouble(float_value);
 }
@@ -234,10 +259,16 @@ static PyObject *DateTime_getattr(DateTimeObj *self, char *name)
     PyObject *rv;
 
     if (!self->cracked && strcmp(name, "type") != 0) {
+	CS_RETCODE crack_result;
+
 	PyErr_Clear();
-	datetime_crack(self);
+	crack_result = datetime_crack(self);
 	if (PyErr_Occurred())
 	    return NULL;
+	if (crack_result != CS_SUCCEED) {
+	    PyErr_SetString(PyExc_TypeError, "datetime crack failed");
+	    return NULL;
+	}
     }
 
     rv = PyMember_Get((char*)self, DateTime_memberlist, name);
@@ -267,7 +298,7 @@ PyTypeObject DateTimeType = {
     0,				/*tp_itemsize*/
     /* methods */
     (destructor)DateTime_dealloc,/*tp_dealloc*/
-    (printfunc)DateTime_print,	/*tp_print*/
+    (printfunc)0,		/*tp_print*/
     (getattrfunc)DateTime_getattr, /*tp_getattr*/
     (setattrfunc)DateTime_setattr, /*tp_setattr*/
     (cmpfunc)0,			/*tp_compare*/
@@ -284,8 +315,8 @@ PyTypeObject DateTimeType = {
     DateTimeType__doc__		/* Documentation string */
 };
 
-char datetime_new__doc__[] =
-"datetime(type, s) -> DateTime\n"
+char DateTimeType_new__doc__[] =
+"datetime(s [, type]) -> DateTime\n"
 "\n"
 "Create a datetime object.";
 
@@ -295,27 +326,31 @@ PyObject *DateTimeType_new(PyObject *module, PyObject *args)
 {
     CS_DATAFMT datetime_fmt;
     CS_DATAFMT char_fmt;
-    int type;
+    int type = CS_DATETIME_TYPE;
     char *str;
     CS_DATETIME datetime;
+    CS_INT datetime_len;
+    CS_RETCODE conv_result;
 
-    if (!PyArg_ParseTuple(args, "is", &type, &str))
+    if (!PyArg_ParseTuple(args, "s|i", &str, &type))
 	return NULL;
 
     datetime_datafmt(&datetime_fmt, type);
     char_datafmt(&char_fmt);
+    char_fmt.maxlength = strlen(str);
 
     PyErr_Clear();
-    if (cs_convert(global_ctx(),
-		   &char_fmt, str,
-		   &datetime_fmt, &datetime, &datetime_len) <= 0) {
+    conv_result = cs_convert(global_ctx(),
+			     &char_fmt, str,
+			     &datetime_fmt, &datetime, &datetime_len);
+    if (PyErr_Occurred())
+	return NULL;
+    if (conv_result != CS_SUCCEED) {
 	PyErr_SetString(PyExc_TypeError, "datetime from string conversion failed");
 	return NULL;
     }
-    if (PyErr_Occurred())
-	return NULL;
 
-    return datetime_alloc(type, &datetime);
+    return datetime_alloc(&datetime, type);
 }
 
 /* Used in unpickler
@@ -327,12 +362,12 @@ static PyObject *datetime_constructor = NULL;
  * is this:
  *
  * def pickle_datetime(dt):
- *     return datetime, (dt.type, str(dt))
+ *     return datetime, (str(dt), dt.type)
  * 
  * copy_reg.pickle(type(datetime(1)), pickle_datetime, datetime)
  */
 char pickle_datetime__doc__[] =
-"pickle_datetime(dt) -> datetime, (dt.type, str(dt))\n"
+"pickle_datetime(dt) -> datetime, (str(dt), dt.type)\n"
 "\n"
 "Used to pickle the datetime data type.";
 
@@ -347,8 +382,9 @@ PyObject *pickle_datetime(PyObject *module, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "O!", &DateTimeType, &obj))
 	goto error;
-    datetime_as_string((PyObject*)obj, text);
-    if ((values = Py_BuildValue("(is)", obj->type, text)) == NULL)
+    if (datetime_as_string((PyObject*)obj, text) != CS_SUCCEED)
+	goto error;
+    if ((values = Py_BuildValue("(si)", text, obj->type)) == NULL)
 	goto error;
     tuple = Py_BuildValue("(OO)", datetime_constructor, values);
 

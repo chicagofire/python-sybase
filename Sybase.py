@@ -1,11 +1,11 @@
 try:
     import DateTime
-    have_datetime = 1
+    use_datetime = 1
 except:
-    have_datetime = 0
+    use_datetime = 0
 from sybasect import *
 
-__version__ = '0.29'
+__version__ = '0.30'
 
 # _sybase is a thin wrapper on top of the Sybase CT library.  The
 # objects in _sybase perform some CT functions automatically:
@@ -120,7 +120,7 @@ def _extract_row(bufs, n):
     row = []
     for buf in bufs:
         col = buf[n]
-        if have_datetime and type(col) is DateTimeType:
+        if use_datetime and type(col) is DateTimeType:
             row.append(DateTime.DateTime(col.year, col.month + 1, col.day,
                                          col.hour, col.minute,
                                          col.second + col.msecond / 1000.0))
@@ -197,6 +197,9 @@ class _Cmd:
         bufs = []
         for i in range(num_cols):
             fmt = self.ct_describe(i + 1)
+            #print '--- fmt ---'
+            #for name in dir(fmt):
+            #    print '%-12s: %s' % (name, getattr(fmt, name))
             fmt.count = count
             buf = self.ct_bind(i + 1, fmt)
             bufs.append(buf)
