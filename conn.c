@@ -537,6 +537,10 @@ static int property_type(int property)
     case CS_TRANSACTION_NAME:
 #endif
 	return OPTION_STRING;
+#ifdef CS_LOC_PROP
+    case CS_LOC_PROP:
+	return OPTION_LOCALE;
+#endif
 #ifdef CS_EED_CMD
     case CS_EED_CMD:
 	return OPTION_CMD;
@@ -634,6 +638,25 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 
 	    return PyInt_FromLong(status);
 
+	case OPTION_LOCALE:
+	    if (!CS_LOCALE_Check(obj)) {
+		PyErr_SetString(PyExc_TypeError, "CS_LOCALE is required");
+		return NULL;
+	    }
+
+	    PyErr_Clear();
+	    SY_BEGIN_THREADS;
+	    status = ct_con_props(self->conn, CS_SET, property,
+				  ((CS_LOCALEObj*)obj)->locale, CS_UNUSED, NULL);
+	    SY_END_THREADS;
+	    if (self->debug)
+		fprintf(stderr, "ct_con_props(CS_SET, LOCALE, '%s') -> %s\n",
+			value_str(PROPS, property), value_str(STATUS, status));
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    return PyInt_FromLong(status);
+
 	default:
 	    PyErr_SetString(PyExc_TypeError, "unhandled property value");
 	    return NULL;
@@ -702,6 +725,10 @@ static PyObject *CS_CONNECTION_ct_con_props(CS_CONNECTIONObj *self, PyObject *ar
 
 	case OPTION_CMD:
 	    PyErr_SetString(PyExc_TypeError, "EED not supported yet");
+	    return NULL;
+
+	case OPTION_LOCALE:
+	    PyErr_SetString(PyExc_TypeError, "LOCALE not supported yet");
 	    return NULL;
 
 	case OPTION_UNKNOWN:

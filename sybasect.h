@@ -51,7 +51,7 @@ void leak_unreg(PyObject *obj);
 #endif
 
 enum { OPTION_BOOL, OPTION_INT, OPTION_STRING, OPTION_CMD,
-       OPTION_NUMERIC, OPTION_UNKNOWN };
+       OPTION_NUMERIC, OPTION_LOCALE, OPTION_UNKNOWN };
 
 typedef struct CS_CONTEXTObj {
     PyObject_HEAD
@@ -134,6 +134,17 @@ extern PyTypeObject CS_IODESCType;
 extern char iodesc_new__doc__[];
 PyObject *iodesc_new(PyObject *module, PyObject *args);
 PyObject *iodesc_alloc(CS_IODESC *iodesc);
+
+typedef struct {
+    PyObject_HEAD
+    CS_CONTEXTObj *ctx;
+    int debug;
+    CS_LOCALE *locale;
+} CS_LOCALEObj;
+
+extern PyTypeObject CS_LOCALEType;
+#define CS_LOCALE_Check(obj) (obj->ob_type == &CS_LOCALEType)
+PyObject *locale_alloc(CS_CONTEXTObj *ctx);
 
 typedef struct {
     PyObject_HEAD
@@ -230,7 +241,7 @@ int first_tuple_int(PyObject *args, int *int_arg);
 enum { CSVER, ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT,
        BULK, BULKDIR, BULKPROPS, DYNAMIC, PROPS, DIRSERV, SECURITY, NETIO,
        OPTION, DATEDAY, DATEFMT, DATAFMT, LEVEL, TYPE, STATUS, STATUSFMT,
-       CBTYPE, CONSTAT, CURSTAT, };
+       CBTYPE, CONSTAT, CURSTAT, LOCVAL, DTINFO, CSDATES, };
 
 char *value_str(int type, int value);
 char *mask_str(int type, int value);

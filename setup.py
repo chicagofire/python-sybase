@@ -48,7 +48,7 @@ elif os.name == 'nt':                   # win32
                 'Please define the Sybase installation directory in'
                 'the SYBASE environment variable.\n')
             sys.exit(1)
-    syb_libs = [ 'libblk', 'libct', 'libcs' ]
+    syb_libs = ['libblk', 'libct', 'libcs']
 
 else:                                   # unknown
     import sys
@@ -67,13 +67,21 @@ for dir in (syb_incdir, syb_libdir):
         sys.stderr.write('Directory %s does not exist - cannot build.\n' % dir)
         sys.exit(1)
 
+extra_objects = None
+try:
+    if os.uname()[0] == 'SunOS':
+        syb_libs.remove('comn')
+        extra_objects = [os.path.join(syb_libdir, 'libcomn.a')]
+except:
+    pass
+
 syb_macros = []
 for api in ('blk_rowxfer_mult',):
     if api_exists(api, os.path.join(syb_incdir, 'bkpublic.h')):
         syb_macros.append(('HAVE_' + string.upper(api), None))
 
 setup(name = "Sybase",
-      version = "0.31",
+      version = "0.32",
       maintainer = "Dave Cole",
       maintainer_email = " djc@object-craft.com.au",
       description = "Sybase Extension to Python",
@@ -83,11 +91,13 @@ setup(name = "Sybase",
       ext_modules = [
           Extension('sybasect',
                     ['blk.c', 'databuf.c', 'cmd.c', 'conn.c', 'ctx.c',
-                     'datafmt.c', 'iodesc.c', 'msgs.c',
-                     'numeric.c', 'money.c', 'datetime.c', 'sybasect.c'],
+                     'datafmt.c', 'iodesc.c', 'locale.c', 'msgs.c',
+                     'numeric.c', 'money.c', 'datetime.c',
+                     'sybasect.c'],
                     define_macros = syb_macros,
                     libraries = syb_libs,
-                    library_dirs = [syb_libdir]
+                    library_dirs = [syb_libdir],
+                    extra_objects = extra_objects
                     )
           ],
       )
