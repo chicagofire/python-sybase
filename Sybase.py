@@ -508,6 +508,7 @@ class _FetchLazy:
 
     def start(self, arraysize):
         self._arraysize = arraysize
+        self._set_state(_LAZY_FETCHING)
         status = self._cmd.ct_send()
         if status != CS_SUCCEED:
             self._raise_error(Error, 'ct_send')
