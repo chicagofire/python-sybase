@@ -107,6 +107,8 @@ typedef struct {
 } CS_DATAFMTObj;
 
 extern PyTypeObject CS_DATAFMTType;
+#define CS_DATAFMT_Check(obj) (obj->ob_type == &CS_DATAFMTType)
+void money_datafmt(CS_DATAFMT *fmt);
 void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale);
 void char_datafmt(CS_DATAFMT *fmt);
 void int_datafmt(CS_DATAFMT *fmt);
@@ -114,7 +116,6 @@ void float_datafmt(CS_DATAFMT *fmt);
 extern char datafmt_new__doc__[];
 PyObject *datafmt_new(PyObject *module, PyObject *args);
 PyObject *datafmt_alloc(CS_DATAFMT *datafmt, int strip);
-int CS_DATAFMT_Check(PyObject *obj);
 
 typedef struct {
     PyObject_HEAD
@@ -122,10 +123,10 @@ typedef struct {
 } CS_IODESCObj;
 
 extern PyTypeObject CS_IODESCType;
+#define CS_IODESC_Check(obj) (obj->ob_type == &CS_IODESCType)
 extern char iodesc_new__doc__[];
 PyObject *iodesc_new(PyObject *module, PyObject *args);
 PyObject *iodesc_alloc(CS_IODESC *iodesc);
-int CS_IODESC_Check(PyObject *obj);
 
 typedef struct {
     PyObject_HEAD
@@ -137,8 +138,8 @@ typedef struct {
 } DataBufObj;
 
 extern PyTypeObject DataBufType;
+#define DataBuf_Check(obj) (obj->ob_type == &DataBufType)
 PyObject *databuf_alloc(PyObject *obj);
-int DataBuf_Check(PyObject *obj);
 
 typedef struct {
     PyObject_HEAD
@@ -146,14 +147,29 @@ typedef struct {
 } NumericObj;
 
 extern PyTypeObject NumericType;
+#define Numeric_Check(obj) (obj->ob_type == &NumericType)
 NumericObj *numeric_alloc(CS_NUMERIC *num);
 int numeric_as_string(PyObject *obj, char *text);
 extern char numeric_new__doc__[];
 PyObject *NumericType_new(PyObject *module, PyObject *args);
-int Numeric_Check(PyObject *obj);
 void copy_reg_numeric(PyObject *dict);
 extern char pickle_numeric__doc__[];
 PyObject *pickle_numeric(PyObject *module, PyObject *args);
+
+typedef struct {
+    PyObject_HEAD
+    CS_MONEY num;
+} MoneyObj;
+
+extern PyTypeObject MoneyType;
+#define Money_Check(obj) (obj->ob_type == &MoneyType)
+MoneyObj *money_alloc(CS_MONEY *num);
+int money_as_string(PyObject *obj, char *text);
+extern char money_new__doc__[];
+PyObject *MoneyType_new(PyObject *module, PyObject *args);
+void copy_reg_money(PyObject *dict);
+extern char pickle_money__doc__[];
+PyObject *pickle_money(PyObject *module, PyObject *args);
 
 typedef struct {
     PyObject_HEAD
@@ -180,3 +196,4 @@ enum { CSVER, ACTION, CANCEL, RESULT, RESINFO, CMD, CURSOR, CURSOROPT,
 char *value_str(int type, int value);
 
 #define NUMERIC_LEN (CS_MAX_PREC + 1)
+#define MONEY_LEN   NUMERIC_LEN
