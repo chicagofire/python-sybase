@@ -1,3 +1,7 @@
+2006-12-07  Sébastien Sablé  <sable.sungard@gmail.com>
+
+	* tests/dbapi20.py: Added Python DB API 2.0 Anal Compliance Unit Test 1.10
+
 2005-04-07 08:46  djc
 
 	* Sybase.py, setup.py, sybasect.c, dist/release-0.37,
