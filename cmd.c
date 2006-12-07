@@ -1266,7 +1266,7 @@ static void CS_COMMAND_dealloc(CS_COMMANDObj *self)
 		      self->serial, value_str(VAL_STATUS, status));
     }
     Py_XDECREF(self->conn);
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 #define OFFSET(x) offsetof(CS_COMMANDObj, x)

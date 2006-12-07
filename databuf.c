@@ -112,7 +112,7 @@ static void DataBuf_dealloc(DataBufObj *self)
     if (self->indicator != NULL)
 	free(self->indicator);
 
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 /* Code to handle accessing DataBuf objects as sequence objects */

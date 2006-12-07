@@ -28,7 +28,7 @@ PyObject *clientmsg_alloc()
 static void CS_CLIENTMSG_dealloc(CS_CLIENTMSGObj *self)
 {
     SY_LEAK_UNREG(self);
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 #define CLIENT_OFF(x) offsetof(CS_CLIENTMSG, x)
@@ -126,7 +126,7 @@ PyObject *servermsg_alloc()
 static void CS_SERVERMSG_dealloc(CS_SERVERMSGObj *self)
 {
     SY_LEAK_UNREG(self);
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 #define SERV_OFF(x) offsetof(CS_SERVERMSG, x)

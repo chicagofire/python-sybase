@@ -154,7 +154,7 @@ static void DateTime_dealloc(DateTimeObj *self)
 {
     SY_LEAK_UNREG(self);
 
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 static PyObject *DateTime_repr(DateTimeObj *self)

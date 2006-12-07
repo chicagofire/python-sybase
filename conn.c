@@ -1269,7 +1269,7 @@ static void CS_CONNECTION_dealloc(CS_CONNECTIONObj *self)
     SY_LOCK_FREE(self);
     Py_XDECREF(self->ctx);
     conn_del_object(self);
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 #define OFF(x) offsetof(CS_CONNECTIONObj, x)

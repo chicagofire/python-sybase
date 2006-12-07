@@ -131,7 +131,7 @@ PyObject *datafmt_new(PyObject *module, PyObject *args)
 static void CS_DATAFMT_dealloc(CS_DATAFMTObj *self)
 {
     SY_LEAK_UNREG(self);
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 void datafmt_debug(CS_DATAFMT *fmt)

@@ -55,7 +55,7 @@ PyObject *iodesc_new(PyObject *module, PyObject *args)
 static void CS_IODESC_dealloc(CS_IODESCObj *self)
 {
     SY_LEAK_UNREG(self);
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 /* Code to access structure members by accessing attributes */
