@@ -1004,6 +1004,14 @@ class Connection:
     def commit(self, name = None):
         '''DB-API Connection.commit()
         '''
+        # We need to cancel all result sets before commiting,
+        # otherwise we get a pending results error
+        if self._is_connected:
+            self._lock()
+            try:
+                self._conn.ct_cancel(CS_CANCEL_ALL)
+            finally:
+                self._unlock()
         if name:
             self.execute('commit transaction %s' % name)
         else:
