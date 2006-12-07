@@ -883,6 +883,28 @@ class Connection:
         if not delay_connect:
             self.connect()
 
+    def __getattr__(self, name):
+        # Expose exception classes via the Connection object so
+        # programmers don't have to tie their code to this module with
+        # "from Sybase import DatabaseError" all over the place.  See
+        # PEP 249, "Optional DB API Extensions".
+        names = ('Warning',
+                 'Error',
+                 'InterfaceError',
+                 'DatabaseError',
+                 'DataError',
+                 'OperationalError',
+                 'IntegrityError',
+                 'InternalError',
+                 'ProgrammingError',
+                 'StoredProcedureError',
+                 'NotSupportedError',
+                )
+        if name in names:
+            return getattr(sys.modules[self.__module__], name)
+        else:
+            raise AttributeError(name)
+
     def _lock(self):
         if self._do_locking:
             self._connlock.acquire()
