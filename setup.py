@@ -200,5 +200,6 @@ setup(name="sybase",
                     )
           ],
       cmdclass={'sdist': my_sdist},
+      # test_suite = 'nose.collector' # easy_setup only
       )
 
