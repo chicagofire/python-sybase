@@ -85,6 +85,10 @@ class ProgrammingError(DatabaseError):
     pass
 
 
+class StoredProcedureError(ProgrammingError):
+    pass
+
+
 class NotSupportedError(DatabaseError):
     pass
 
@@ -188,6 +192,8 @@ def _servermsg_cb(ctx, conn, msg):
     mn = msg.msgnumber
     if mn == 2601: ## Attempt to insert duplicate key row in object with unique index
         raise IntegrityError(_fmt_server(msg))
+    elif mn == 2812: ## Procedure not found
+        raise StoredProcedureError('procedure not found %s', _fmt_server(msg))
     elif mn in (0, 5701, 5703, 5704) or ((mn >= 6200) and (mn < 6300)):
         # Non-errors:
         #    0      PRINT
