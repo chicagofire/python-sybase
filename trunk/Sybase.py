@@ -186,7 +186,9 @@ def _clientmsg_cb(ctx, conn, msg):
 
 def _servermsg_cb(ctx, conn, msg):
     mn = msg.msgnumber
-    if mn in (0, 5701, 5703, 5704) or ((mn >= 6200) and (mn < 6300)):
+    if mn == 2601: ## Attempt to insert duplicate key row in object with unique index
+        raise IntegrityError(_fmt_server(msg))
+    elif mn in (0, 5701, 5703, 5704) or ((mn >= 6200) and (mn < 6300)):
         # Non-errors:
         #    0      PRINT
         # 5701      Changed db context
