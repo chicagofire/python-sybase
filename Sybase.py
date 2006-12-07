@@ -700,6 +700,12 @@ class Cursor:
     def _unlock(self):
         self._owner._unlock()
 
+    def _checkready(self):
+        if self._closed:
+            raise ProgrammingError('cursor is closed')
+        if not self._fetcher:
+            raise ProgrammingError('query has not been executed')
+
     def callproc(self, name, params = ()):
         '''DB-API Cursor.callproc()
         '''
@@ -800,19 +806,13 @@ class Cursor:
     def fetchone(self):
         '''DB-API Cursor.fetchone()
         '''
-        if self._closed:
-            raise ProgrammingError('cursor is closed')
-        if not self._fetcher:
-            raise ProgrammingError('query has not been executed')
+        self._checkready()
         return self._fetcher.fetchone()
 
     def fetchmany(self, num = -1):
         '''DB-API Cursor.fetchmany()
         '''
-        if self._closed:
-            raise ProgrammingError('cursor is closed')
-        if not self._fetcher:
-            raise ProgrammingError('query has not been executed')
+        self._checkready()
         if num < 0:
             num = self.arraysize
         return self._fetcher.fetchmany(num)
@@ -820,19 +820,13 @@ class Cursor:
     def fetchall(self):
         '''DB-API Cursor.fetchall()
         '''
-        if self._closed:
-            raise ProgrammingError('cursor is closed')
-        if not self._fetcher:
-            raise ProgrammingError('query has not been executed')
+        self._checkready()
         return self._fetcher.fetchall()
 
     def nextset(self):
         '''DB-API Cursor.nextset()
         '''
-        if self._closed:
-            raise ProgrammingError('cursor is closed')
-        if not self._fetcher:
-            raise ProgrammingError('query has not been executed')
+        self._checkready()
         desc = self._fetcher.nextset()
         if desc:
             self.description = desc
