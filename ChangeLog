@@ -1,6 +1,10 @@
 2006-12-07  Sébastien Sablé  <sable.sungard@gmail.com>
 
-	* tests/dbapi20.py: Added Python DB API 2.0 Anal Compliance Unit Test 1.10
+	* tests/dbapi20.py: Extended dbapi20 driver compliance unit test
+	suite in order to permit testing drivers without auto-commit
+
+	* tests/dbapi20.py: Added Python DB API 2.0 Anal Compliance Unit
+	Test 1.10
 
 2005-04-07 08:46  djc
 
