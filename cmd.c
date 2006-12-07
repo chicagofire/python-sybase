@@ -788,7 +788,7 @@ static PyObject *CS_COMMAND_ct_param(CS_COMMANDObj *self, PyObject *args)
 	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug) {
-	    debug_msg("ct_param(cmd%s, &fmt=", self->serial);
+	    debug_msg("ct_param(cmd%d, &fmt=", self->serial);
 	    datafmt_debug(&datafmt->fmt);
 	    debug_msg(", NULL, CS_UNUSED, CS_UNUSED) -> %s\n",
 		      value_str(VAL_STATUS, status));
