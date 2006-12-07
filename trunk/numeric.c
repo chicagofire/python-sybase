@@ -299,7 +299,7 @@ NumericObj *Numeric_FromNumeric(PyObject *obj, int precision, int scale)
 static void Numeric_dealloc(NumericObj *self)
 {
     SY_LEAK_UNREG(self);
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 #ifdef HAVE_CS_CMP

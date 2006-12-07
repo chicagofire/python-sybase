@@ -262,7 +262,7 @@ MoneyObj *Money_FromMoney(PyObject *obj, int type)
 static void Money_dealloc(MoneyObj *self)
 {
     SY_LEAK_UNREG(self);
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 #ifdef HAVE_CS_CMP

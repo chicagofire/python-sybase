@@ -1481,7 +1481,7 @@ static void CS_CONTEXT_dealloc(CS_CONTEXTObj *self)
     Py_XDECREF(self->clientmsg_cb);
     ctx_del_object(self);
 
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 #define OFF(x) offsetof(CS_CONTEXTObj, x)

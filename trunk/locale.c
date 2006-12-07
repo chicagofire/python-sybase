@@ -73,7 +73,7 @@ static void CS_LOCALE_dealloc(CS_LOCALEObj *self)
 		      value_str(VAL_STATUS, status));
     }
     Py_XDECREF(self->ctx);
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 static int csdate_type(int type)

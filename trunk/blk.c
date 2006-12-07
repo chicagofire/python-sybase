@@ -678,7 +678,7 @@ static void CS_BLKDESC_dealloc(CS_BLKDESCObj *self)
     }
 #endif
     Py_XDECREF(self->conn);
-    PyMem_DEL(self);
+    PyObject_DEL(self);
 }
 
 #define OFFSET(x) offsetof(CS_BLKDESCObj, x)

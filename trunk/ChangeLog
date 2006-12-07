@@ -1,5 +1,9 @@
 2006-12-07  Sébastien Sablé  <sable.sungard@gmail.com>
 
+	* blk.c, cmd.c, conn.c, ctx.c, databuf.c, datafmt.c, datetime.c,
+	iodesc.c, locale.c, money.c, msgs.c, numeric.c: Applied patch from
+	Gregory Bond so that python-sybase works with python 2.5
+
 	* setup.py, tests/sybase_dbapi20.py, tests/test_sybase_dbapi20.py:
 	Added python-sybase specific tests to dbapi20 and a test runner
 	for python-sybase with and without auto_commit
