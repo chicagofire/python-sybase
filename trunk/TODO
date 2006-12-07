@@ -6,8 +6,6 @@
 
 - BLOB columns (text/image)
 
-- PyUnit
-
 - Bulkcopy copy out
 
 - DataBuf[n] = val should do more conversions
