@@ -496,6 +496,13 @@ class _FetchLazy:
             while self._lock_count:
                 self._unlock()
 
+    def _raise_exception(self, exc):
+        if self._state not in (_LAZY_IDLE, _LAZY_CLOSED):
+            if self._owner._conn.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
+                self._set_state(_LAZY_IDLE)
+                self._unlock()
+        raise exc
+
     def _raise_error(self, exc, text):
         if self._state not in (_LAZY_IDLE, _LAZY_CLOSED):
             if self._owner._conn.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
@@ -616,7 +623,10 @@ class _FetchLazy:
         self._array = []
         self._array_pos = 0
         while 1:
-            status, result = self._cmd.ct_results()
+            try:
+                status, result = self._cmd.ct_results()
+            except Exception, e:
+                self._raise_exception(e)
             if status == CS_END_RESULTS:
                 if self._state != _LAZY_END_RESULT:
                     self._unlock()
