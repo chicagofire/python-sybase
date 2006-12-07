@@ -9,6 +9,8 @@
   this is turning out to be a thoroughly unwholesome unit test."
 
     -- Ian Bicking
+
+  http://stuartbishop.net/Software/DBAPI20TestSuite/
 '''
 
 __rcs_id__  = '$Id: dbapi20.py,v 1.10 2003/10/09 03:14:14 zenzen Exp $'
@@ -99,10 +101,10 @@ class DatabaseAPI20Test(unittest.TestCase):
         
     # Some drivers may need to override these helpers, for example adding
     # a 'commit' after the execute.
-    def executeDDL1(self,cursor):
+    def executeDDL1(self,con,cursor):
         cursor.execute(self.ddl1)
 
-    def executeDDL2(self,cursor):
+    def executeDDL2(self,con,cursor):
         cursor.execute(self.ddl2)
 
     def setUp(self):
@@ -137,6 +139,9 @@ class DatabaseAPI20Test(unittest.TestCase):
                 )
         except AttributeError:
             self.fail("No connect method found in self.driver module")
+
+    def commit(self, con):
+        pass
 
     def test_connect(self):
         con = self._connect()
@@ -250,7 +255,7 @@ class DatabaseAPI20Test(unittest.TestCase):
             # the documented transaction isolation level
             cur1 = con.cursor()
             cur2 = con.cursor()
-            self.executeDDL1(cur1)
+            self.executeDDL1(con,cur1)
             cur1.execute("insert into %sbooze values ('Victoria Bitter')" % (
                 self.table_prefix
                 ))
@@ -266,12 +271,13 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            self.executeDDL1(cur)
+            self.executeDDL1(con,cur)
             self.assertEqual(cur.description,None,
                 'cursor.description should be none after executing a '
                 'statement that can return no rows (such as DDL)'
                 )
             cur.execute('select name from %sbooze' % self.table_prefix)
+            self.commit(con)
             self.assertEqual(len(cur.description),1,
                 'cursor.description describes too many columns'
                 )
@@ -287,7 +293,7 @@ class DatabaseAPI20Test(unittest.TestCase):
                 )
 
             # Make sure self.description gets reset
-            self.executeDDL2(cur)
+            self.executeDDL2(con,cur)
             self.assertEqual(cur.description,None,
                 'cursor.description not being set to None when executing '
                 'no-result statements (eg. DDL)'
@@ -299,7 +305,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            self.executeDDL1(cur)
+            self.executeDDL1(con,cur)
             self.assertEqual(cur.rowcount,-1,
                 'cursor.rowcount should be -1 after executing no-result '
                 'statements'
@@ -316,7 +322,8 @@ class DatabaseAPI20Test(unittest.TestCase):
                 'cursor.rowcount should == number of rows returned, or '
                 'set to -1 after executing a select statement'
                 )
-            self.executeDDL2(cur)
+            self.commit(con)
+            self.executeDDL2(con,cur)
             self.assertEqual(cur.rowcount,-1,
                 'cursor.rowcount not being reset to -1 after executing '
                 'no-result statements'
@@ -353,7 +360,7 @@ class DatabaseAPI20Test(unittest.TestCase):
 
         # cursor.execute should raise an Error if called after connection
         # closed
-        self.assertRaises(self.driver.Error,self.executeDDL1,cur)
+        self.assertRaises(self.driver.Error,self.executeDDL1,con,cur)
 
         # connection.commit should raise an Error if called after connection'
         # closed.'
@@ -366,12 +373,12 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            self._paraminsert(cur)
+            self._paraminsert(con,cur)
         finally:
             con.close()
 
-    def _paraminsert(self,cur):
-        self.executeDDL1(cur)
+    def _paraminsert(self,con,cur):
+        self.executeDDL1(con,cur)
         cur.execute("insert into %sbooze values ('Victoria Bitter')" % (
             self.table_prefix
             ))
@@ -424,7 +431,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            self.executeDDL1(cur)
+            self.executeDDL1(con,cur)
             largs = [ ("Cooper's",) , ("Boag's",) ]
             margs = [ {'beer': "Cooper's"}, {'beer': "Boag's"} ]
             if self.driver.paramstyle == 'qmark':
@@ -483,7 +490,7 @@ class DatabaseAPI20Test(unittest.TestCase):
 
             # cursor.fetchone should raise an Error if called after
             # executing a query that cannnot return rows
-            self.executeDDL1(cur)
+            self.executeDDL1(con,cur)
             self.assertRaises(self.driver.Error,cur.fetchone)
 
             cur.execute('select name from %sbooze' % self.table_prefix)
@@ -543,7 +550,7 @@ class DatabaseAPI20Test(unittest.TestCase):
             #issuing a query
             self.assertRaises(self.driver.Error,cur.fetchmany,4)
 
-            self.executeDDL1(cur)
+            self.executeDDL1(con,cur)
             for sql in self._populate():
                 cur.execute(sql)
 
@@ -603,8 +610,9 @@ class DatabaseAPI20Test(unittest.TestCase):
                 'called after the whole result set has been fetched'
                 )
             self.failUnless(cur.rowcount in (-1,6))
+            self.commit(con)
 
-            self.executeDDL2(cur)
+            self.executeDDL2(con,cur)
             cur.execute('select name from %sbarflys' % self.table_prefix)
             r = cur.fetchmany() # Should get empty sequence
             self.assertEqual(len(r),0,
@@ -625,7 +633,7 @@ class DatabaseAPI20Test(unittest.TestCase):
             # as a select)
             self.assertRaises(self.driver.Error, cur.fetchall)
 
-            self.executeDDL1(cur)
+            self.executeDDL1(con,cur)
             for sql in self._populate():
                 cur.execute(sql)
 
@@ -652,8 +660,9 @@ class DatabaseAPI20Test(unittest.TestCase):
                 'after the whole result set has been fetched'
                 )
             self.failUnless(cur.rowcount in (-1,len(self.samples)))
+            self.commit(con)
 
-            self.executeDDL2(cur)
+            self.executeDDL2(con,cur)
             cur.execute('select name from %sbarflys' % self.table_prefix)
             rows = cur.fetchall()
             self.failUnless(cur.rowcount in (-1,0))
@@ -669,7 +678,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            self.executeDDL1(cur)
+            self.executeDDL1(con,cur)
             for sql in self._populate():
                 cur.execute(sql)
 
@@ -726,7 +735,7 @@ class DatabaseAPI20Test(unittest.TestCase):
                 return
 
             try:
-                self.executeDDL1(cur)
+                self.executeDDL1(con,cur)
                 sql=self._populate()
                 for sql in self._populate():
                     cur.execute(sql)
@@ -766,7 +775,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         try:
             cur = con.cursor()
             cur.setinputsizes( (25,) )
-            self._paraminsert(cur) # Make sure cursor still works
+            self._paraminsert(con,cur) # Make sure cursor still works
         finally:
             con.close()
 
@@ -777,7 +786,7 @@ class DatabaseAPI20Test(unittest.TestCase):
             cur = con.cursor()
             cur.setoutputsize(1000)
             cur.setoutputsize(2000,0)
-            self._paraminsert(cur) # Make sure the cursor still works
+            self._paraminsert(con,cur) # Make sure the cursor still works
         finally:
             con.close()
 
@@ -789,7 +798,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            self.executeDDL1(cur)
+            self.executeDDL1(con,cur)
             cur.execute('insert into %sbooze values (NULL)' % self.table_prefix)
             cur.execute('select name from %sbooze' % self.table_prefix)
             r = cur.fetchall()
