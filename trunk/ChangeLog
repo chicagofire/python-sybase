@@ -1,10 +1,15 @@
 2006-12-07  Sébastien Sablé  <sable.sungard@gmail.com>
 
+	* Sybase.py: Corrected tests test_bug_result_pending3_fetchall,
+	test_fetchall and test_fetchmany - "This routine cannot be called
+	because another command structure has results pending." when
+	manually commiting after a fetchall()
+
 	* Sybase.py: Corrected tests test_bug_result_pending and
 	test_bug_result_pending2 - "This routine cannot be called because
 	another command structure has results pending." when calling
 	execute on a cursor after a request has failed
-	
+
 	* cmd.c: Corrected core dump in ct_param when in debug mode
 
 	* blk.c, cmd.c, conn.c, ctx.c, databuf.c, datafmt.c, datetime.c,

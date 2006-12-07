@@ -670,7 +670,6 @@ class _FetchLazy:
                 status, self.rowcount = self._cmd.ct_res_info(CS_ROW_COUNT)
                 if status != CS_SUCCEED:
                     self._raise_error(Error, 'ct_res_info')
-                return
             else:
                 self._raise_error(Error, 'ct_results')
 
