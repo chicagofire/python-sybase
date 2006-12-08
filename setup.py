@@ -193,7 +193,7 @@ class my_sdist(sdist):
         sdist.run(self)
 
 setup(name="sybase",
-      version="0.37",
+      version="0.38pre1",
       maintainer="Dave Cole",
       maintainer_email="djc@object-craft.com.au",
       description="Sybase Extension to Python",
