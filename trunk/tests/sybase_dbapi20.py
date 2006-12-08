@@ -213,8 +213,12 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
-    def test_native_datetime(self):
-        con = self._connect()
+    def test_python_datetime(self):
+        kw_args = self.connect_kw_args
+        kw_args.update({'datetime': "python"})
+        con = self.driver.connect(
+            *self.connect_args,**kw_args
+            )
         try:
             cur = con.cursor()
             cur.execute('create table %sbooze (day date)' % self.table_prefix)
@@ -224,31 +228,66 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             cur.execute("select * from %sbooze" % self.table_prefix)
             res = cur.fetchall()
             date = res[0][0]
-            if self.driver.use_py_datetime:
-                import datetime
-                self.assert_(isinstance(date, datetime.datetime))
-                self.assertEquals(date.year, 2006)
-                self.assertEquals(date.month, 11)
-                self.assertEquals(date.day, 24)
-            elif self.driver.use_datetime:
-                print "WARNING: using mx.DateTime datetime format"
-                try:
-                    from DateTime import DateTimeType
-                except ImportError:
-                    from mx.DateTime import DateTimeType
-                self.assert_(isinstance(date, DateTimeType))
-                self.assertEquals(date.year, 2006)
-                self.assertEquals(date.month, 11)
-                self.assertEquals(date.day, 24)
-            else:
-                print "WARNING: using Sybase native datetime format"
-                self.assert_(isinstance(date, self.driver.DateTimeType))
-                self.assertEquals(date.year, 2006)
-                self.assertEquals(date.month, 10)
-                self.assertEquals(date.day, 24)
+            self.assertEqual(self.driver.use_datetime, 2)
+            import datetime
+            self.assert_(isinstance(date, datetime.datetime))
+            self.assertEquals(date.year, 2006)
+            self.assertEquals(date.month, 11)
+            self.assertEquals(date.day, 24)
+            self.assert_(type(date) >= self.driver.DATETIME)
         finally:
             con.close()
 
+    def test_mx_datetime(self):
+        kw_args = self.connect_kw_args
+        kw_args.update({'datetime': "mx"})
+        con = self.driver.connect(
+            *self.connect_args,**kw_args
+            )
+        try:
+            cur = con.cursor()
+            cur.execute('create table %sbooze (day date)' % self.table_prefix)
+            self.commit(con)
+            cur.execute("insert into %sbooze values ('20061124')" % self.table_prefix)
+            self.commit(con)
+            cur.execute("select * from %sbooze" % self.table_prefix)
+            res = cur.fetchall()
+            date = res[0][0]
+            self.assertEqual(self.driver.use_datetime, 1)
+            import mx.DateTime
+            self.assert_(isinstance(date, mx.DateTime.DateTimeType))
+            self.assertEquals(date.year, 2006)
+            self.assertEquals(date.month, 11)
+            self.assertEquals(date.day, 24)
+            self.assert_(type(date) >= self.driver.DATETIME)
+        finally:
+            con.close()
+
+    def test_sybase_datetime(self):
+        kw_args = self.connect_kw_args
+        kw_args.update({'datetime': "sybase"})
+        con = self.driver.connect(
+            *self.connect_args,**kw_args
+            )
+        try:
+            cur = con.cursor()
+            cur.execute('create table %sbooze (day date)' % self.table_prefix)
+            self.commit(con)
+            cur.execute("insert into %sbooze values ('20061124')" % self.table_prefix)
+            self.commit(con)
+            cur.execute("select * from %sbooze" % self.table_prefix)
+            res = cur.fetchall()
+            date = res[0][0]
+            self.assertEqual(self.driver.use_datetime, 0)
+            # print type(date)
+            self.assert_(isinstance(date, self.driver.DateTimeType))
+            self.assertEquals(date.year, 2006)
+            self.assertEquals(date.month, 10)
+            self.assertEquals(date.day, 24)
+            # self.assertEquals(type(date), self.driver.DATETIME)
+            self.assert_(type(date) >= self.driver.DATETIME)
+        finally:
+            con.close()
 
 # TODO: the following tests must be overridden
 
