@@ -50,6 +50,8 @@ if os.name == 'posix':                  # unix
         lib_names = ['blk', 'ct', 'cs', 'comn', 'tcl', 'intl', 'insck']
     else:
         lib_names = ['blk', 'ct', 'cs', 'tcl', 'comn', 'intl']
+    # for Sybase 15.0
+    lib_names += ['sybblk', 'sybct', 'sybcs', 'sybtcl', 'sybinsck', 'sybcomn', 'sybintl', 'sybunic']
     for name in lib_names:
         lib_name = os.path.join(sybase, 'lib', 'lib%s.a' % name)
         if os.access(lib_name, os.R_OK):
