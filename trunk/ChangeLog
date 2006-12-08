@@ -1,5 +1,7 @@
 2006-12-08  Sébastien Sablé  <sable.sungard@gmail.com>
 
+	* setup.py, Sybase.py: Changing to release 0.38pre1
+
 	* Sybase.py: Adding support for python native datetime type for
 	dates - there is a new "datetime" argument to connect in order to
 	choose the datetime type
