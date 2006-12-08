@@ -213,8 +213,13 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
+    def test_invalid_datetime(self):
+        kw_args = dict(self.connect_kw_args)
+        kw_args.update({'datetime': "none"})
+        self.assertRaises(ValueError, self.driver.connect, *self.connect_args,**kw_args)
+
     def test_python_datetime(self):
-        kw_args = self.connect_kw_args
+        kw_args = dict(self.connect_kw_args)
         kw_args.update({'datetime': "python"})
         con = self.driver.connect(
             *self.connect_args,**kw_args
@@ -239,7 +244,7 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             con.close()
 
     def test_mx_datetime(self):
-        kw_args = self.connect_kw_args
+        kw_args = dict(self.connect_kw_args)
         kw_args.update({'datetime': "mx"})
         con = self.driver.connect(
             *self.connect_args,**kw_args
@@ -264,7 +269,7 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             con.close()
 
     def test_sybase_datetime(self):
-        kw_args = self.connect_kw_args
+        kw_args = dict(self.connect_kw_args)
         kw_args.update({'datetime': "sybase"})
         con = self.driver.connect(
             *self.connect_args,**kw_args
