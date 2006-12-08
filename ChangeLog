@@ -1,5 +1,9 @@
 2006-12-08  Sébastien Sablé  <sable.sungard@gmail.com>
 
+	* Sybase.py: Adding support for python native datetime type for
+	dates - there is a new "datetime" argument to connect in order to
+	choose the datetime type
+
 	* setup.py: Corrected compilation in 64 bits mode based on a patch
 	by Harri Pasanen
 

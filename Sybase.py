@@ -3,16 +3,6 @@
 #
 # LICENCE - see LICENCE file distributed with this software for details.
 #
-try:
-    import DateTime
-    use_datetime = 1
-except ImportError:
-    try:
-        import mx.DateTime
-        DateTime = mx.DateTime
-        use_datetime = 1
-    except ImportError:
-        use_datetime = 0
 import sys
 import time
 import string
@@ -33,6 +23,8 @@ threadsafety = 2                        # Threads may share the module
 
 paramstyle = 'named'                    # Named style, 
                                         # e.g. '...WHERE name=@name'
+
+use_datetime = 0                        # Deprecated: date type
 
 # DB-API exceptions
 #
@@ -232,12 +224,7 @@ def _row_bind(cmd, count = 1):
 
 
 def _column_value(val):
-    if use_datetime and type(val) is DateTimeType:
-        return DateTime.DateTime(val.year, val.month + 1, val.day,
-                                 val.hour, val.minute,
-                                 val.second + val.msecond / 1000.0)
-    else:
-        return val
+    return val
 
 
 def _extract_row(bufs, n):
@@ -847,7 +834,8 @@ class Cursor:
 class Connection:
 
     def __init__(self, dsn, user, passwd, database = None,
-                 strip = 0, auto_commit = 0, delay_connect = 0, locking = 1):
+                 strip = 0, auto_commit = 0, delay_connect = 0, locking = 1,
+                 datetime = "auto"):
         '''DB-API Sybase.Connect()
         '''
         self._conn = self._cmd = None
@@ -876,6 +864,57 @@ class Connection:
             self._raise_error(Error, 'ct_con_props')
         if not delay_connect:
             self.connect()
+
+        global use_datetime, _column_value, DATETIME
+
+        if datetime == "auto":
+            import warnings
+            warnings.warn("native python datetime will be used by default in sybase-python 0.39 - specify datetime argument to choose another type", DeprecationWarning)
+            try:
+                import DateTime as DT
+                use_datetime = 1
+            except ImportError:
+                try:
+                    import mx.DateTime as DT
+                    use_datetime = 1
+                except ImportError:
+                    use_datetime = 0
+        elif datetime == "sybase":
+            use_datetime = 0
+        elif datetime == "mx":
+            try:
+                import DateTime as DT
+            except ImportError:
+                import mx.DateTime as DT
+            use_datetime = 1
+        elif datetime == "python":
+            from datetime import datetime
+            use_datetime = 2
+        else:
+            raise ValueError, "Unknown datetime value: %s" % datetime
+
+        if use_datetime == 0:
+            DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE)
+            def _column_value(val):
+                return val
+        elif use_datetime == 1:
+            DATETIME = DBAPITypeObject(DT.DateTimeType)
+            def _column_value(val):
+                if type(val) is DateTimeType:
+                    return DT.DateTime(val.year, val.month + 1, val.day,
+                                       val.hour, val.minute,
+                                       val.second + val.msecond / 1000.0)
+                else:
+                    return val
+        elif use_datetime == 2:
+            DATETIME = DBAPITypeObject(datetime)
+            def _column_value(val):
+                if type(val) is DateTimeType:
+                    return datetime(val.year, val.month + 1, val.day,
+                                    val.hour, val.minute,
+                                    val.second, val.msecond * 1000)
+                else:
+                    return val
 
     def __getattr__(self, name):
         # Expose exception classes via the Connection object so
@@ -1041,6 +1080,6 @@ class Connection:
 
 
 def connect(dsn, user, passwd, database = None,
-            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1):
+            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1, datetime = "auto"):
     return Connection(dsn, user, passwd, database,
-                      strip, auto_commit, delay_connect, locking)
+                      strip, auto_commit, delay_connect, locking, datetime)
