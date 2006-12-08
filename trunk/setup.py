@@ -31,6 +31,10 @@ if os.environ.has_key('SYBASE'):
         ocs = os.environ['SYBASE_OCS']
         sybase = os.path.join(sybase, ocs)
 
+have64bit = False        
+if sys.maxint > 2147483647:
+    have64bit = True
+
 if os.name == 'posix':                  # unix
     # Most people will define the location of their Sybase
     # installation in their environment.
@@ -53,6 +57,8 @@ if os.name == 'posix':                  # unix
     # for Sybase 15.0
     lib_names += ['sybblk', 'sybct', 'sybcs', 'sybtcl', 'sybinsck', 'sybcomn', 'sybintl', 'sybunic']
     for name in lib_names:
+        if have64bit:
+            name += '_r64'
         lib_name = os.path.join(sybase, 'lib', 'lib%s.a' % name)
         if os.access(lib_name, os.R_OK):
             syb_libs.append(name)
@@ -89,7 +95,10 @@ extra_objects = None
 runtime_library_dirs = None
 try:
     if os.uname()[0] == 'SunOS':
-        syb_libs.append('sybdb')
+        if have64bit:
+            syb_libs.append('sybdb64')
+        else:
+            syb_libs.append('sybdb')
         syb_libs.remove('comn')
         extra_objects = [os.path.join(syb_libdir, 'libcomn.a')]
         runtime_library_dirs = [syb_libdir]
@@ -97,6 +106,9 @@ except:
     pass
 
 syb_macros = [('WANT_BULKCOPY', None)]
+
+if have64bit:
+    syb_macros.append(('SYB_LP64', None))
 
 # distutils does not allow -D HAVE_FREETDS=60 so I have to find this
 # argument myself and remove it from sys.argv and set the macro via
