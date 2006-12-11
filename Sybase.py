@@ -835,7 +835,7 @@ class Connection:
 
     def __init__(self, dsn, user, passwd, database = None,
                  strip = 0, auto_commit = 0, delay_connect = 0, locking = 1,
-                 datetime = "auto"):
+                 datetime = None):
         '''DB-API Sybase.Connect()
         '''
         self._conn = self._cmd = None
@@ -867,9 +867,11 @@ class Connection:
 
         global use_datetime, _column_value, DATETIME
 
-        if datetime == "auto":
+        if datetime == None:
             import warnings
             warnings.warn("native python datetime will be used by default in sybase-python 0.39 - specify datetime argument to choose another type", DeprecationWarning)
+            datetime = "auto"
+        if datetime == "auto":
             try:
                 import DateTime as DT
                 use_datetime = 1
@@ -1080,6 +1082,6 @@ class Connection:
 
 
 def connect(dsn, user, passwd, database = None,
-            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1, datetime = "auto"):
+            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1, datetime = None):
     return Connection(dsn, user, passwd, database,
                       strip, auto_commit, delay_connect, locking, datetime)
