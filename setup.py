@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # Copyright 2001 by Object Craft P/L, Melbourne, Australia.
 #
@@ -194,10 +195,10 @@ class my_sdist(sdist):
 
 setup(name="python-sybase",
       version="0.38pre1",
-      maintainer="Dave Cole",
-      maintainer_email="djc@object-craft.com.au",
+      maintainer="Sébastien Sablé",
+      maintainer_email="sable@users.sourceforge.net",
       description="Sybase Extension to Python",
-      url="http://www.object-craft.com.au/projects/sybase/",
+      url="http://python-sybase.sourceforge.net/",
       py_modules=['Sybase'],
       include_dirs=[syb_incdir],
       ext_modules=[
