@@ -179,6 +179,7 @@ void money_datafmt(CS_DATAFMT *fmt, int type);
 void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale);
 void char_datafmt(CS_DATAFMT *fmt);
 void int_datafmt(CS_DATAFMT *fmt);
+void long_datafmt(CS_DATAFMT *fmt);
 void float_datafmt(CS_DATAFMT *fmt);
 extern char datafmt_new__doc__[];
 PyObject *datafmt_new(PyObject *module, PyObject *args);

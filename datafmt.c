@@ -69,6 +69,17 @@ void int_datafmt(CS_DATAFMT *fmt)
     fmt->precision = 0;
 }
 
+void long_datafmt(CS_DATAFMT *fmt)
+{
+    memset(fmt, 0, sizeof(*fmt));
+    fmt->datatype = CS_LONG_TYPE;
+    fmt->maxlength = sizeof(CS_LONG);
+    fmt->locale = NULL;
+    fmt->format = CS_FMT_UNUSED;
+    fmt->scale = 0;
+    fmt->precision = 0;
+}
+
 void float_datafmt(CS_DATAFMT *fmt)
 {
     memset(fmt, 0, sizeof(*fmt));
