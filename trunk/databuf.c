@@ -70,8 +70,10 @@ PyObject *databuf_alloc(PyObject *obj)
 	    return NULL;
 	}
     } else {
-	if (PyInt_Check(obj) || PyLong_Check(obj) || obj == Py_None)
+	if (PyInt_Check(obj) || obj == Py_None)
 	    int_datafmt(&self->fmt);
+	else if (PyLong_Check(obj))
+	    long_datafmt(&self->fmt);
 	else if (PyFloat_Check(obj))
 	    float_datafmt(&self->fmt);
 	else if (Numeric_Check(obj))
@@ -179,6 +181,9 @@ static PyObject *DataBuf_item(DataBufObj *self, int i)
 
     case CS_INT_TYPE:
 	return PyInt_FromLong(*(CS_INT*)item);
+
+    case CS_LONG_TYPE:
+        return PyLong_FromLong(*(CS_LONG*)item);
 
     case CS_MONEY_TYPE:
 	return (PyObject*)money_alloc(item, CS_MONEY_TYPE);
@@ -308,6 +313,18 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	    return -1;
 	}
 	*(CS_INT*)item = PyInt_AsLong(v);
+	self->copied[i] = self->fmt.maxlength;
+	break;
+
+    case CS_LONG_TYPE:
+        if (!PyLong_Check(v)) {
+	    PyErr_SetString(PyExc_TypeError, "long expected");
+	    return -1;
+	}
+	*(CS_LONG*)item = PyLong_AsLong(v);
+	if (PyErr_Occurred()) {
+	    return -1;
+	}
 	self->copied[i] = self->fmt.maxlength;
 	break;
 
