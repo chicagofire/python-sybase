@@ -86,10 +86,11 @@ static PyObject *CS_BLKDESC_blk_describe(CS_BLKDESCObj *self, PyObject *args)
         return NULL;
     }
 
-    if (status != CS_SUCCEED)
+    if (status != CS_SUCCEED) {
 	if (self->debug)
 	    debug_msg(", None\n");
 	return Py_BuildValue("iO", status, Py_None);
+    }
 
     fmt = datafmt_alloc(&datafmt, 0);
     if (fmt == NULL) {
