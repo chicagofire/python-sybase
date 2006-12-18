@@ -225,21 +225,29 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             *self.connect_args,**kw_args
             )
         try:
+            import datetime
             cur = con.cursor()
             cur.execute('create table %sbooze (day date)' % self.table_prefix)
             self.commit(con)
             cur.execute("insert into %sbooze values ('20061124')" % self.table_prefix)
             self.commit(con)
+
+            # TODO SSA: DataBuf does not support datetime type yet
+            # cur.execute("insert into %sbooze values (@beer)" % self.table_prefix, {'@beer': datetime.datetime(2006,11,24)})
+            # self.commit(con)
+
             cur.execute("select * from %sbooze" % self.table_prefix)
             res = cur.fetchall()
             date = res[0][0]
             self.assertEqual(self.driver.use_datetime, 2)
-            import datetime
             self.assert_(isinstance(date, datetime.datetime))
             self.assertEquals(date.year, 2006)
             self.assertEquals(date.month, 11)
             self.assertEquals(date.day, 24)
             self.assert_(type(date) >= self.driver.DATETIME)
+            self.assert_(isinstance(self.driver.Date(2006,12,24), datetime.datetime))
+            self.assert_(isinstance(self.driver.Time(23,30,00), datetime.time))
+            self.assert_(isinstance(self.driver.Date(2006,12,24), datetime.datetime))
         finally:
             con.close()
 
@@ -265,6 +273,9 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             self.assertEquals(date.month, 11)
             self.assertEquals(date.day, 24)
             self.assert_(type(date) >= self.driver.DATETIME)
+            self.assert_(isinstance(self.driver.Date(2006,12,24), mx.DateTime.DateTimeType))
+            self.assert_(isinstance(self.driver.Time(23,30,00), mx.DateTime.DateTimeDeltaType))
+            self.assert_(isinstance(self.driver.Date(2006,12,24), mx.DateTime.DateTimeType))
         finally:
             con.close()
 
@@ -291,6 +302,9 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             self.assertEquals(date.day, 24)
             # self.assertEquals(type(date), self.driver.DATETIME)
             self.assert_(type(date) >= self.driver.DATETIME)
+            self.assert_(isinstance(self.driver.Date(2006,11,24), self.driver.DateTimeType))
+            self.assert_(isinstance(self.driver.Time(23,30,00), self.driver.DateTimeType))
+            self.assert_(isinstance(self.driver.Date(2006,12,24), self.driver.DateTimeType))
         finally:
             con.close()
 

@@ -1,3 +1,11 @@
+2006-12-18  Sébastien Sablé  <sable.sungard@gmail.com>
+
+	* Sybase.py: Corrected Date, Time and Timestamp functions when
+	using mx.DateTime or native python datetime types
+
+	* Sybase.py: Corrected DATETIME as cursor.description still
+	returns native Sybase datetime types
+
 2006-12-14  Sébastien Sablé  <sable.sungard@gmail.com>
 
 	* blk.c: Corrected blk_describe always returns (status, None)
