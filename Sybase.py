@@ -865,7 +865,7 @@ class Connection:
         if not delay_connect:
             self.connect()
 
-        global use_datetime, _column_value, DATETIME
+        global use_datetime, _column_value, DATETIME, Date, Time, Timestamp
 
         if datetime == None:
             import warnings
@@ -890,17 +890,25 @@ class Connection:
                 import mx.DateTime as DT
             use_datetime = 1
         elif datetime == "python":
-            from datetime import datetime
+            import datetime
             use_datetime = 2
         else:
             raise ValueError, "Unknown datetime value: %s" % datetime
 
         if use_datetime == 0:
             DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE)
+            datetime = getattr(sys.modules[self.__module__], "datetime")
             def _column_value(val):
                 return val
+            def Date(year, month, day):
+                return datetime('%s-%s-%s' % (year, month, day))
+            def Time(hour, minute, second):
+                return datetime('%d:%d:%d' % (hour, minute, second))
+            def Timestamp(year, month, day, hour, minute, second):
+                return datetime('%s-%s-%s %d:%d:%d' % (year, month, day,
+                                           hour, minute, second))
         elif use_datetime == 1:
-            DATETIME = DBAPITypeObject(DT.DateTimeType)
+            DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE, DT.DateTimeType)
             def _column_value(val):
                 if type(val) is DateTimeType:
                     return DT.DateTime(val.year, val.month + 1, val.day,
@@ -908,15 +916,27 @@ class Connection:
                                        val.second + val.msecond / 1000.0)
                 else:
                     return val
+            def Date(year, month, day):
+                return DT.DateTime(year, month, day)
+            def Time(hour, minute, second):
+                return DT.Time(hour, minute, second)
+            def Timestamp(year, month, day, hour, minute, second):
+                return DT.DateTime(year, month, day, hour, minute, second)
         elif use_datetime == 2:
-            DATETIME = DBAPITypeObject(datetime)
+            DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE, datetime.datetime, datetime.time)
             def _column_value(val):
                 if type(val) is DateTimeType:
-                    return datetime(val.year, val.month + 1, val.day,
-                                    val.hour, val.minute,
-                                    val.second, val.msecond * 1000)
+                    return datetime.datetime(val.year, val.month + 1, val.day,
+                                             val.hour, val.minute,
+                                             val.second, val.msecond * 1000)
                 else:
                     return val
+            def Date(year, month, day):
+                return datetime.datetime(year, month, day)
+            def Time(hour, minute, second):
+                return datetime.time(hour, minute, second)
+            def Timestamp(year, month, day, hour, minute, second):
+                return datetime.datetime(year, month, day, hour, minute, second)
 
     def __getattr__(self, name):
         # Expose exception classes via the Connection object so
