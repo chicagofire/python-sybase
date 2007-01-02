@@ -1,3 +1,9 @@
+2007-01-02  Sébastien Sablé  <sable.sungard@gmail.com>
+
+	* databuf.c, setup.py, sybasect.h, sybasect.c,
+	tests/sybase_dbapi20.py: Added support for python datetime type in
+	DataBuf and as parameter of Cursor.execute()
+
 2006-12-18  Sébastien Sablé  <sable.sungard@gmail.com>
 
 	* Sybase.py: Corrected Date, Time and Timestamp functions when

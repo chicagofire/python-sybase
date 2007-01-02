@@ -85,6 +85,10 @@ PyObject *databuf_alloc(PyObject *obj)
 	else if (PyString_Check(obj)) {
 	    char_datafmt(&self->fmt);
 	    self->fmt.maxlength = PyString_Size(obj) + 1;
+#ifdef HAVE_DATETIME
+	} else if (date_check(obj)) {
+	    char_datafmt(&self->fmt);
+#endif
 	} else {
 	    PyErr_SetString(PyExc_TypeError, "unsupported parameter type");
 	    Py_DECREF(self);
