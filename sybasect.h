@@ -94,6 +94,7 @@ enum { OPTION_BOOL, OPTION_INT, OPTION_STRING, OPTION_CMD,
        OPTION_UNKNOWN };
 
 void debug_msg(char *fmt, ...);
+int date_check(PyObject *ob);
 
 typedef struct CS_CONTEXTObj {
     PyObject_HEAD

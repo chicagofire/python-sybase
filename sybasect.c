@@ -7,6 +7,9 @@
 ******************************************************************/
 
 #include "sybasect.h"
+#ifdef HAVE_DATETIME
+#include "datetime.h"
+#endif
 
 #ifdef FIND_LEAKS
 typedef struct LeakReg {
@@ -96,6 +99,17 @@ void debug_msg(char *fmt, ...)
     res = PyObject_CallMethod(debug_file, "flush", "");
     Py_XDECREF(res);
     /* PyErr_Clear(); */
+}
+
+/* PyDate_Check must be called in the same source file as
+   PyDateTime_IMPORT so we create this alias */
+int date_check(PyObject *ob)
+{
+#ifdef HAVE_DATETIME
+    return PyDate_Check(ob);
+#else
+    return 0;
+#endif
 }
 
 static char sybasect_set_debug__doc__[] = 
@@ -1544,6 +1558,12 @@ void initsybasect(void)
 #else
     if (dict_add_int(d, "__with_threads__", 0) < 0)
 	goto error;
+#endif
+
+#ifdef HAVE_DATETIME
+    PyDateTime_IMPORT;
+    if (PyErr_Occurred())
+        goto error;
 #endif
 
 #ifdef HAVE_FREETDS

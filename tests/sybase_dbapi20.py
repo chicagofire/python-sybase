@@ -231,10 +231,8 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             self.commit(con)
             cur.execute("insert into %sbooze values ('20061124')" % self.table_prefix)
             self.commit(con)
-
-            # TODO SSA: DataBuf does not support datetime type yet
-            # cur.execute("insert into %sbooze values (@beer)" % self.table_prefix, {'@beer': datetime.datetime(2006,11,24)})
-            # self.commit(con)
+            cur.execute("insert into %sbooze values (@beer)" % self.table_prefix, {'@beer': datetime.datetime(2006,11,24)})
+            self.commit(con)
 
             cur.execute("select * from %sbooze" % self.table_prefix)
             res = cur.fetchall()
