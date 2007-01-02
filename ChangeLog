@@ -1,5 +1,8 @@
 2007-01-02  Sébastien Sablé  <sable.sungard@gmail.com>
 
+	* Sybase.py: rowcount is now propagated to Cursor (corrects
+	tracker 1621003)
+
 	* databuf.c, setup.py, sybasect.h, sybasect.c,
 	tests/sybase_dbapi20.py: Added support for python datetime type in
 	DataBuf and as parameter of Cursor.execute()
