@@ -437,6 +437,7 @@ class _FetchLazy:
         self._cmd = None
         self._lock_count = 0
         self._state = _LAZY_IDLE
+        self.rowcount = -1
         self._open()
 
     def _set_state(self, state):
@@ -704,6 +705,7 @@ class Cursor:
             # Discard any previous results
             self._fetcher = None
             self.return_status = None
+            self.rowcount = -1
 
             # Prepare to retrieve new results.
             fetcher = self._fetcher = _FetchNowParams(self._owner)
@@ -738,6 +740,7 @@ class Cursor:
             # Start retreiving results.
             self.description = fetcher.start(self.arraysize, out_params)
             self.return_status = fetcher.return_status
+            self.rowcount = len(out_params)
             return out_params
         finally:
             self._unlock()
@@ -748,6 +751,7 @@ class Cursor:
         if self._closed:
             raise ProgrammingError('cursor is closed')
         self._fetcher = None
+        self.rowcount = -1
         self._closed = 1
 
     def execute(self, sql, params = {}):
@@ -772,6 +776,7 @@ class Cursor:
                 if status != CS_SUCCEED:
                     fetcher._raise_error(Error, 'ct_param')
             self.description = fetcher.start(self.arraysize)
+            self.rowcount = fetcher.rowcount
         finally:
             self._unlock()
 
@@ -783,10 +788,13 @@ class Cursor:
             raise ProgrammingError('cursor is closed')
         self._lock()
         try:
+            rowcount = 0
             for params in params_seq:
                 self.execute(sql, params)
+                rowcount += self.rowcount
                 if not self._fetcher._is_idle():
                     self._fetcher._raise_error(ProgrammingError, 'fetchable results on cursor')
+            self.rowcount = rowcount
         finally:
             self._unlock()
 
@@ -817,6 +825,7 @@ class Cursor:
         desc = self._fetcher.nextset()
         if desc:
             self.description = desc
+            self.rowcount = self._fetcher.rowcount
             return 1
         return 0
 
