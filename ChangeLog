@@ -1,4 +1,9 @@
-2007-01-02  Sébastien Sablé  <sable.sungard@gmail.com>
+2007-01-11  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* blk.c: Corrected crash on a BLK object when debug is enabled
+	(close tracker 1630941 reported by Gregory Bond)
+
+2007-01-02  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: rowcount is now propagated to Cursor (corrects
 	tracker 1621003)
@@ -7,7 +12,7 @@
 	tests/sybase_dbapi20.py: Added support for python datetime type in
 	DataBuf and as parameter of Cursor.execute()
 
-2006-12-18  Sébastien Sablé  <sable.sungard@gmail.com>
+2006-12-18  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: Corrected Date, Time and Timestamp functions when
 	using mx.DateTime or native python datetime types
@@ -15,17 +20,17 @@
 	* Sybase.py: Corrected DATETIME as cursor.description still
 	returns native Sybase datetime types
 
-2006-12-14  Sébastien Sablé  <sable.sungard@gmail.com>
+2006-12-14  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* blk.c: Corrected blk_describe always returns (status, None)
 	thanks to patch by Phil Porter
 
-2006-12-13  Sébastien Sablé  <sable.sungard@gmail.com>
+2006-12-13  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* databuf.c, datafmt.c: Patch to handle CS_LONG type based on
 	patch by Paul Rensing
 
-2006-12-08  Sébastien Sablé  <sable.sungard@gmail.com>
+2006-12-08  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* setup.py, Sybase.py: Changing to release 0.38pre1
 
@@ -38,7 +43,7 @@
 
 	* setup.py: Corrected linking with Sybase 15.0
 
-2006-12-07  Sébastien Sablé  <sable.sungard@gmail.com>
+2006-12-07  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: Factored out Cursor._checkready() - patch provided by
 	Greg Ward

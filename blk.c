@@ -634,7 +634,7 @@ PyObject *bulk_alloc(CS_CONNECTIONObj *conn, int version)
     SY_CONN_END_THREADS(conn);
 
     if (self->debug)
-	debug_msg("blk_alloc(conn%d, %s, &blk%d) -> %s",
+	debug_msg("blk_alloc(conn%d, %d, &blk%d) -> %s",
 		  conn->serial, self->serial,
 		  value_str(VAL_BULK, version), value_str(VAL_STATUS, status));
     if (PyErr_Occurred()) {
