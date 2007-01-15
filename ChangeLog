@@ -1,3 +1,9 @@
+2007-01-15  Sébastien Sablé  <sable.sungard@gmail.com>
+
+	* Sybase.py: Corrected incorrect type mx.DateTime.DateTime
+	returned by Sybase.Date() in "mx" datetime mode. This type is not
+	supported by DataBuf.
+
 2007-01-11  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* blk.c: Corrected crash on a BLK object when debug is enabled
