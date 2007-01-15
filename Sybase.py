@@ -918,6 +918,7 @@ class Connection:
                                            hour, minute, second))
         elif use_datetime == 1:
             DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE, DT.DateTimeType)
+            datetime = getattr(sys.modules[self.__module__], "datetime")
             def _column_value(val):
                 if type(val) is DateTimeType:
                     return DT.DateTime(val.year, val.month + 1, val.day,
@@ -926,11 +927,12 @@ class Connection:
                 else:
                     return val
             def Date(year, month, day):
-                return DT.DateTime(year, month, day)
+                return datetime('%s-%s-%s' % (year, month, day))
             def Time(hour, minute, second):
-                return DT.Time(hour, minute, second)
+                return datetime('%d:%d:%d' % (hour, minute, second))
             def Timestamp(year, month, day, hour, minute, second):
-                return DT.DateTime(year, month, day, hour, minute, second)
+                return datetime('%s-%s-%s %d:%d:%d' % (year, month, day,
+                                           hour, minute, second))
         elif use_datetime == 2:
             DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE, datetime.datetime, datetime.time)
             def _column_value(val):
