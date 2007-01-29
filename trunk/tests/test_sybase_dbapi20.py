@@ -47,6 +47,10 @@ if os.environ.get("SYBASE", None) is not None:
             connect_kw_args = {'auto_commit': 1}
             force_commit = 1""" % server)
 
+            exec("""class TestSybase%sNoLocking(sybase_dbapi20.TestSybase):
+            connect_args = (server, user, passwd, database)
+            connect_kw_args = {'auto_commit': 1, 'locking': 0}""" % server)
+
             curnb += 1
 
 if __name__ == '__main__':
