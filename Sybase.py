@@ -487,8 +487,9 @@ class _FetchLazy:
             # By the time we get called the threading module might
             # have killed the thread the lock was created in ---
             # oops.
-            count, owner = self._owner._connlock._release_save()
-            self._owner._connlock._acquire_restore((count, threading.currentThread()))
+            if self._owner._do_locking:
+                count, owner = self._owner._connlock._release_save()
+                self._owner._connlock._acquire_restore((count, threading.currentThread()))
             while self._lock_count:
                 self._unlock()
 

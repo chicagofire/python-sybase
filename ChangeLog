@@ -1,3 +1,8 @@
+2007-01-29  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Corrected AttributeError when locking is off (close tracker
+	1637942 reported by Jim Nusbaum)
+
 2007-01-15  Sébastien Sablé  <sable.sungard@gmail.com>
 
 	* Sybase.py: Corrected incorrect type mx.DateTime.DateTime
