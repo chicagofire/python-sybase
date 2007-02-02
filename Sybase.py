@@ -55,8 +55,19 @@ class InterfaceError(Error):
 
 
 class DatabaseError(Error):
-    pass
-
+    def __init__(self, msg):
+        '''take a sybasect.CS_SERVERMSG so break out the fields for use'''
+        if type(msg) == ServerMsgType:
+            str = _fmt_server(msg)
+        elif type(msg) == ClientMsgType:
+            str = _fmt_client(msg)
+        else:
+            # Assume string
+            str = msg
+            msg = None
+        Error.__init__(self, str)
+        self.msg = msg
+            
 class DataError(DatabaseError):
     pass
 
@@ -173,19 +184,19 @@ def _fmt_client(msg):
 
 
 def _cslib_cb(ctx, msg):
-    raise Error(_fmt_client(msg))
+    raise Error(_fmt_client(msg), msg)
 
 
 def _clientmsg_cb(ctx, conn, msg):
-    raise DatabaseError(_fmt_client(msg))
+    raise DatabaseError(msg)
 
 
 def _servermsg_cb(ctx, conn, msg):
     mn = msg.msgnumber
     if mn == 2601: ## Attempt to insert duplicate key row in object with unique index
-        raise IntegrityError(_fmt_server(msg))
+        raise IntegrityError(msg)
     elif mn == 2812: ## Procedure not found
-        raise StoredProcedureError('procedure not found %s', _fmt_server(msg))
+        raise StoredProcedureError(msg)
     elif mn in (0, 5701, 5703, 5704) or ((mn >= 6200) and (mn < 6300)):
         # Non-errors:
         #    0      PRINT
@@ -197,7 +208,7 @@ def _servermsg_cb(ctx, conn, msg):
         if hook:
             hook(conn, msg)
     else:
-        raise DatabaseError(_fmt_server(msg))
+        raise DatabaseError(msg)
 
 
 def _row_bind(cmd, count = 1):
