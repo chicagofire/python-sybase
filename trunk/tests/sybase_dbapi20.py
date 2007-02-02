@@ -315,6 +315,53 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
+    def test_bulkcopy(self):
+        kw_args = dict(self.connect_kw_args)
+        kw_args.update({'bulkcopy': 1})
+        con = self.driver.connect(*self.connect_args, **kw_args)
+        try:
+            cur = con.cursor()
+            self.executeDDL1(con,cur)
+
+            if not con.auto_commit:
+                self.assertRaises(self.driver.ProgrammingError, con.bulkcopy, "%sbooze" % self.table_prefix)
+                return
+
+            b = con.bulkcopy("%sbooze" % self.table_prefix)
+            largs = [ ("Cooper's",) , ("Boag's",) ]
+
+            for r in largs:
+                b.rowxfer(r)
+            ret = b.done()
+            self.assertEqual(ret, 2,
+                'Bulkcopy.done retrieved incorrect number of rows'
+                )
+
+            self.assertEqual(b.totalcount, 2,
+                'insert using bulkcopy set bulkcopy.totalcount to '
+                'incorrect value %r' % b.totalcount
+                )
+            cur.execute('select name from %sbooze' % self.table_prefix)
+            res = cur.fetchall()
+            self.assertEqual(len(res),2,
+                'cursor.fetchall retrieved incorrect number of rows'
+                )
+            beers = [res[0][0],res[1][0]]
+            beers.sort()
+            self.assertEqual(beers[0],"Boag's",'incorrect data retrieved')
+            self.assertEqual(beers[1],"Cooper's",'incorrect data retrieved')
+
+            bulk = con.bulkcopy("%sbooze" % self.table_prefix, out=1)
+            beers = [b[0] for b in bulk]
+            beers.sort()
+            print beers[0], beers[1]
+            self.assertEqual(beers[0],"Boag's",'incorrect data retrieved')
+            self.assertEqual(beers[1],"Cooper's",'incorrect data retrieved')
+
+        finally:
+            con.close()
+
+
 # TODO: the following tests must be overridden
 
     def test_nextset(self):
