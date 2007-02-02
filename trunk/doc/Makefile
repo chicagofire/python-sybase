@@ -1,6 +1,6 @@
-PYTHON_SRC=	${HOME}/download/Python-2.2
+PYTHON_SRC=     /usr/lib/python2.4
 
-MKHOWTO=	$(PYTHON_SRC)/Doc/tools/mkhowto
+MKHOWTO=	$(PYTHON_SRC)/doc/tools/mkhowto
 
 .PHONY: html
 
@@ -25,7 +25,7 @@ booklet: ps
 html:	$(DOCFILES) version
 	$(MKHOWTO) --html sybase.tex
 	mkdir -p sybase/icons
-	cp $(PYTHON_SRC)/Doc/html/icons/* sybase/icons/
+	cp $(PYTHON_SRC)/doc/html/icons/* sybase/icons/
 	-rm sybase/sybase.how
 # the iconserver option of mkhowto is broken since it writes
 # it to the end if the init_file where they aren't useful anymore,
