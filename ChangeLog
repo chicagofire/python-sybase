@@ -1,5 +1,7 @@
 2007-02-02  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Releasing version 0.38pre2
+
 	* Sybase.py: Add structured error information to
 	Sybase.DatabaseError thanks to patch provided by Gregory Bond
 	(close tracker 1631902)
