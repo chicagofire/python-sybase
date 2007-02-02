@@ -1,9 +1,14 @@
+2007-02-02  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Resurrected Sybase.Bulkcopy functionality thanks to patch
+	provided by Gregory Bond (close tracker 1632916)
+
 2007-01-29  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Corrected AttributeError when locking is off (close tracker
 	1637942 reported by Jim Nusbaum)
 
-2007-01-15  Sébastien Sablé  <sable.sungard@gmail.com>
+2007-01-15  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: Corrected incorrect type mx.DateTime.DateTime
 	returned by Sybase.Date() in "mx" datetime mode. This type is not

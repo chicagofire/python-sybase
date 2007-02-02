@@ -845,7 +845,7 @@ class Connection:
 
     def __init__(self, dsn, user, passwd, database = None,
                  strip = 0, auto_commit = 0, delay_connect = 0, locking = 1,
-                 datetime = None):
+                 datetime = None, bulkcopy = 0):
         '''DB-API Sybase.Connect()
         '''
         self._conn = self._cmd = None
@@ -872,6 +872,10 @@ class Connection:
         status = conn.ct_con_props(CS_SET, CS_PASSWORD, passwd)
         if status != CS_SUCCEED:
             self._raise_error(Error, 'ct_con_props')
+        if bulkcopy:
+            status = conn.ct_con_props(CS_SET, CS_BULK_LOGIN, CS_TRUE)
+            if status != CS_SUCCEED:
+                self._raise_error(Error, 'ct_con_props')
         if not delay_connect:
             self.connect()
 
@@ -1097,6 +1101,13 @@ class Connection:
         '''
         return Cursor(self)
 
+    def bulkcopy(self, tablename, *args, **kw):
+        # Fake an alternate way to specify direction=CS_BLK_OUT
+        if kw.get('out', 0):
+            del kw['out']
+            kw['direction'] = CS_BLK_OUT
+        return Bulkcopy(self, tablename, *args, **kw)
+    
     def execute(self, sql):
         '''Backwards compatibility
         '''
@@ -1113,7 +1124,158 @@ class Connection:
             self._unlock()
 
 
+class Bulkcopy(object):
+
+    def __init__(self, conn, tablename, direction = CS_BLK_IN, arraysize = 20):
+        '''Manage a BCP session for the named table'''
+
+        if not conn.auto_commit:
+            raise ProgrammingError('bulkcopy requires connection in auto_commit mode')
+        if direction not in (CS_BLK_IN, CS_BLK_OUT):
+            raise ProgrammingError("Bulkcopy direction must be CS_BLK_IN or CS_BLK_OUT")
+        
+        self._direction = direction
+        self._arraysize = arraysize     # no of rows to transfer at once
+        
+        self._totalcount = 0            # Total number of rows transferred in/out so far
+        # the next two for _flush() / _row()
+        self._batchcount = 0            # Rows send in the current batch but not yet reported to user via self.batch()
+        self._nextrow = 0               # Next row in the DataBuf to use
+        
+        self._alldone = 0
+
+        conn._lock()
+        try:
+            #conn._conn.debug = 1
+            status, blk = conn._conn.blk_alloc()
+            if status != CS_SUCCEED:
+                conn._raise_error(Error, 'blk_alloc')
+            if blk.blk_init(direction, tablename) != CS_SUCCEED:
+                conn._raise_error(Error, 'blk_init')
+            #blk.debug = 1
+        finally:
+            conn._unlock()
+
+        self._blk = blk
+        
+        # Now allocate buffers
+        bufs = []
+        while 1:
+            try:
+                status, fmt = blk.blk_describe(len(bufs) + 1)
+                # This never happens, raises DatabaseError instead
+                if status != CS_SUCCEED:
+                    break
+            except DatabaseError, e:
+                break
+            fmt.count = arraysize
+            bufs.append(DataBuf(fmt))
+
+        self.bufs = bufs
+
+        # Now bind the buffers
+        for i in range(len(bufs)):
+            buf = bufs[i]
+            if direction == CS_BLK_OUT:
+                buf.format = 0
+            else:
+                buf.format = CS_BLK_ARRAY_MAXLEN
+            if blk.blk_bind(i + 1, buf) != CS_SUCCEED:
+                conn._raise_error(Error, 'blk_bind')
+
+    def __del__(self):
+        '''Make sure any incoming but unflushed data is sent!'''
+        try:
+            if not self._alldone:
+                self.done()
+        except:
+            pass
+            
+    # Read-only property, as size of DataBufs is set in __init__
+    arraysize = property(lambda x: x._arraysize)
+    totalcount = property(lambda x: x._totalcount)
+    
+    def rowxfer(self, args = None):
+        if self._direction == CS_BLK_OUT:
+            if args is not None:
+                raise ProgramError("Attempt to rowxfer() data in to a bcp out session")
+            return self._row()
+        
+        if args is None:
+            raise ProgramError("rowxfer() for bcp-IN needs a sequence arg")
+            
+        if len(args) != len(self.bufs):
+            raise Error("BCP has %d columns, data has %d columns" % (len(self.bu<fs), len(args)))
+
+        for i in range(len(args)):
+            self.bufs[i][self._nextrow] = args[i]
+        self._nextrow += 1
+
+        if self._nextrow == self._arraysize:
+            self._flush()
+
+    def _flush(self):
+        '''Flush any partially-filled DataBufs'''
+        if self._nextrow > 0:
+            status, rows  = self._blk.blk_rowxfer_mult(self._nextrow)
+            if status != CS_SUCCEED:
+                self.conn._raise_error(Error, 'blk_rowxfer_mult in')
+            self._nextrow = 0
+            self._totalcount += rows
+            
+    def batch(self):
+        '''Flush a batch full to the server.  Return the number of rows in this batch'''
+        self._flush()
+        status, rows = self._blk.blk_done(CS_BLK_BATCH)
+        if status != CS_SUCCEED:
+            self.conn._raise_error(Error, 'blk_done batch in')
+        # rows should be 0 here due to _flush()
+        rows += self._batchcount
+        self._batchcount = 0
+        return rows
+            
+    def done(self):
+        self._flush()
+        status, rows = self._blk.blk_done(CS_BLK_ALL)
+        if status != CS_SUCCEED:
+            self.conn._raise_error(Error, 'blk_done in')
+        self._alldone = 1
+        return rows        
+
+    def __iter__(self):
+        '''An iterator for all the BCPd rows fetched from the database'''
+        if self._direction == CS_BLK_IN:
+            raise ProgramError("iter() is for bcp-OUT... use rowxfer() instead")
+        while 1:
+            r = self._row()
+            if r is None:
+                raise StopIteration
+            yield r
+    rows = __iter__
+
+    def _row(self):
+        if self._nextrow == self._batchcount:
+            status, num = self._blk.blk_rowxfer_mult()
+            if status == CS_END_DATA:
+                status, rows = self._blk.blk_done(CS_BLK_ALL)
+                if status != CS_SUCCEED:
+                    self.conn._raise_error(Error, 'blk_done out')
+                self._alldone = 1
+                return None
+            if status != CS_SUCCEED:
+                self.conn._raise_error(Error, 'blk_rowxfer_mult out')
+            self._nextrow = 0
+            self._batchcount = num
+            assert num > 0
+            
+
+        self._totalcount += 1
+        rownum = self._nextrow
+        self._nextrow += 1
+        return _extract_row(self.bufs, rownum)
+
+
 def connect(dsn, user, passwd, database = None,
-            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1, datetime = None):
+            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1, datetime = None, bulkcopy = 0):
     return Connection(dsn, user, passwd, database,
-                      strip, auto_commit, delay_connect, locking, datetime)
+                      strip, auto_commit, delay_connect, locking, datetime, bulkcopy)

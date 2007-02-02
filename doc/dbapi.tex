@@ -205,22 +205,25 @@ The \var{owner} argument must be an instance of the \class{Connection}
 class.
 \end{classdesc}
 
-% Will return in next release
-%
-%\begin{classdesc}{Bulkcopy}{owner, table, direction}
-%Return a new instance of the \class{Bulkcopy} class.
-%
-%The \var{owner} argument must be an instance of the \class{Connection}
-%class.  A bulk copy context will be established for the table named in
-%the \var{table} argument, the bulkcopy direction must be either
-%\code{CS_BLK_IN} or \code{CS_BLK_OUT} as defined in the
-%\module{Sybase} module.
-%
-%\class{Bulkcopy} objects are usually created via the
-%\method{bulkcopy()} method of the \class{Connection} object.
-%
-%This is an extension of the DB-API 2.0 specification.
-%\end{classdesc}
+\begin{classdesc}{Bulkcopy}{owner, table, direction = CS_BLK_IN, arraysize = 20}
+Return a new instance of the \class{Bulkcopy} class.
+
+The \var{owner} argument must be an instance of the \class{Connection}
+class.  A bulk copy context will be established for the table named in
+the \var{table} argument, the bulkcopy direction must be either
+\code{CS_BLK_IN} or \code{CS_BLK_OUT} as defined in the
+\module{Sybase} module.  \code{arraysize} specifies the number of
+in-memory rows that will be batched for each DB request.
+
+This functionality can only be called when the \class{Connection} is
+in \code{auto_commit} mode. Otherwise a \class{ProgrammingError}
+exception is raised.
+
+\class{Bulkcopy} objects are usually created via the
+\method{bulkcopy()} method of the \class{Connection} object.
+
+This is an extension of the DB-API 2.0 specification.
+\end{classdesc}
 
 \begin{classdesc}{Connection}{dsn, user, passwd \optional{, \ldots}}
 Return a new instance of the \class{Connection} class which implements
@@ -267,10 +270,11 @@ insert, open, fetch, select, and update. You must still explicitly
 close the transaction with a commit.
 \end{quote}
 
-%\item{\var{bulkcopy \code{= 0}}}
-%
-%Must be non-zero if you are going to perform bulkcopy operations on
-%the connection.
+\item{\var{bulkcopy \code{= 0}}}
+
+Must be non-zero if you are going to perform bulkcopy operations on
+the connection.  You will also need to turn off chained transactions
+in order to use bulkcopy (\code{auto_commit=1}).
 
 \item{\var{delay_connect \code{= 0}}}
 
@@ -289,6 +293,11 @@ db.connect()
 
 Controls whether or not thread locks will be used on the connection
 object.  When non-zero, the connection allows connections and cursors to be shared between threads.  If your program is not multi-threaded you can gain a slight performance improvement by passing zero in this argument.
+
+\item{\var{datetime \code{= ``auto''}}}
+
+Controls the type used when returning a date or time.
+
 \end{description}
 \end{funcdesc}
 
@@ -450,17 +459,23 @@ binary parameters to the command, you must format the parameters as
 part of the SQL string in the \var{sql} argument.
 \end{methoddesc}
 
-%\begin{methoddesc}[Connection]{bulkcopy}{table, direction}
-%This is an extension of the DB-API 2.0 specification.
-%
-%Returns a new \class{Bulkcopy} object using the connection.  The
-%\var{table} argument identifies the table which you wish to perform
-%bulkcopy operations upon.
-%
-%The \var{direction} argument controls the direction of the bulkcopy
-%operation.  Specify \code{Sybase.CS_BLK_IN} to copy data in, or
-%\code{Sybase.CS_BLK_OUT} to copy data out.
-%\end{methoddesc}
+\begin{methoddesc}[Connection]{bulkcopy}{table, direction = CS_BLK_IN,
+arraysize = 20}
+This is an extension of the DB-API 2.0 specification.
+
+Returns a new \class{Bulkcopy} object using the connection.  The
+\var{table} argument identifies the table which you wish to perform
+bulkcopy operations upon.  The \var{arraysize} argument specifies the
+number of rows stored in-memory for each DB request.
+
+The \var{direction} argument controls the direction of the bulkcopy
+operation.  Specify \code{Sybase.CS_BLK_IN} to copy data in, or
+\code{Sybase.CS_BLK_OUT} to copy data out.
+\end{methoddesc}
+
+\begin{methoddesc}[Connection]{bulkcopy}{table, out=1,arraysize = 20}
+A more convenient way of specifying BCP out.
+\end{methoddesc}
 
 \subsection{Cursor Objects}
 
@@ -627,26 +642,77 @@ Implements the DB-API 2.0 cursor \method{setoutputsize()} method.
 This method does nothing -- it is provided for DB-API compliance.
 \end{methoddesc}
 
-%\subsection{Bulkcopy Objects}
-%
-%This is an extension of the DB-API 2.0 specification.
-%
-%This object provides an interface to the Sybase bulkcopy
-%functionality.
-%
-%\begin{methoddesc}[Bulkcopy]{rowxfer}{\optional{data}}
-%If the \class{Bulkcopy} object direction is \code{CS_BLK_IN} then the
-%sequence passed as the \var{data} argument is sent as one row to the
-%server.  If the direction is \code{CS_BLK_OUT} then one row will be
-%returned from the server.
-%\end{methoddesc}
-%
-%\begin{methoddesc}[Bulkcopy]{batch}{}
-%Marks a complete bulkcopy batch.  The number of rows transferred in
-%the batch is returned.
-%\end{methoddesc}
-%
-%\begin{methoddesc}[Bulkcopy]{done}{}
-%Marks a complete bulkcopy operation.  The number of rows transferred
-%in the batch is returned.
-%\end{methoddesc}
+\subsection{Bulkcopy Objects}
+
+his is an extension of the DB-API 2.0 specification.
+
+This object provides an interface to the Sybase bulkcopy
+functionality.
+
+\begin{methoddesc}[Bulkcopy]{rowxfer}{\optional{data}}
+If the \class{Bulkcopy} object direction is \code{CS_BLK_IN} then the
+sequence passed as the \var{data} argument is sent as one row to the
+server.  If the direction is \code{CS_BLK_OUT} then one row will be
+returned from the server. If there are no more rows, \code{None} is returned.
+\end{methoddesc}
+
+\begin{methoddesc}[Bulkcopy]{batch}{}
+Marks a complete bulkcopy batch.  The number of rows transferred in
+the batch is returned.
+\end{methoddesc}
+
+\begin{methoddesc}[Bulkcopy]{done}{}
+Marks a complete bulkcopy operation.  The number of rows transferred
+in the batch is returned.  \code{done()} must be called (or the
+\code{Bulkcopy} object destroyed) to flush any outstanding cached rows
+to the DB.  In addition, any other operation on the associated
+\code{Connection} object will fail until \member{done}{} is called.
+
+\end{methoddesc}
+
+\begin{methoddesc}[Bulkcopy]{__iter__}{} Returns an iterator that will
+iterate over all the rows in the table returned by the bulkcopy out
+operation.  The \code{Bulkcopy} object should be created with the
+\code{CS_BLK_OUT} direction argument.  Intermixed use of the iterator
+returned from \member{__iter__}{} and the \member{rowxfer}{} to
+retrieve rows is supported; both use the same underlying function and
+will return all rows without missing or duplicating any row.
+
+\end{methoddesc}
+
+\begin{methoddesc}[Bulkcopy]{rows}{}
+An alias for \member{__iter__}{}.
+\end{methoddesc}
+
+
+\begin{methoddesc}[Bulkcopy]{arraysize}
+The arraysize passed to the constructor.  Up to this many rows will be
+cached in memory and sent to the DB server in one request. Read only.
+\end{methoddesc}
+
+\begin{methoddesc}[Bulkcopy]{totalcount}
+A count of the total number of lines passed to/from the DB server.
+Read only.
+\end{methoddesc}
+
+An example of using the \code{Bulkcopy} class follows:
+
+\begin{verbatim}
+from Sybase import *
+
+c = connect('server', 'user', 'password', bulkcopy=1, auto_commit=1);
+
+c.execute("Create table #b(a int, b varchar(10), c float)")
+
+b = c.bulkcopy('#b') # CS_BLK_IN is default
+for r in range(32):
+    b.rowxfer([r, ("xxx%d" % r), r * 0.1])
+    if r % 5 == 4:
+        ret = b.batch()
+        print "post batch, batch was", ret, "count = ", b.totalcount
+ret = b.done()
+print "post done, last batch was", ret, "count = ", b.totalcount
+
+for r in c.bulkcopy('#b', out=1):
+    print r
+\end{verbatim}
