@@ -58,7 +58,7 @@ dist: version html
 
 # Version substitution
 version: ../Sybase.py
-	DATE="`date +'%B %d, %Y'`"; \
+	DATE="`LANG=en date +'%B %d, %Y'`"; \
 	VERSION="`awk '/__version__/ {print $$3}' ../Sybase.py`"; \
 	VERSION="`echo $$VERSION | sed s/\\'//g`"; \
 	cat sybase.tex | sed s/\\release.*/\\release\{$$VERSION\}/ >sybase.tex2; \
