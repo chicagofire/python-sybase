@@ -10,11 +10,11 @@ database system.  It supports all of the Python Database API, version
 
 The module is available here:
 
-    http://downloads.sourceforge.net/python-sybase/python-sybase-0.38pre2.tar.gz
+http://downloads.sourceforge.net/python-sybase/python-sybase-0.38pre2.tar.gz
 
 The module home page is here:
 
-    http://python-sybase.sourceforge.net/
+http://python-sybase.sourceforge.net/
 
 
 CHANGES SINCE 0.38pre1:
