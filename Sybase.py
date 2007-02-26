@@ -1216,7 +1216,7 @@ class Bulkcopy(object):
             raise ProgramError("rowxfer() for bcp-IN needs a sequence arg")
             
         if len(args) != len(self.bufs):
-            raise Error("BCP has %d columns, data has %d columns" % (len(self.bu<fs), len(args)))
+            raise Error("BCP has %d columns, data has %d columns" % (len(self.bufs), len(args)))
 
         for i in range(len(args)):
             self.bufs[i][self._nextrow] = args[i]
