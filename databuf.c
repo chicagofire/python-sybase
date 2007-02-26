@@ -80,13 +80,19 @@ PyObject *databuf_alloc(PyObject *obj)
 	    numeric_datafmt(&self->fmt, CS_SRC_VALUE, CS_SRC_VALUE);
 	else if (DateTime_Check(obj))
 	    datetime_datafmt(&self->fmt, ((DateTimeObj*)obj)->type);
+#ifdef CS_DATE_TYPE
+	else if (Date_Check(obj))
+	    date_datafmt(&self->fmt, ((DateObj*)obj)->type);
+#endif
 	else if (Money_Check(obj))
 	    money_datafmt(&self->fmt, ((MoneyObj*)obj)->type);
 	else if (PyString_Check(obj)) {
 	    char_datafmt(&self->fmt);
 	    self->fmt.maxlength = PyString_Size(obj) + 1;
 #ifdef HAVE_DATETIME
-	} else if (date_check(obj)) {
+	} else if (pydatetime_check(obj)) {
+	    char_datafmt(&self->fmt);
+	} else if (pydate_check(obj)) {
 	    char_datafmt(&self->fmt);
 #endif
 	} else {
@@ -207,6 +213,11 @@ static PyObject *DataBuf_item(DataBufObj *self, int i)
     case CS_DATETIME_TYPE:
         return datetime_alloc(item, CS_DATETIME_TYPE);
 
+#ifdef CS_DATE_TYPE
+    case CS_DATE_TYPE:
+        return date_alloc(item, CS_DATE_TYPE);
+#endif
+
     case CS_DECIMAL_TYPE:
     case CS_NUMERIC_TYPE:
 	return (PyObject*)numeric_alloc(item);
@@ -228,6 +239,7 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 {
     void *item;
     PyObject *obj = NULL;
+    PyObject *obj2 = NULL;
     int size;
 
     if (v == NULL) {
@@ -363,6 +375,25 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	break;
 
     case CS_DATETIME_TYPE:
+	if (pydatetime_check(v)) {
+	    obj = PyObject_Str(v);
+	    if (obj == NULL)
+		return -1;
+	    v = obj;
+        }
+        if (PyString_Check(v)) {
+	    obj2 = PyObject_Str(v);
+	    Py_XDECREF(obj);
+	    if (obj2 == NULL) {
+		return -1;
+            }
+	    obj = DateTime_FromString(obj2);
+	    Py_XDECREF(obj2);
+	    if (obj == NULL) {
+		return -1;
+            }
+	    v = obj;
+	}
         if (!DateTime_Check(v)) {
             PyErr_SetString(PyExc_TypeError, "datetime expected");
             return -1;
@@ -381,6 +412,37 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	    return -1;
 	self->copied[i] = self->fmt.maxlength;
         break;
+
+#ifdef CS_DATE_TYPE
+    case CS_DATE_TYPE:
+	if (pydate_check(v)) {
+	    obj = PyObject_Str(v);
+	    if (obj == NULL)
+		return -1;
+	    v = obj;
+        }
+        if (PyString_Check(v)) {
+	    obj2 = PyObject_Str(v);
+	    Py_XDECREF(obj);
+	    if (obj2 == NULL) {
+		return -1;
+            }
+	    obj = Date_FromString(obj2);
+	    Py_XDECREF(obj2);
+	    if (obj == NULL) {
+		return -1;
+            }
+	    v = obj;
+	}
+        if (!Date_Check(v)) {
+            PyErr_SetString(PyExc_TypeError, "date expected");
+            return -1;
+        }
+	if (date_assign(v, CS_DATE_TYPE, item) != CS_SUCCEED)
+	    return -1;
+	self->copied[i] = self->fmt.maxlength;
+        break;
+#endif /* CS_DATE_TYPE */
 
     case CS_DECIMAL_TYPE:
     case CS_NUMERIC_TYPE:
