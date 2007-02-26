@@ -320,12 +320,12 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         kw_args.update({'bulkcopy': 1})
         con = self.driver.connect(*self.connect_args, **kw_args)
         try:
-            cur = con.cursor()
-            self.executeDDL1(con,cur)
-
             if not con.auto_commit:
                 self.assertRaises(self.driver.ProgrammingError, con.bulkcopy, "%sbooze" % self.table_prefix)
                 return
+
+            cur = con.cursor()
+            self.executeDDL1(con,cur)
 
             b = con.bulkcopy("%sbooze" % self.table_prefix)
             largs = [ ("Cooper's",) , ("Boag's",) ]
@@ -361,6 +361,73 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
+
+    def test_bulkcopy2(self):
+        kw_args = dict(self.connect_kw_args)
+        kw_args.update({'bulkcopy': 1, 'datetime': "python"})
+        con = self.driver.connect(*self.connect_args, **kw_args)
+        try:
+            if not con.auto_commit:
+                self.assertRaises(self.driver.ProgrammingError, con.bulkcopy, "%sbooze" % self.table_prefix)
+                return
+
+            cur = con.cursor()
+            cur.execute('create table %sbooze (name varchar(20) NULL, day date)' % self.table_prefix)
+            self.commit(con)
+
+            import datetime
+            b = con.bulkcopy("%sbooze" % self.table_prefix)
+            largs = [ ("Cooper's", datetime.date(2006,11,24)) , ("Boag's", datetime.date(2006,11,25)) ]
+
+            for r in largs:
+                b.rowxfer(r)
+            ret = b.done()
+            self.assertEqual(ret, 2,
+                'Bulkcopy.done retrieved incorrect number of rows'
+                )
+
+            self.assertEqual(b.totalcount, 2,
+                'insert using bulkcopy set bulkcopy.totalcount to '
+                'incorrect value %r' % b.totalcount
+                )
+            cur.execute('select name from %sbooze' % self.table_prefix)
+            res = cur.fetchall()
+            self.assertEqual(len(res),2,
+                'cursor.fetchall retrieved incorrect number of rows'
+                )
+            beers = [res[0][0],res[1][0]]
+            beers.sort()
+            self.assertEqual(beers[0], "Boag's", 'incorrect data retrieved')
+            self.assertEqual(beers[1], "Cooper's", 'incorrect data retrieved')
+
+            bulk = con.bulkcopy("%sbooze" % self.table_prefix, out=1)
+            beers = [b[0] for b in bulk]
+            beers.sort()
+            print beers[0], beers[1]
+            self.assertEqual(beers[0], "Boag's", 'incorrect data retrieved')
+            self.assertEqual(beers[1], "Cooper's", 'incorrect data retrieved')
+
+        finally:
+            con.close()
+
+    def test_DataBuf(self):
+        from Sybase import *
+        import datetime
+        
+        b = DataBuf('hello')
+        self.assertEquals((b.datatype, b.format), (CS_CHAR_TYPE, CS_FMT_NULLTERM))
+        b = DataBuf(123)
+        self.assertEquals((b.datatype, b.format), (CS_INT_TYPE, CS_FMT_UNUSED))
+        b = DataBuf(long(123))
+        self.assertEquals((b.datatype, b.format), (CS_LONG_TYPE, CS_FMT_UNUSED))
+
+        d = datetime.datetime(2007, 02, 16, 12, 25, 0)
+        b = DataBuf(d)
+        self.assertEquals((b.datatype, b.format), (CS_DATETIME_TYPE, CS_FMT_UNUSED))
+
+        d = datetime.date(2007, 02, 16)
+        b = DataBuf(d)
+        self.assertEquals((b.datatype, b.format), (CS_DATE_TYPE, CS_FMT_UNUSED))
 
 # TODO: the following tests must be overridden
 

@@ -36,6 +36,19 @@ void datetime_datafmt(CS_DATAFMT *fmt, int type)
     fmt->scale = 0;
 }
 
+#ifdef CS_DATE_TYPE
+void date_datafmt(CS_DATAFMT *fmt, int type)
+{
+    memset(fmt, 0, sizeof(*fmt));
+    fmt->datatype = type;
+    fmt->maxlength = sizeof(CS_DATE);
+    fmt->locale = NULL;
+    fmt->format = CS_FMT_UNUSED;
+    fmt->precision = 0;
+    fmt->scale = 0;
+}
+#endif
+
 void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale)
 {
     memset(fmt, 0, sizeof(*fmt));

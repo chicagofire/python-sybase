@@ -103,10 +103,21 @@ void debug_msg(char *fmt, ...)
 
 /* PyDate_Check must be called in the same source file as
    PyDateTime_IMPORT so we create this alias */
-int date_check(PyObject *ob)
+int pydate_check(PyObject *ob)
 {
 #ifdef HAVE_DATETIME
     return PyDate_Check(ob);
+#else
+    return 0;
+#endif
+}
+
+/* PyDateTime_Check must be called in the same source file as
+   PyDateTime_IMPORT so we create this alias */
+int pydatetime_check(PyObject *ob)
+{
+#ifdef HAVE_DATETIME
+    return PyDateTime_Check(ob);
 #else
     return 0;
 #endif
@@ -299,6 +310,11 @@ static PyObject *sybasect_sizeof_type(PyObject *module, PyObject *args)
     case CS_DATETIME4_TYPE:
 	size = sizeof(CS_DATETIME4);
 	break;
+#ifdef CS_DATE_TYPE
+    case CS_DATE_TYPE:
+	size = sizeof(CS_DATE);
+	break;
+#endif
     case CS_MONEY_TYPE:
 	size = sizeof(CS_MONEY);
 	break;
