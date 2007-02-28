@@ -1,5 +1,10 @@
 2007-02-28  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Added conversion from string to int when assigning to a
+	CS_INT_TYPE DataBuf
+
+	* Simplified API for CS_DATE_TYPE related functions
+
 	* databuf.c: Corrected bug in databuf_alloc: Sybase reports the
 	wrong maxlength for numeric type - verified with Sybase 12.5 -
 	thanks to patch provided by Phil Porter

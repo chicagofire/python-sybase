@@ -418,16 +418,82 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         self.assertEquals((b.datatype, b.format), (CS_CHAR_TYPE, CS_FMT_NULLTERM))
         b = DataBuf(123)
         self.assertEquals((b.datatype, b.format), (CS_INT_TYPE, CS_FMT_UNUSED))
+        b[0] = '100'
+        self.assertEquals(b[0], 100)
+        
         b = DataBuf(long(123))
         self.assertEquals((b.datatype, b.format), (CS_LONG_TYPE, CS_FMT_UNUSED))
-
+        
         d = datetime.datetime(2007, 02, 16, 12, 25, 0)
         b = DataBuf(d)
         self.assertEquals((b.datatype, b.format), (CS_DATETIME_TYPE, CS_FMT_UNUSED))
-
+        self.assertEquals(str(b[0]), 'Feb 16 2007 12:25PM')
+        
         d = datetime.date(2007, 02, 16)
         b = DataBuf(d)
         self.assertEquals((b.datatype, b.format), (CS_DATE_TYPE, CS_FMT_UNUSED))
+        self.assertEquals(str(b[0]), 'Feb 16 2007')
+        
+        b = DataBuf(1.0)
+        self.assertEquals(b[0], 1.0)
+        
+        b = DataBuf(Sybase.numeric(100))
+        self.assertEquals(b[0], 100)
+        
+        b = DataBuf(Sybase.numeric(100.0))
+        self.assertEquals(b[0], 100.0)
+        
+        b = DataBuf(Sybase.numeric(100.0))
+        b[0] = Sybase.numeric(100.0)
+        self.assertEquals(b[0], 100.0)
+
+        b = DataBuf(100.0)
+        self.assertEquals(b[0], 100.0)
+        self.assertEquals((b.datatype, b.format), (CS_FLOAT_TYPE, CS_FMT_UNUSED))
+        b[0] = 110.0
+        self.assertEquals(b[0], 110.0)
+
+        fmt = CS_DATAFMT()
+        fmt.datatype = CS_FLOAT_TYPE
+        buf = DataBuf(fmt)
+        buf[0] = 100.5
+        self.assertEquals(buf[0], 100.5)
+        # buf[0] = '101.5'
+        # self.assertEquals(buf[0], 101.5)
+
+        fmt = CS_DATAFMT()
+        fmt.datatype = CS_NUMERIC_TYPE
+        buf = DataBuf(fmt)
+        buf[0] = 100.5
+        self.assertEquals(buf[0], 100.5)
+        buf[0] = '101.5'
+        self.assertEquals(buf[0], 101.5)
+
+        fmt = CS_DATAFMT()
+        fmt.datatype = CS_NUMERIC_TYPE
+        fmt.count = 10
+        buf = DataBuf(fmt)
+        buf[0] = 100.0
+        buf[1] = 101.0
+        buf[2] = 102.0
+        buf[3] = 103.0
+        buf[4] = 104.0
+        buf[5] = 105.0
+        buf[6] = 106.0
+        buf[7] = 107.0
+        buf[8] = 108.0
+        buf[9] = 109.0
+        self.assertEquals(buf[0], 100.0)
+        self.assertEquals(buf[1], 101.0)
+        self.assertEquals(buf[2], 102.0)
+        self.assertEquals(buf[3], 103.0)
+        self.assertEquals(buf[4], 104.0)
+        self.assertEquals(buf[5], 105.0)
+        self.assertEquals(buf[6], 106.0)
+        self.assertEquals(buf[7], 107.0)
+        self.assertEquals(buf[8], 108.0)
+        self.assertEquals(buf[9], 109.0)
+
 
 # TODO: the following tests must be overridden
 

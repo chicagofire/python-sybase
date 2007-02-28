@@ -12,6 +12,7 @@
 
 PyTypeObject DateType;
 
+/* Convert a machine-readable datetime value into a user-accessible format. */
 static int date_crack(DateObj *self)
 {
     CS_RETCODE crack_result = CS_SUCCEED;
@@ -44,8 +45,8 @@ int date_assign(PyObject *obj, int type, void *buff)
 	*(CS_DATE*)buff = ((DateObj*)obj)->date;
 	return CS_SUCCEED;
     }
-    date_datafmt(&src_fmt, ((DateObj*)obj)->type);
-    date_datafmt(&dest_fmt, type);
+    date_datafmt(&src_fmt);
+    date_datafmt(&dest_fmt);
 
     src_buff = &((DateObj*)obj)->date;
 
@@ -71,11 +72,9 @@ int date_as_string(PyObject *obj, char *text)
     CS_DATAFMT char_fmt;
     CS_INT char_len;
     CS_CONTEXT *ctx;
-    int type;
     void *data;
 
-    type = ((DateObj*)obj)->type;
-    date_datafmt(&date_fmt, type);
+    date_datafmt(&date_fmt);
     char_datafmt(&char_fmt);
     char_fmt.maxlength = DATE_LEN;
 
@@ -89,7 +88,7 @@ int date_as_string(PyObject *obj, char *text)
 		      &char_fmt, text, &char_len);
 }
 
-PyObject *date_alloc(void *value, int type)
+PyObject *date_alloc(void *value)
 {
     DateObj *self;
 
@@ -98,7 +97,7 @@ PyObject *date_alloc(void *value, int type)
 	return NULL;
 
     SY_LEAK_REG(self);
-    self->type = type;
+    self->type = CS_DATE_TYPE;
     memcpy(&self->date, value, sizeof(self->date));
     memset(&self->daterec, 0, sizeof(self->daterec));
     self->cracked = 0;
@@ -115,7 +114,7 @@ PyObject *Date_FromString(PyObject *obj)
     char *str = PyString_AsString(obj);
     CS_RETCODE conv_result;
 
-    date_datafmt(&date_fmt, CS_DATE_TYPE);
+    date_datafmt(&date_fmt);
     char_datafmt(&char_fmt);
     char_fmt.maxlength = strlen(str);
 
@@ -133,7 +132,26 @@ PyObject *Date_FromString(PyObject *obj)
 	return NULL;
     }
 
-    return date_alloc(&date, CS_DATE_TYPE);
+    return date_alloc(&date);
+}
+
+PyObject *Date_FromPyDate(PyObject *obj)
+{
+#ifdef HAVE_DATETIME
+    PyObject *res;
+    PyObject *str;
+
+    str = PyObject_Str(obj);
+    if (PyErr_Occurred())
+	return NULL;
+
+    res = Date_FromString(str);
+    Py_XDECREF(str);
+    return res;
+#else
+    PyErr_SetString(PyExc_TypeError, "python-sybase compiled without support for python datetime");
+    return NULL;
+#endif
 }
 
 static void Date_dealloc(DateObj *self)
@@ -189,7 +207,7 @@ static PyObject *Date_int(DateObj *v)
     void *value;
     CS_RETCODE conv_result;
 
-    date_datafmt(&date_fmt, v->type);
+    date_datafmt(&date_fmt);
     int_datafmt(&int_fmt);
 
     value = &v->date;
@@ -238,7 +256,7 @@ static PyObject *Date_float(DateObj *v)
     void *value;
     CS_RETCODE conv_result;
 
-    date_datafmt(&date_fmt, v->type);
+    date_datafmt(&date_fmt);
     float_datafmt(&float_fmt);
 
     value = &v->date;
@@ -380,7 +398,7 @@ PyObject *DateType_new(PyObject *module, PyObject *args)
     if (!PyArg_ParseTuple(args, "s|i", &str, &type))
 	return NULL;
 
-    date_datafmt(&date_fmt, type);
+    date_datafmt(&date_fmt);
     char_datafmt(&char_fmt);
     char_fmt.maxlength = strlen(str);
 
@@ -398,7 +416,7 @@ PyObject *DateType_new(PyObject *module, PyObject *args)
 	return NULL;
     }
 
-    return date_alloc(&date, type);
+    return date_alloc(&date);
 }
 
 /* Used in unpickler

@@ -1098,6 +1098,9 @@ static value_desc sybase_args[] = {
 #ifdef CS_DATETIME4_TYPE
     SYVAL(VAL_TYPE, CS_DATETIME4_TYPE),
 #endif
+#ifdef CS_DATE_TYPE
+    SYVAL(VAL_TYPE, CS_DATE_TYPE),
+#endif
 #ifdef CS_MONEY_TYPE
     SYVAL(VAL_TYPE, CS_MONEY_TYPE),
 #endif

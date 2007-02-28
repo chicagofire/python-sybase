@@ -37,10 +37,10 @@ void datetime_datafmt(CS_DATAFMT *fmt, int type)
 }
 
 #ifdef CS_DATE_TYPE
-void date_datafmt(CS_DATAFMT *fmt, int type)
+void date_datafmt(CS_DATAFMT *fmt)
 {
     memset(fmt, 0, sizeof(*fmt));
-    fmt->datatype = type;
+    fmt->datatype = CS_DATE_TYPE;
     fmt->maxlength = sizeof(CS_DATE);
     fmt->locale = NULL;
     fmt->format = CS_FMT_UNUSED;
