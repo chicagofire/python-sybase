@@ -57,14 +57,15 @@ PyObject *databuf_alloc(PyObject *obj)
 	self->fmt = ((CS_DATAFMTObj*)obj)->fmt;
 	if (self->fmt.count == 0)
 	    self->fmt.count = 1;
-#ifdef HAVE_FREETDS
+
 	/* Seems like FreeTDS reports the wrong maxlength in
 	 * ct_describe() - fix this when binding to a buffer.
 	 */
+	/* Seems like Sybase's blk_describe has the same problem - PCP */ 
 	if (self->fmt.datatype == CS_NUMERIC_TYPE
 	    || self->fmt.datatype == CS_DECIMAL_TYPE)
 	    self->fmt.maxlength = sizeof(CS_NUMERIC);
-#endif
+
 	if (allocate_buffers(self) == NULL) {
 	    Py_DECREF(self);
 	    return NULL;
