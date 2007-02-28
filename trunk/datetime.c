@@ -150,6 +150,25 @@ PyObject *DateTime_FromString(PyObject *obj)
     return datetime_alloc(&datetime, CS_DATETIME_TYPE);
 }
 
+PyObject *DateTime_FromPyDateTime(PyObject *obj)
+{
+#ifdef HAVE_DATETIME
+    PyObject *res;
+    PyObject *str;
+
+    str = PyObject_Str(obj);
+    if (PyErr_Occurred())
+	return NULL;
+
+    res = DateTime_FromString(str);
+    Py_XDECREF(str);
+    return res;
+#else
+    PyErr_SetString(PyExc_TypeError, "python-sybase compiled without support for python datetime");
+    return NULL;
+#endif
+}
+
 static void DateTime_dealloc(DateTimeObj *self)
 {
     SY_LEAK_UNREG(self);

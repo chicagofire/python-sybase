@@ -83,7 +83,7 @@ PyObject *databuf_alloc(PyObject *obj)
 	    datetime_datafmt(&self->fmt, ((DateTimeObj*)obj)->type);
 #ifdef CS_DATE_TYPE
 	else if (Date_Check(obj))
-	    date_datafmt(&self->fmt, ((DateObj*)obj)->type);
+	    date_datafmt(&self->fmt);
 #endif
 	else if (Money_Check(obj))
 	    money_datafmt(&self->fmt, ((MoneyObj*)obj)->type);
@@ -92,9 +92,9 @@ PyObject *databuf_alloc(PyObject *obj)
 	    self->fmt.maxlength = PyString_Size(obj) + 1;
 #ifdef HAVE_DATETIME
 	} else if (pydatetime_check(obj)) {
-	    char_datafmt(&self->fmt);
+	    datetime_datafmt(&self->fmt, CS_DATETIME_TYPE);
 	} else if (pydate_check(obj)) {
-	    char_datafmt(&self->fmt);
+	    date_datafmt(&self->fmt);
 #endif
 	} else {
 	    PyErr_SetString(PyExc_TypeError, "unsupported parameter type");
@@ -216,7 +216,7 @@ static PyObject *DataBuf_item(DataBufObj *self, int i)
 
 #ifdef CS_DATE_TYPE
     case CS_DATE_TYPE:
-        return date_alloc(item, CS_DATE_TYPE);
+        return date_alloc(item);
 #endif
 
     case CS_DECIMAL_TYPE:
@@ -269,7 +269,6 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	size = PyString_Size(v);
 	if (size > self->fmt.maxlength) {
 	    PyErr_SetString(PyExc_TypeError, "string too long for buffer");
-	    Py_XDECREF(obj);
 	    return -1;
 	}
 	memmove(item, PyString_AsString(v), size);
@@ -325,8 +324,16 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	break;
 
     case CS_INT_TYPE:
+        if (PyString_Check(v)) {
+	    obj = PyInt_FromString(PyString_AsString(v), NULL, 0);
+	    if (obj == NULL) {
+	    	return -1;
+	    }
+	    v = obj;
+        }
 	if (!PyInt_Check(v)) {
 	    PyErr_SetString(PyExc_TypeError, "integer expected");
+	    Py_XDECREF(obj);
 	    return -1;
 	}
 	*(CS_INT*)item = PyInt_AsLong(v);
@@ -377,14 +384,12 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 
     case CS_DATETIME_TYPE:
 	if (pydatetime_check(v)) {
-	    obj = PyObject_Str(v);
+	    obj = DateTime_FromPyDateTime(v);
 	    if (obj == NULL)
 		return -1;
 	    v = obj;
-        }
-        if (PyString_Check(v)) {
+        } else if (PyString_Check(v)) {
 	    obj2 = PyObject_Str(v);
-	    Py_XDECREF(obj);
 	    if (obj2 == NULL) {
 		return -1;
             }
@@ -397,6 +402,7 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	}
         if (!DateTime_Check(v)) {
             PyErr_SetString(PyExc_TypeError, "datetime expected");
+	    Py_XDECREF(obj);
             return -1;
         }
 	if (datetime_assign(v, CS_DATETIME_TYPE, item) != CS_SUCCEED)
@@ -417,14 +423,12 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 #ifdef CS_DATE_TYPE
     case CS_DATE_TYPE:
 	if (pydate_check(v)) {
-	    obj = PyObject_Str(v);
+	    obj = Date_FromPyDate(v);
 	    if (obj == NULL)
 		return -1;
 	    v = obj;
-        }
-        if (PyString_Check(v)) {
+        } else if (PyString_Check(v)) {
 	    obj2 = PyObject_Str(v);
-	    Py_XDECREF(obj);
 	    if (obj2 == NULL) {
 		return -1;
             }
@@ -437,6 +441,7 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
 	}
         if (!Date_Check(v)) {
             PyErr_SetString(PyExc_TypeError, "date expected");
+	    Py_XDECREF(obj);
             return -1;
         }
 	if (date_assign(v, CS_DATE_TYPE, item) != CS_SUCCEED)

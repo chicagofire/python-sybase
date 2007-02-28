@@ -177,7 +177,7 @@ typedef struct {
 extern PyTypeObject CS_DATAFMTType;
 #define CS_DATAFMT_Check(obj) (obj->ob_type == &CS_DATAFMTType)
 void datetime_datafmt(CS_DATAFMT *fmt, int type);
-void date_datafmt(CS_DATAFMT *fmt, int type);
+void date_datafmt(CS_DATAFMT *fmt);
 void money_datafmt(CS_DATAFMT *fmt, int type);
 void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale);
 void char_datafmt(CS_DATAFMT *fmt);
@@ -289,6 +289,7 @@ int copy_reg_datetime(PyObject *dict);
 extern char pickle_datetime__doc__[];
 PyObject *pickle_datetime(PyObject *module, PyObject *args);
 PyObject *DateTime_FromString(PyObject *obj);
+PyObject *DateTime_FromPyDateTime(PyObject *obj);
 
 #ifdef CS_DATE_TYPE
 typedef struct {
@@ -303,7 +304,7 @@ typedef struct {
 
 extern PyTypeObject DateType;
 #define Date_Check(obj) (obj->ob_type == &DateType)
-PyObject *date_alloc(void *value, int type);
+PyObject *date_alloc(void *value);
 int date_assign(PyObject *obj, int type, void *buff);
 int date_as_string(PyObject *obj, char *text);
 extern char DateType_new__doc__[];
@@ -312,6 +313,7 @@ int copy_reg_date(PyObject *dict);
 extern char pickle_date__doc__[];
 PyObject *pickle_date(PyObject *module, PyObject *args);
 PyObject *Date_FromString(PyObject *obj);
+PyObject *Date_FromPyDate(PyObject *obj);
 #endif /* CS_DATE_TYPE */
 
 typedef struct {
