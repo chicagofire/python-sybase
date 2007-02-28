@@ -1,3 +1,9 @@
+2007-02-28  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* databuf.c: Corrected bug in databuf_alloc: Sybase reports the
+	wrong maxlength for numeric type - verified with Sybase 12.5 -
+	thanks to patch provided by Phil Porter
+
 2007-02-26  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Added support for CS_DATE_TYPE
