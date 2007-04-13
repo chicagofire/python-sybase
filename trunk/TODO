@@ -7,5 +7,3 @@
 - BLOB columns (text/image)
 
 - Bulkcopy copy out
-
-- DataBuf[n] = val should do more conversions
