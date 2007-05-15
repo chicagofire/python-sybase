@@ -1,3 +1,9 @@
+2007-05-15  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* doc/installation.tex: Corrected documentation to compile with
+	FreeTDS and Threads thanks to Derek Harland (close tracker
+	1709043)
+
 2007-02-28  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Added conversion from string to int when assigning to a
@@ -15,7 +21,7 @@
 
 2007-05-03  Sébastien Sablé  <sable@users.sourceforge.net>
 
-       * Releasing version 0.38
+        * Releasing version 0.38
 
 2007-02-02  Sébastien Sablé  <sable@users.sourceforge.net>
 
