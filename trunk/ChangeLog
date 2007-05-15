@@ -13,6 +13,10 @@
 
 	* Added support for CS_DATE_TYPE
 
+2007-05-03  Sébastien Sablé  <sable@users.sourceforge.net>
+
+       * Releasing version 0.38
+
 2007-02-02  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Releasing version 0.38pre2
