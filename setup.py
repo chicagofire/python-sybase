@@ -229,7 +229,7 @@ class my_sdist(sdist):
 
 setup(name="python-sybase",
       version="0.39pre1",
-      maintainer="Sébastien Sablé",
+      maintainer=u"Sébastien Sablé",
       maintainer_email="sable@users.sourceforge.net",
       description=doclines[0],
       url="http://python-sybase.sourceforge.net/",
