@@ -12,7 +12,7 @@ from sybasect import __have_freetds__
 
 set_debug(sys.stderr)
 
-__version__ = '0.38pre2'
+__version__ = '0.39pre1'
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
