@@ -1,3 +1,7 @@
+2007-05-22  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Add metadata for pypi
+
 2007-05-15  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* doc/installation.tex: Corrected documentation to compile with

@@ -9,6 +9,24 @@
 #       python setup.py install
 #
 
+"""Sybase module for Python
+
+The Sybase module provides a Python interface to the Sybase relational
+database system. The Sybase package supports all of the Python
+Database API, version 2.0 with extensions.
+"""
+
+classifiers = """\
+Development Status :: 5 - Production/Stable
+Intended Audience :: Developers
+License :: OSI Approved :: BSD License
+Programming Language :: Python
+Topic :: Database
+Topic :: Software Development :: Libraries :: Python Modules
+Operating System :: Microsoft :: Windows
+Operating System :: Unix
+"""
+
 import distutils
 import os
 import sys
@@ -16,6 +34,15 @@ import string
 import re
 from distutils.core import setup, Extension
 from distutils.command.sdist import sdist
+
+if sys.version_info < (2, 3):
+    _setup = setup
+    def setup(**kwargs):
+        if kwargs.has_key("classifiers"):
+            del kwargs["classifiers"]
+        _setup(**kwargs)
+
+doclines = __doc__.split("\n")
 
 def api_exists(func, filename):
     try:
@@ -201,11 +228,15 @@ class my_sdist(sdist):
         sdist.run(self)
 
 setup(name="python-sybase",
-      version="0.38pre2",
+      version="0.39pre1",
       maintainer="Sébastien Sablé",
       maintainer_email="sable@users.sourceforge.net",
-      description="Sybase Extension to Python",
+      description=doclines[0],
       url="http://python-sybase.sourceforge.net/",
+      license="http://www.opensource.org/licenses/bsd-license.html",
+      platforms = ["any"],
+      classifiers = filter(None, classifiers.split("\n")),
+      long_description = "\n".join(doclines[2:]),
       py_modules=['Sybase'],
       include_dirs=[syb_incdir],
       ext_modules=[
