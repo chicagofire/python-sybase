@@ -1,5 +1,10 @@
 #!/bin/ksh
 
+if [[ ! -d target ]]
+then
+   rm -rf ../target
+fi
+
 ARCH=$(./config.guess)
 export ARCH
 SUPPORT_HOME=/livraison/test/${ARCH}/support/support-2.6.5
@@ -49,4 +54,4 @@ python setup.py install --prefix=./target
 PYTHONPATH=./target:${PYTHONPATH}
 export PYTHONPATH
 
-nosetests --source-folder=. --xml-report-folder=./nosexunit-xml --with-nosexunit -v
+nosetests --source-folder=. --xml-report-folder=./target/nosexunit-xml --with-nosexunit -v
