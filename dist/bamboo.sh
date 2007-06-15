@@ -38,7 +38,14 @@ case "${ARCH}" in
         ;;
     *)
         export LD_LIBRARY_PATH=${SUPPORT_HOME}/lib:${LD_LIBRARY_PATH}
-        export SYBASE=/sybase/product/12.5
+        if [[ -d /sybase/product/12.5 ]]
+        then
+           export SYBASE=/sybase/product/12.5
+        fi
+        if [[ -d /sybase/product/15.0 ]]
+        then
+           export SYBASE=/sybase/product/15.0
+        fi
         if [[ -f ${SYBASE}/SYBASE.sh ]]
         then
             . ${SYBASE}/SYBASE.sh
