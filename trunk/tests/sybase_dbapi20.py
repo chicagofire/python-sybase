@@ -416,8 +416,11 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         
         b = DataBuf('hello')
         self.assertEquals((b.datatype, b.format), (CS_CHAR_TYPE, CS_FMT_NULLTERM))
+
         b = DataBuf(123)
         self.assertEquals((b.datatype, b.format), (CS_INT_TYPE, CS_FMT_UNUSED))
+        b[0] = 100
+        self.assertEquals(b[0], 100)
         b[0] = '100'
         self.assertEquals(b[0], 100)
         
