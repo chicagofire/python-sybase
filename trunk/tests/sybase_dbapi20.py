@@ -142,7 +142,6 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
-
     def test_bug_result_pending2(self):
         con = self._connect()
         try:
@@ -361,7 +360,6 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
-
     def test_bulkcopy2(self):
         kw_args = dict(self.connect_kw_args)
         kw_args.update({'bulkcopy': 1, 'datetime': "python"})
@@ -462,7 +460,7 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         buf[0] = 100.5
         self.assertEquals(buf[0], 100.5)
         # buf[0] = '101.5'
-        # self.assertEquals(buf[0], 101.5)
+        # self.assertEquals(buf[0], 101.5) 
 
         fmt = CS_DATAFMT()
         fmt.datatype = CS_NUMERIC_TYPE
@@ -497,12 +495,42 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         self.assertEquals(buf[8], 108.0)
         self.assertEquals(buf[9], 109.0)
 
+#     def testThreadLocking(self):
+#         con = self._connect()
+#         try:
+#             query = "select t1=object_name(instrig), t2=object_name(updtrig), " + \
+#                     "t3=object_name(deltrig) from sysobjects where " + \
+#                     "id=object_id('Account')"
+#             cursor = con.cursor()
+#             cursor.execute(query)
+#             print "1"
+#             triggers = cursor.fetchall()
+#             print "2"
+#             while cursor.nextset():
+#                 print "3"
+#                 dummy = cursor.fetchall()
+#         finally:
+#             con.close()
 
 # TODO: the following tests must be overridden
-
-    def test_nextset(self):
-        pass
 
     def test_setoutputsize(self):
         pass
 
+    def help_nextset_setUp(self,cur):
+        ''' Should create a procedure called deleteme
+            that returns two result sets, first the 
+	    number of rows in booze then "name from booze"
+        '''
+        sql="""
+            create procedure deleteme as
+            begin
+                select count(*) from %sbooze
+                select name from %sbooze
+            end
+        """ % (self.table_prefix, self.table_prefix)
+        cur.execute(sql)
+
+    def help_nextset_tearDown(self,cur):
+        'If cleaning up is needed after nextSetTest'
+        cur.execute("drop procedure deleteme")

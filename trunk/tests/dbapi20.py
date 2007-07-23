@@ -716,10 +716,10 @@ class DatabaseAPI20Test(unittest.TestCase):
         #sql="""
         #    create procedure deleteme as
         #    begin
-        #        select count(*) from booze
-        #        select name from booze
+        #        select count(*) from %sbooze
+        #        select name from %sbooze
         #    end
-        #"""
+        #""" % (self.table_prefix, self.table_prefix)
         #cur.execute(sql)
 
     def help_nextset_tearDown(self,cur):
@@ -741,6 +741,7 @@ class DatabaseAPI20Test(unittest.TestCase):
                     cur.execute(sql)
 
                 self.help_nextset_setUp(cur)
+                self.commit(con)
 
                 cur.callproc('deleteme')
                 numberofrows=cur.fetchone()
@@ -752,12 +753,9 @@ class DatabaseAPI20Test(unittest.TestCase):
                 assert s == None,'No more return sets, should return None'
             finally:
                 self.help_nextset_tearDown(cur)
-
+                self.commit(con)
         finally:
             con.close()
-
-    def test_nextset(self):
-        raise NotImplementedError,'Drivers need to override this test'
 
     def test_arraysize(self):
         # Not much here - rest of the tests for this are in test_fetchmany
