@@ -304,6 +304,7 @@ class _FetchNow:
         self._result_list = []
         self._description_list = []
         self._rownum = 0
+        self.rowcount = -1
         status, self._cmd = self._conn.ct_cmd_alloc()
         if status != CS_SUCCEED:
             self._raise_error(Error, 'ct_cmd_alloc')
@@ -838,8 +839,8 @@ class Cursor:
         if desc:
             self.description = desc
             self.rowcount = self._fetcher.rowcount
-            return 1
-        return 0
+            return True
+        return None
 
     def setinputsizes(self, *sizes):
         '''DB-API Cursor.setinputsizes()
