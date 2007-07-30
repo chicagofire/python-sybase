@@ -1,5 +1,9 @@
 2007-07-30  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* doc/ctxobj.tex, doc/localeobj.tex: Corrected documentation about
+	CS_CONTEXT Objects thanks to bug report by Derek Harland (close
+	tracker 1748109)
+
 	* Sybase.py: Corrected bug in close() if connection killed from
 	outside thanks to patch by Derek Harland (close tracker 1746220)
 

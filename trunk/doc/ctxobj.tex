@@ -149,18 +149,18 @@ if ctx.ct_callback(CS_SET, CS_SERVERMSG_CB,
 \end{verbatim}
 \end{methoddesc}
 
-\begin{methoddesc}[CS_CONTEXT]{ct_loc_alloc}{}
+\begin{methoddesc}[CS_CONTEXT]{cs_loc_alloc}{}
 Allocates a new \class{CS_LOCALE} object which is used to control
-locale settings.  Calls the Sybase-CT \function{ct_loc_alloc()}
+locale settings.  Calls the Sybase-CT \function{cs_loc_alloc()}
 function like this:
 
 \begin{verbatim}
-status = ct_loc_alloc(ctx, &locale);
+status = cs_loc_alloc(ctx, &locale);
 \end{verbatim}
 
 Returns a tuple containing the Sybase result code and a new instance
 of the \class{CS_LOCALE} class constructed from the \var{locale}
-returned by \function{ct_loc_alloc()}.  \code{None} is returned as the
+returned by \function{cs_loc_alloc()}.  \code{None} is returned as the
 \class{CS_LOCALE} object when the result code is not \code{CS_SUCCEED}.
 \end{methoddesc}
 
