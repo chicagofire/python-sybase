@@ -1066,6 +1066,7 @@ class Connection:
             if status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_con_props')
             if not result & CS_CONSTAT_CONNECTED:
+                self._is_connected = 0
                 self._raise_error(ProgrammingError, 'Connection is already closed')
             if self._cmd:
                 self._cmd = None
