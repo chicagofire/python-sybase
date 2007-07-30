@@ -923,7 +923,7 @@ class Connection:
 
         if use_datetime == 0:
             DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE)
-            datetime = getattr(sys.modules[self.__module__], "datetime")
+            datetime = globals()["datetime"]
             def _column_value(val):
                 return val
             def Date(year, month, day):
@@ -935,7 +935,7 @@ class Connection:
                                            hour, minute, second))
         elif use_datetime == 1:
             DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE, DT.DateTimeType)
-            datetime = getattr(sys.modules[self.__module__], "datetime")
+            datetime = globals()["datetime"]
             def _column_value(val):
                 if type(val) is DateTimeType:
                     return DT.DateTime(val.year, val.month + 1, val.day,
@@ -984,7 +984,7 @@ class Connection:
                  'NotSupportedError',
                 )
         if name in names:
-            return getattr(sys.modules[self.__module__], name)
+            return globals()[name]
         else:
             raise AttributeError(name)
 

@@ -534,3 +534,12 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
     def help_nextset_tearDown(self,cur):
         'If cleaning up is needed after nextSetTest'
         cur.execute("drop procedure deleteme")
+
+    def test_bugtracker_1719789(self):
+
+        class MyConnection(Sybase.Connection):
+            pass
+
+        conn = MyConnection(*self.connect_args,**self.connect_kw_args)
+        conn.close()
+            
