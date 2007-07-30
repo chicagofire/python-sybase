@@ -1,8 +1,12 @@
 2007-07-30  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Sybase.py: Optimization in fetchall - using fetchmany instead of
+	fetchone to avoid locking time penalty, thanks to patch by Derek
+	Harland (close tracker 1746908)
+
 	* freetds.h, setup.py: Corrections to compile with bcp-support
-	against freetds thanks to Klaus-Martin Hansche (close tracker
-	1724088)
+	against freetds thanks to patch by Klaus-Martin Hansche (close
+	tracker 1724088)
 
 	* MANIFEST.in: Added test suites to distribution
 

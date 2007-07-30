@@ -603,10 +603,10 @@ class _FetchLazy:
         try:
             rows = []
             while 1:
-                row = self.fetchone()
-                if not row:
+                new_rows = self.fetchmany(-1)
+                if not new_rows:
                     break
-                rows.append(row)
+                rows.extend(new_rows)
             return rows
         finally:
             self._unlock()
