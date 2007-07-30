@@ -2,5 +2,6 @@ include ChangeLog LICENCE TODO
 include *.c *.h
 include doc/*.tex doc/pstumble doc/Makefile
 recursive-include examples README *.py *.sql *.readme
+recursive-include tests *.py
 global-include .cvsignore
 global-exclude *.pyc

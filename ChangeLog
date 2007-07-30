@@ -1,3 +1,7 @@
+2007-07-30  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* MANIFEST.in: Added test suites to distribution
+
 2007-07-23  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Better compliance with DBAPI: returns None in nextset when no
