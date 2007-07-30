@@ -49,7 +49,7 @@ def api_exists(func, filename):
         text = open(filename).read()
     except:
         return 0
-    if re.search(r'CS_PUBLIC %s' % func, text):
+    if re.search(r'CS_PUBLIC|CS_RETCODE %s' % func, text):
         return 1
 
 sybase = None

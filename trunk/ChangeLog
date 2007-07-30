@@ -1,5 +1,9 @@
 2007-07-30  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* freetds.h, setup.py: Corrections to compile with bcp-support
+	against freetds thanks to Klaus-Martin Hansche (close tracker
+	1724088)
+
 	* MANIFEST.in: Added test suites to distribution
 
 2007-07-23  Sébastien Sablé  <sable@users.sourceforge.net>
