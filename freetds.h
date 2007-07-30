@@ -100,6 +100,12 @@ typedef CS_NUMERIC CS_DECIMAL;
 #define CS_SERVERMSG_TYPE 4701
 #define CS_ALLMSG_TYPE 4702
 
+/* Define missing constants
+ */
+#ifndef CS_EXEC_IMMEDIATE
+#define CS_EXEC_IMMEDIATE   (CS_INT)719
+#endif
+
 /* FreeTDS does not define these in their include files for some reason...
  */
 CS_RETCODE blk_bind(CS_BLKDESC *blkdesc, CS_INT colnum, CS_DATAFMT *datafmt, CS_VOID *buffer, CS_INT *datalen, CS_SMALLINT *indicator);
