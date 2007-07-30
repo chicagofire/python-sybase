@@ -1,5 +1,8 @@
 2007-07-30  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Sybase.py: Corrected bug if inherit from Sybase.Connection
+	thanks to patch by Derek Harland (close tracker 1719789)
+
 	* Sybase.py: Optimization in fetchall - using fetchmany instead of
 	fetchone to avoid locking time penalty, thanks to patch by Derek
 	Harland (close tracker 1746908)
