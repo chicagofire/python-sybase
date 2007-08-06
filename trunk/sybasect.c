@@ -11,6 +11,10 @@
 #include "datetime.h"
 #endif
 
+#ifdef HAVE_DECIMAL
+PyObject *DecimalClass;
+#endif
+
 #ifdef FIND_LEAKS
 typedef struct LeakReg {
     PyObject *obj;
@@ -118,6 +122,15 @@ int pydatetime_check(PyObject *ob)
 {
 #ifdef HAVE_DATETIME
     return PyDateTime_Check(ob);
+#else
+    return 0;
+#endif
+}
+
+int pydecimal_check(PyObject *ob)
+{
+#ifdef HAVE_DECIMAL
+    return PyObject_IsInstance(ob, DecimalClass);
 #else
     return 0;
 #endif
@@ -1537,6 +1550,11 @@ void initsybasect(void)
     PyObject *m, *d, *rev = NULL;
     value_desc *desc;
 
+#ifdef HAVE_DECIMAL
+    PyObject *builtins = NULL, *list = NULL, *empty_dict = NULL,
+      *__import__ = NULL, *decimal = NULL, *Decimal = NULL, *mod = NULL;
+#endif
+
     /* Initialise the type of the new type objects here; doing it here
      * is required for portability to Windows without requiring C++. */
 #ifdef WANT_BULKCOPY
@@ -1585,6 +1603,19 @@ void initsybasect(void)
         goto error;
 #endif
 
+#ifdef HAVE_DECIMAL
+    builtins = PyImport_AddModule("__builtin__"); if (!builtins) goto error;
+    __import__ = PyObject_GetAttrString(builtins, "__import__"); if (!__import__) goto error;
+    Decimal = PyString_FromString("Decimal"); if (!Decimal) goto error;
+    list = PyList_New(1); if (!list) goto error;
+    Py_INCREF(Decimal);
+    PyList_SET_ITEM(list, 0, Decimal);
+    empty_dict = PyDict_New(); if (!empty_dict) goto error;
+    decimal = PyString_FromString("decimal"); if (!decimal) goto error;
+    mod = PyObject_CallFunction(__import__, "OOOO", decimal, d, empty_dict, list);
+    DecimalClass = PyObject_GetAttr(mod, Decimal); if (!DecimalClass) goto error;
+#endif
+
 #ifdef HAVE_FREETDS
     if (dict_add_int(d, "__have_freetds__", HAVE_FREETDS) < 0)
 	goto error;
@@ -1626,8 +1657,19 @@ void initsybasect(void)
 	|| copy_reg_datetime(d))
 	;
 
+
+
 error:
     Py_XDECREF(rev);
+
+#ifdef HAVE_DECIMAL
+    Py_XDECREF(__import__);
+    Py_XDECREF(list);
+    Py_XDECREF(Decimal);
+    Py_XDECREF(empty_dict);
+    Py_XDECREF(decimal);
+    Py_XDECREF(mod);
+#endif
 
     /* Check for errors */
     if (PyErr_Occurred()) {

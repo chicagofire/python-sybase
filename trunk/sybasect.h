@@ -96,6 +96,7 @@ enum { OPTION_BOOL, OPTION_INT, OPTION_STRING, OPTION_CMD,
 void debug_msg(char *fmt, ...);
 int pydate_check(PyObject *ob);
 int pydatetime_check(PyObject *ob);
+int pydecimal_check(PyObject *ob);
 
 typedef struct CS_CONTEXTObj {
     PyObject_HEAD

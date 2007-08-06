@@ -230,6 +230,9 @@ static int numeric_from_numeric(CS_NUMERIC *num, int precision, int scale, CS_NU
 
 int numeric_from_value(CS_NUMERIC *num, int precision, int scale, PyObject *obj)
 {
+    PyObject *str;
+    int res;
+
     if (PyInt_Check(obj))
 	return numeric_from_int(num, precision, scale, PyInt_AsLong(obj));
     else if (PyLong_Check(obj))
@@ -241,6 +244,12 @@ int numeric_from_value(CS_NUMERIC *num, int precision, int scale, PyObject *obj)
     else if (Numeric_Check(obj))
 	return numeric_from_numeric(num, precision, scale,
 				    &((NumericObj*)obj)->num);
+    else if (pydecimal_check(obj)) {
+	str = PyObject_Str(obj);
+	res = numeric_from_string(num, precision, scale, PyString_AsString(str));
+	Py_DECREF(str);
+	return res;
+    }						   
     PyErr_SetString(PyExc_TypeError, "could not convert to Numeric");
     return 0;
 }

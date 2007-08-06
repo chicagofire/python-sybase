@@ -96,6 +96,10 @@ PyObject *databuf_alloc(PyObject *obj)
 	} else if (pydate_check(obj)) {
 	    date_datafmt(&self->fmt);
 #endif
+#ifdef HAVE_DECIMAL
+	} else if (pydecimal_check(obj)) {
+	    numeric_datafmt(&self->fmt, CS_SRC_VALUE, CS_SRC_VALUE);
+#endif
 	} else {
 	    PyErr_SetString(PyExc_TypeError, "unsupported parameter type");
 	    Py_DECREF(self);
