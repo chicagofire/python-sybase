@@ -469,6 +469,9 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         self.assertEquals(buf[0], 100.5)
         buf[0] = '101.5'
         self.assertEquals(buf[0], 101.5)
+        from decimal import Decimal
+        buf[0] = Decimal('100.5')
+        self.assertEquals(buf[0], 100.5)
 
         fmt = CS_DATAFMT()
         fmt.datatype = CS_NUMERIC_TYPE

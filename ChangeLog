@@ -1,3 +1,7 @@
+2007-08-06  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Added support for python Decimal objects in databuf
+
 2007-07-30  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* doc/ctxobj.tex, doc/localeobj.tex: Corrected documentation about

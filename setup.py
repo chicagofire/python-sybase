@@ -145,6 +145,13 @@ except ImportError:
 else:
     syb_macros.append(('HAVE_DATETIME', None))
 
+try:
+    from decimal import Decimal
+except ImportError:
+    pass
+else:
+    syb_macros.append(('HAVE_DECIMAL', None))
+
 # distutils does not allow -D HAVE_FREETDS=60 so I have to find this
 # argument myself and remove it from sys.argv and set the macro via
 # the define_macros argument to the extension module.
