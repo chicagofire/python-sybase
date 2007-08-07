@@ -58,7 +58,7 @@ esac
 
 cd ..
 python setup.py install --prefix=./target
-PYTHONPATH=./target:${PYTHONPATH}
+PYTHONPATH=`pwd`/target/lib/python2.4/site-packages:${PYTHONPATH}
 export PYTHONPATH
 
 nosetests --source-folder=. --xml-report-folder=./target/nosexunit-xml --with-nosexunit -v
