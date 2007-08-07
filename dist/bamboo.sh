@@ -27,7 +27,7 @@ case "${ARCH}" in
         fi
         ;;
     sparc-sun-solaris2.10)
-        export PATH=/opt/SUNWspro/bin:/usr/local/bin:/usr/sfw/bin:/usr/ccs/bin:/usr/xpg4/bin:$PATH
+	export PATH=/opt/SUNWspro/bin:/usr/sfw/bin:/usr/ccs/bin:/usr/xpg4/bin:$PATH
         export CC=cc
         export CFLAGS="-g -O"
         export MAKE=gmake
