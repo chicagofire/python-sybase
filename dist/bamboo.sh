@@ -15,7 +15,11 @@ case "${ARCH}" in
     hppa2.0w-hp-hpux11.23)
         ;;
     powerpc-ibm-aix5.3.0.0)
-        export LIBPATH=${SUPPORT_HOME}/lib:${LIBPATH}
+        export MAKE=gmake
+        export ABI=32
+        export PATH=/usr/vac/bin:/usr/bin:${PATH}
+        export CC=xlc_r
+        export LIBPATH=${SUPPORT_HOME}/lib:/usr/lib:${LIBPATH}
         export SYBASE=/sybase/product/15.0
         if [[ -f ${SYBASE}/SYBASE.sh ]]
         then
