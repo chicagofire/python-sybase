@@ -2,7 +2,10 @@
 import dbapi20
 import Sybase
 import popen2
-
+try:
+    import nose
+except ImportError:
+    pass
 
 class TestSybase(dbapi20.DatabaseAPI20Test):
 
