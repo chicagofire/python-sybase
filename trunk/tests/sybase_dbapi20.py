@@ -252,6 +252,10 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             con.close()
 
     def test_mx_datetime(self):
+        try:
+            import mx.DateTime
+        except ImportError:
+            raise nose.SkipTest
         kw_args = dict(self.connect_kw_args)
         kw_args.update({'datetime': "mx"})
         con = self.driver.connect(
