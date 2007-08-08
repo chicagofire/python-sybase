@@ -1002,65 +1002,66 @@ class CtCursor:
             raise ProgrammingError('cursor is closed')
         self._lock()
         try:
-            # Discard any previous results
-            self._fetcher = None
-
-            _ctx.debug_msg("using ct_cursor, %s\n" % sql)
-            fetcher = self._fetcher = _FetchLazy(self._owner)
-            cmd = fetcher._cmd
- 
-            _ctx.debug_msg("cursor declare\n")
-            status = cmd.ct_cursor(CS_CURSOR_DECLARE, "ctmp%x" % id(self), sql, CS_UNUSED)
-            if status != CS_SUCCEED:
-                fetcher._raise_error(Error, 'ct_cursor declare')
-            self._cursor = 1
-
-            _ctx.debug_msg("cursor define params type\n")
-            for name, value in params.items():
-                _ctx.debug_msg("params: name '%s' value '%s'" % (name, value))
-
-                buf = DataBuf(value)
-                buf.name = name
-
-                fmt = CS_DATAFMT()
-                fmt.count = buf.count
-                fmt.datatype = buf.datatype
-                fmt.format = CS_FMT_UNUSED
-                fmt.maxlength = buf.maxlength
-                fmt.name = buf.name
-                fmt.precision = buf.precision
-                fmt.scale = buf.scale
-                fmt.status = CS_INPUTVALUE
-                fmt.strip = buf.strip
-                fmt.usertype = buf.usertype
-
-                status = cmd.ct_param(fmt)
+            try:
+                # Discard any previous results
+                self._fetcher = None
+    
+                _ctx.debug_msg("using ct_cursor, %s\n" % sql)
+                fetcher = self._fetcher = _FetchLazy(self._owner)
+                cmd = fetcher._cmd
+     
+                _ctx.debug_msg("cursor declare\n")
+                status = cmd.ct_cursor(CS_CURSOR_DECLARE, "ctmp%x" % id(self), sql, CS_UNUSED)
                 if status != CS_SUCCEED:
-                    fetcher._raise_error(Error, 'ct_param')
-
-            nb_rows = 100
-            cmd.ct_cursor(CS_CURSOR_ROWS, nb_rows)
-            _ctx.debug_msg("using ct_cursor nb_rows %d\n" % nb_rows)
-            if status != CS_SUCCEED:
-                fetcher._raise_error(Error, 'ct_cursor rows')
-
-            _ctx.debug_msg("cursor open\n")
-            status = cmd.ct_cursor(CS_CURSOR_OPEN)
-            if status != CS_SUCCEED:
-                fetcher._raise_error(Error, 'ct_cursor open')
-                
-            _ctx.debug_msg("cursor define params value\n")
-            for name, value in params.items():
-                buf = DataBuf(value)
-                buf.name = name
-                status = cmd.ct_param(buf)
+                    fetcher._raise_error(Error, 'ct_cursor declare')
+                self._cursor = 1
+    
+                _ctx.debug_msg("cursor define params type\n")
+                for name, value in params.items():
+                    _ctx.debug_msg("params: name '%s' value '%s'" % (name, value))
+    
+                    buf = DataBuf(value)
+                    buf.name = name
+    
+                    fmt = CS_DATAFMT()
+                    fmt.count = buf.count
+                    fmt.datatype = buf.datatype
+                    fmt.format = CS_FMT_UNUSED
+                    fmt.maxlength = buf.maxlength
+                    fmt.name = buf.name
+                    fmt.precision = buf.precision
+                    fmt.scale = buf.scale
+                    fmt.status = CS_INPUTVALUE
+                    fmt.strip = buf.strip
+                    fmt.usertype = buf.usertype
+    
+                    status = cmd.ct_param(fmt)
+                    if status != CS_SUCCEED:
+                        fetcher._raise_error(Error, 'ct_param')
+    
+                nb_rows = 100
+                cmd.ct_cursor(CS_CURSOR_ROWS, nb_rows)
+                _ctx.debug_msg("using ct_cursor nb_rows %d\n" % nb_rows)
                 if status != CS_SUCCEED:
-                    fetcher._raise_error(Error, 'ct_param')
-
-            self.description = fetcher.start(self.arraysize)
-        except:
-            self._cursor = 0
-            raise
+                    fetcher._raise_error(Error, 'ct_cursor rows')
+    
+                _ctx.debug_msg("cursor open\n")
+                status = cmd.ct_cursor(CS_CURSOR_OPEN)
+                if status != CS_SUCCEED:
+                    fetcher._raise_error(Error, 'ct_cursor open')
+                    
+                _ctx.debug_msg("cursor define params value\n")
+                for name, value in params.items():
+                    buf = DataBuf(value)
+                    buf.name = name
+                    status = cmd.ct_param(buf)
+                    if status != CS_SUCCEED:
+                        fetcher._raise_error(Error, 'ct_param')
+    
+                self.description = fetcher.start(self.arraysize)
+            except:
+                self._cursor = 0
+                raise
         finally:
             self._unlock()
 
