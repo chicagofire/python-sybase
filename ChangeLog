@@ -1,5 +1,9 @@
 2007-08-08  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Sybase.py, doc/dbapi.tex: Additional 'locale' argument to
+	connect and Connection to set the locale of the connection thanks
+	to patch by Harri Pasanen
+
 	* Sybase.py: Corrected syntax specific to python 2.5
 
 	* setup.py: Using setuptools

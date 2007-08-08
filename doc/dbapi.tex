@@ -289,6 +289,14 @@ db.set_property(Sybase.CS_HOSTNAME, 'secret')
 db.connect()
 \end{verbatim}
 
+\item{\var{locale \code{= None}}}
+
+Controls the locale of the connection to match that of the server. 
+
+\begin{verbatim}
+db = Sybase.connect('SYBASE', 'sa', '', locale = 'utf8')
+\end{verbatim}
+
 \item{\var{locking \code{= 1}}}
 
 Controls whether or not thread locks will be used on the connection
