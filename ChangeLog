@@ -1,5 +1,7 @@
 2007-08-08  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Sybase.py: Corrected syntax specific to python 2.5
+
 	* setup.py: Using setuptools
 
 2007-08-06  Sébastien Sablé  <sable@users.sourceforge.net>
