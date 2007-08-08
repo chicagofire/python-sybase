@@ -1232,7 +1232,7 @@ class Connection:
 
     def __init__(self, dsn, user, passwd, database = None,
                  strip = 0, auto_commit = 0, delay_connect = 0, locking = 1,
-                 datetime = None, bulkcopy = 0):
+                 datetime = None, bulkcopy = 0, locale = None):
         '''DB-API Sybase.Connect()
         '''
         self._conn = self._cmd = None
@@ -1261,6 +1261,16 @@ class Connection:
             self._raise_error(Error, 'ct_con_props')
         if bulkcopy:
             status = conn.ct_con_props(CS_SET, CS_BULK_LOGIN, CS_TRUE)
+            if status != CS_SUCCEED:
+                self._raise_error(Error, 'ct_con_props')
+        if locale:
+            status, loc = _ctx.cs_loc_alloc()
+            if status != CS_SUCCEED:
+                self._raise_error(Error, 'cs_loc_alloc')
+            status = loc.cs_locale(CS_SET, CS_SYB_CHARSET, locale)
+            if status != CS_SUCCEED:
+                self._raise_error(Error, 'cs_locale')
+            status = conn.ct_con_props(CS_SET, CS_LOC_PROP, loc)
             if status != CS_SUCCEED:
                 self._raise_error(Error, 'ct_con_props')
         if not delay_connect:
@@ -1656,6 +1666,8 @@ class Bulkcopy(object):
 
 
 def connect(dsn, user, passwd, database = None,
-            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1, datetime = None, bulkcopy = 0):
+            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1, datetime = None,
+            bulkcopy = 0, locale = None):
     return Connection(dsn, user, passwd, database,
-                      strip, auto_commit, delay_connect, locking, datetime, bulkcopy)
+                      strip, auto_commit, delay_connect, locking,
+                      datetime, bulkcopy, locale)
