@@ -27,6 +27,9 @@ Operating System :: Microsoft :: Windows
 Operating System :: Unix
 """
 
+from ez_setup import use_setuptools
+use_setuptools()
+
 import distutils
 import os
 import sys
