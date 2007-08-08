@@ -1,0 +1,70 @@
+Subject: Sybase module 0.38pre2 released
+To: python-sybase@object-craft.com.au
+Cc: python-announce@python.org,freetds@franklin.oit.unc.edu,db-sig@python.org,python-list@python.org
+
+WHAT IS IT:
+
+The Sybase module provides a Python interface to the Sybase relational
+database system.  It supports all of the Python Database API, version
+2.0 with extensions.
+
+The module is available here:
+
+http://downloads.sourceforge.net/python-sybase/python-sybase-0.38pre2.tar.gz
+
+The module home page is here:
+
+http://python-sybase.sourceforge.net/
+
+
+CHANGES SINCE 0.38pre1:
+
+* Add structured error information to Sybase.DatabaseError thanks to
+patch provided by Gregory Bond (close tracker 1631902)
+
+* Resurrected Sybase.Bulkcopy functionality thanks to patch provided
+by Gregory Bond (close tracker 1632916)
+
+* Corrected AttributeError when locking is off (close tracker 1637942
+reported by Jim Nusbaum)
+
+* Corrected incorrect type mx.DateTime.DateTime returned by
+Sybase.Date() in "mx" datetime mode. This type is not supported by
+DataBuf.
+
+* Corrected crash on a BLK object when debug is enabled (close tracker
+1630941 reported by Gregory Bond)
+
+* rowcount is now propagated to Cursor (corrects tracker 1621003)
+
+* Added support for python datetime type in DataBuf and as parameter
+of Cursor.execute()
+
+* Corrected Date, Time and Timestamp functions when using mx.DateTime
+or native python datetime types
+
+* Corrected DATETIME as cursor.description still returns native Sybase
+datetime types
+
+* Corrected blk_describe always returns (status, None) thanks to patch
+by Phil Porter
+
+* Patch to handle CS_LONG type based on	patch by Paul Rensing
+
+
+MAJOR CHANGES SINCE 0.37:
+
+* This release works with python 2.5
+
+* It also works with sybase 15
+
+* It works with 64bits clients
+
+* It can be configured to return native python datetime objects
+
+* The bug "This routine cannot be called because another command
+structure has results pending." which appears in various cases has
+been corrected
+
+* It includes a unitary test suite based on the dbapi2.0 compliance
+test suite

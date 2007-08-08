@@ -1,0 +1,26 @@
+Subject: Sybase module 0.38pre1 released
+To: python-sybase@object-craft.com.au
+Cc: python-announce@python.org,freetds@franklin.oit.unc.edu,db-sig@python.org,python-list@python.org
+
+WHAT IS IT:
+
+The Sybase module provides a Python interface to the Sybase relational
+database system.  It supports all of the Python Database API, version
+2.0 with extensions.
+
+MAJOR CHANGES SINCE 0.37:
+
+* This release works with python 2.5
+
+* It also works with sybase 15
+
+* It works with 64bits clients
+
+* It can be configured to return native python datetime objects
+
+* The bug "This routine cannot be called because another command
+structure has results pending." which appears in various cases has
+been corrected
+
+* It includes a unitary test suite based on the dbapi2.0 compliance
+test suite

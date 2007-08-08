@@ -1,0 +1,43 @@
+Subject: Sybase module 0.35 released
+To: python-sybase@object-craft.com.au
+Cc: python-announce@python.org,freetds@franklin.oit.unc.edu,db-sig@python.org,python-list@python.org
+
+WHAT IS IT:
+
+The Sybase module provides a Python interface to the Sybase relational
+database system.  It supports all of the Python Database API, version
+2.0 with extensions.
+
+NOTES:
+
+In this release the module uses callback instead of inline error
+handling from the Sybase CT library.  This has caused quite extensive
+changes to the threading support inside the low level extension
+module.
+
+One of the nice side effects of using callback error handling is that
+server errors while executing stored procedures will now be reported
+correctly.
+
+FreeTDS support is much improved in this version.
+
+You can build for FreeTDS like this:
+
+     python setup.py build_ext -D HAVE_FREETDS -U WANT_BULKCOPY
+     python setup.py install
+
+The module is available here:
+
+    http://www.object-craft.com.au/projects/sybase/download/sybase-0.35.tar.gz
+
+The module home page is here:
+
+    http://www.object-craft.com.au/projects/sybase/
+
+CHANGES SINCE 0.35pre3:
+
+No problems were reported with the 0.35pre3 release so the changes are
+minimal.
+
+* sybasect extension module now includes a __version__ string.
+
