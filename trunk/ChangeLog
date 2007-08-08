@@ -1,3 +1,7 @@
+2007-08-08  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* setup.py: Using setuptools
+
 2007-08-06  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Added support for python Decimal objects in databuf
