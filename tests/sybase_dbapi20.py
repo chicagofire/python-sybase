@@ -7,6 +7,7 @@ try:
 except ImportError:
     pass
 
+
 class TestSybase(dbapi20.DatabaseAPI20Test):
 
     driver = Sybase    

@@ -318,7 +318,9 @@ class _FetchNow:
             try:
                 status, result = self._cmd.ct_results()
             except Exception, e:
-                self._conn.ct_cancel(CS_CANCEL_ALL)
+                status = self._cmd.ct_cancel(CS_CANCEL_ALL)
+                if status != CS_SUCCEED:
+                    self._raise_error(Error, 'ct_cancel')
                 raise e
             if status == CS_END_RESULTS:
                 if self._description_list:
@@ -341,7 +343,9 @@ class _FetchNow:
         return 1
 
     def _raise_error(self, exc, text):
-        self._conn.ct_cancel(CS_CANCEL_ALL)
+        status = self._cmd.ct_cancel(CS_CANCEL_ALL)
+        if status != CS_SUCCEED:
+            self._raise_error(Error, 'ct_cancel')
         raise exc(text)
 
     def _read_result(self):
@@ -507,14 +511,14 @@ class _FetchLazy:
 
     def _raise_exception(self, exc):
         if self._state not in (_LAZY_IDLE, _LAZY_CLOSED):
-            if self._owner._conn.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
+            if self._cmd.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
                 self._set_state(_LAZY_IDLE)
                 self._unlock()
         raise exc
 
     def _raise_error(self, exc, text):
         if self._state not in (_LAZY_IDLE, _LAZY_CLOSED):
-            if self._owner._conn.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
+            if self._cmd.ct_cancel(CS_CANCEL_ALL) == CS_SUCCEED:
                 self._set_state(_LAZY_IDLE)
                 self._unlock()
         raise exc(text)
@@ -683,7 +687,7 @@ class _FetchLazy:
                 self._raise_error(Error, 'ct_results')
 
 
-class Cursor:
+class CmdCursor:
 
     def __init__(self, owner):
         '''Implements DB-API Cursor object
@@ -851,6 +855,376 @@ class Cursor:
         '''DB-API Cursor.setoutputsize()
         '''
         pass
+
+
+class CtCursor:
+    def __init__(self, owner):
+        '''Implements DB-API Cursor object
+        '''
+        self.description = None         # DB-API
+        self.rowcount = -1              # DB-API
+        self.arraysize = 1              # DB-API
+        self._owner = owner
+        self._fetcher = None
+        self._closed = 0
+        self._cursor = 0
+
+    def _lock(self):
+        self._owner._lock()
+
+    def _unlock(self):
+        self._owner._unlock()
+
+    def _checkready(self):
+        if self._closed:
+            raise ProgrammingError('cursor is closed')
+        if not self._fetcher:
+            raise ProgrammingError('query has not been executed')
+
+    def _close_cursor(self):
+        if not self._cursor:
+            raise ProgrammingError('cursor undefined')
+
+        _ctx.debug_msg("_close_cursor starts\n")
+
+        cmd = self._fetcher._cmd
+
+        _ctx.debug_msg('cancel9\n')
+        status = cmd.ct_cancel(CS_CANCEL_ALL)
+        if status != CS_SUCCEED:
+            self._fetcher._raise_error(Error, 'ct_cancel')
+
+        # while 1:
+        #     status, result = cmd.ct_results()
+        #     if status != CS_SUCCEED:
+        #         break
+
+        _ctx.debug_msg("cursor close\n")
+        status = cmd.ct_cursor(CS_CURSOR_CLOSE)
+        if status != CS_SUCCEED:
+            self._fetcher._raise_error(Error, 'ct_cursor close')
+
+        status = cmd.ct_send()
+        if status != CS_SUCCEED:
+            self._raise_error(Error, 'ct_send')
+
+        while 1:
+            status, result = cmd.ct_results()
+            if status != CS_SUCCEED:
+                break
+
+        _ctx.debug_msg("cursor deallocate\n")
+        status = cmd.ct_cursor(CS_CURSOR_DEALLOC)
+        if status != CS_SUCCEED:
+            self._fetcher._raise_error(Error, 'ct_cursor dealloc')
+
+        status = cmd.ct_send()
+        if status != CS_SUCCEED:
+            self._raise_error(Error, 'ct_send')
+
+        while 1:
+            status, result = cmd.ct_results()
+            if status != CS_SUCCEED:
+                break
+
+        self._fetcher._set_state(_LAZY_CLOSED)
+        self._cursor = 0
+        _ctx.debug_msg("fin cursor close\n")
+
+    def callproc(self, name, params = ()):
+        '''DB-API Cursor.callproc()
+        '''
+        _ctx.debug_msg('Cursor.callproc\n')
+        if self._closed:
+            raise ProgrammingError('cursor is closed')
+        self._lock()
+        try:
+            # Discard any previous results
+            self._fetcher = None
+            self.return_status = None
+            self.rowcount = -1
+
+            # Prepare to retrieve new results.
+            fetcher = self._fetcher = _FetchNowParams(self._owner)
+            cmd = fetcher._cmd
+            status = cmd.ct_command(CS_RPC_CMD, name)
+            if status != CS_SUCCEED:
+                fetcher._raise_error(Error, 'ct_command')
+            # Send parameters.
+            if type(params) is type({}):
+                out_params = {}
+                for name, value in params.items():
+                    out_params[name] = value
+                    if isinstance(value, DataBufType):
+                        buf = value
+                    else:
+                        buf = DataBuf(value)
+                    buf.name = name
+                    status = cmd.ct_param(buf)
+                    if status != CS_SUCCEED:
+                        fetcher._raise_error(Error, 'ct_param')
+            else:
+                out_params = []
+                for value in params:
+                    out_params.append(value)
+                    if isinstance(value, DataBufType):
+                        buf = value
+                    else:
+                        buf = DataBuf(value)
+                    status = cmd.ct_param(buf)
+                    if status != CS_SUCCEED:
+                        fetcher._raise_error(Error, 'ct_param')
+            # Start retreiving results.
+            self.description = fetcher.start(self.arraysize, out_params)
+            self.return_status = fetcher.return_status
+            self.rowcount = len(out_params)
+            return out_params
+        finally:
+            self._unlock()
+
+    def close(self):
+        '''DB-API Cursor.close()
+        '''
+        if self._closed:
+            raise ProgrammingError('cursor is closed')
+        if self._cursor:
+            self._close_cursor()
+        self._fetcher = None
+        self.rowcount = -1
+        self._closed = 1
+
+    def execute(self, sql, params = {}):
+        '''DB-API Cursor.execute()
+        '''
+
+        _ctx.debug_msg('Cursor.execute\n')
+        if self._closed:
+            raise ProgrammingError('cursor is closed')
+        self._lock()
+        try:
+            # Discard any previous results
+            self._fetcher = None
+
+            _ctx.debug_msg("using ct_cursor, %s\n" % sql)
+            fetcher = self._fetcher = _FetchLazy(self._owner)
+            cmd = fetcher._cmd
+ 
+            _ctx.debug_msg("cursor declare\n")
+            status = cmd.ct_cursor(CS_CURSOR_DECLARE, "ctmp%x" % id(self), sql, CS_UNUSED)
+            if status != CS_SUCCEED:
+                fetcher._raise_error(Error, 'ct_cursor declare')
+            self._cursor = 1
+
+            _ctx.debug_msg("cursor define params type\n")
+            for name, value in params.items():
+                _ctx.debug_msg("params: name '%s' value '%s'" % (name, value))
+
+                buf = DataBuf(value)
+                buf.name = name
+
+                fmt = CS_DATAFMT()
+                fmt.count = buf.count
+                fmt.datatype = buf.datatype
+                fmt.format = CS_FMT_UNUSED
+                fmt.maxlength = buf.maxlength
+                fmt.name = buf.name
+                fmt.precision = buf.precision
+                fmt.scale = buf.scale
+                fmt.status = CS_INPUTVALUE
+                fmt.strip = buf.strip
+                fmt.usertype = buf.usertype
+
+                status = cmd.ct_param(fmt)
+                if status != CS_SUCCEED:
+                    fetcher._raise_error(Error, 'ct_param')
+
+            nb_rows = 100
+            cmd.ct_cursor(CS_CURSOR_ROWS, nb_rows)
+            _ctx.debug_msg("using ct_cursor nb_rows %d\n" % nb_rows)
+            if status != CS_SUCCEED:
+                fetcher._raise_error(Error, 'ct_cursor rows')
+
+            _ctx.debug_msg("cursor open\n")
+            status = cmd.ct_cursor(CS_CURSOR_OPEN)
+            if status != CS_SUCCEED:
+                fetcher._raise_error(Error, 'ct_cursor open')
+                
+            _ctx.debug_msg("cursor define params value\n")
+            for name, value in params.items():
+                buf = DataBuf(value)
+                buf.name = name
+                status = cmd.ct_param(buf)
+                if status != CS_SUCCEED:
+                    fetcher._raise_error(Error, 'ct_param')
+
+            self.description = fetcher.start(self.arraysize)
+        except:
+            self._cursor = 0
+            raise
+        finally:
+            self._unlock()
+
+    def executemany(self, sql, params_seq = []):
+        '''DB-API Cursor.executemany()
+        '''
+        _ctx.debug_msg('Cursor.executemany\n')
+        if self._closed:
+            raise ProgrammingError('cursor is closed')
+        self._lock()
+        try:
+            rowcount = 0
+            for params in params_seq:
+                self.execute(sql, params)
+                rowcount += self.rowcount
+                if not self._fetcher._is_idle():
+                    self._fetcher._raise_error(ProgrammingError, 'fetchable results on cursor')
+            self.rowcount = rowcount
+        finally:
+            self._unlock()
+
+    def fetchone(self):
+        '''DB-API Cursor.fetchone()
+        '''
+        self._checkready()
+        return self._fetcher.fetchone()
+
+    def fetchmany(self, num = -1):
+        '''DB-API Cursor.fetchmany()
+        '''
+        self._checkready()
+        if num < 0:
+            num = self.arraysize
+        return self._fetcher.fetchmany(num)
+
+    def fetchall(self):
+        '''DB-API Cursor.fetchall()
+        '''
+        self._checkready()
+        return self._fetcher.fetchall()
+
+    def nextset(self):
+        '''DB-API Cursor.nextset()
+        '''
+        self._checkready()
+        desc = self._fetcher.nextset()
+        if desc:
+            self.description = desc
+            self.rowcount = self._fetcher.rowcount
+            return True
+        return None
+
+    def setinputsizes(self, *sizes):
+        '''DB-API Cursor.setinputsizes()
+        '''
+        pass
+
+    def setoutputsize(self, size, column = None):
+        '''DB-API Cursor.setoutputsize()
+        '''
+        pass
+
+
+class Cursor(object):
+    def __init__(self, owner):
+        '''Implements DB-API Cursor object
+        '''
+        self._owner = owner
+        self._imp = None
+        self.__arraysize = 1
+
+    def callproc(self, name, params = ()):
+        '''DB-API Cursor.callproc()
+        '''
+        if self._imp:
+            self._imp.close()
+        self._imp = CmdCursor(self._owner)
+        return self._imp.callproc(name, params)
+
+    def close(self):
+        '''DB-API Cursor.close()
+        '''
+        if self._imp:
+            self._imp.close()
+
+    def execute(self, sql, params = {}):
+        '''DB-API Cursor.execute()
+        '''
+        if self._imp:
+            self._imp.close()
+        if sql.lower().startswith("select"):
+            self._imp = CtCursor(self._owner)
+        else:
+            self._imp = CmdCursor(self._owner)
+        self._imp.arraysize = self.__arraysize
+        return self._imp.execute(sql, params)
+
+    def executemany(self, sql, params_seq = []):
+        '''DB-API Cursor.executemany()
+        '''
+        if self._imp:
+            self._imp.close()
+        if sql.lower().startswith("select"):
+            self._imp = CtCursor(self._owner)
+        else:
+            self._imp = CmdCursor(self._owner)
+        self._imp.arraysize = self.__arraysize
+        return self._imp.executemany(sql, params_seq)
+
+    def fetchone(self):
+        '''DB-API Cursor.fetchone()
+        '''
+        if not self._imp:
+            raise ProgrammingError('cursor unimplemented')
+        return self._imp.fetchone()
+
+    def fetchmany(self, num = -1):
+        '''DB-API Cursor.fetchmany()
+        '''
+        if not self._imp:
+            raise ProgrammingError('cursor unimplemented')
+        return self._imp.fetchmany(num)
+
+    def fetchall(self):
+        '''DB-API Cursor.fetchall()
+        '''
+        if not self._imp:
+            raise ProgrammingError('cursor unimplemented')
+        return self._imp.fetchall()
+
+    def nextset(self):
+        '''DB-API Cursor.nextset()
+        '''
+        if not self._imp:
+            raise ProgrammingError('cursor unimplemented')
+        return self._imp.nextset()
+
+    def setinputsizes(self, *sizes):
+        '''DB-API Cursor.setinputsizes()
+        '''
+        pass
+
+    def setoutputsize(self, size, column = None):
+        '''DB-API Cursor.setoutputsize()
+        '''
+        pass
+
+    def get_arraysize(self):
+        return self.__arraysize
+    
+    def set_arraysize(self, arraysize):
+        self.__arraysize = arraysize
+        if self._imp:
+            self._imp.arraysize = arraysize
+
+    def get_description(self):
+        return self._imp.description
+    
+    def get_rowcount(self):
+        return self._imp.rowcount
+
+    arraysize = property(get_arraysize, set_arraysize)
+    description = property(get_description)
+    rowcount = property(get_rowcount)
 
 
 class Connection:
@@ -1088,14 +1462,6 @@ class Connection:
     def commit(self, name = None):
         '''DB-API Connection.commit()
         '''
-        # We need to cancel all result sets before commiting,
-        # otherwise we get a pending results error
-        if self._is_connected:
-            self._lock()
-            try:
-                self._conn.ct_cancel(CS_CANCEL_ALL)
-            finally:
-                self._unlock()
         if name:
             self.execute('commit transaction %s' % name)
         else:

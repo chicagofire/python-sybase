@@ -2,6 +2,8 @@
 
 	* Added support for python Decimal objects in databuf
 
+	* Sybase.py: Using ct_cursor for select requests
+
 2007-07-30  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* doc/ctxobj.tex, doc/localeobj.tex: Corrected documentation about
