@@ -544,7 +544,10 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
 
     def help_nextset_tearDown(self,cur):
         'If cleaning up is needed after nextSetTest'
-        cur.execute("drop procedure deleteme")
+        try:
+            cur.execute("drop procedure deleteme")
+        except:
+            pass
 
     def test_bugtracker_1719789(self):
 
