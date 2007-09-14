@@ -1,3 +1,7 @@
+2007-09-14  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* sybasect.c: Expose sybase date type functions
+
 2007-08-28  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: Refactoring - merged Fetchers, CTCursor and CmdCursor
