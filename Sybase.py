@@ -333,10 +333,10 @@ class Cursor:
             self._raise_error(Error('ct_cmd_alloc'))
 
     def _reset(self):
-        if self._fetching:
-            self._cancel_cmd()
         if self._ct_cursor:
             self._close_ct_cursor()
+        elif self._fetching:
+            self._cancel_cmd()
         self._result_list = []
         self.description = []
         self._rownum = -1
