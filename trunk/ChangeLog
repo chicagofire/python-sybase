@@ -1,5 +1,8 @@
 2007-09-14  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Sybase.py: Add type mapping as proposed in
+	http://www.uniqsys.com/~carsten/typemap.html by Carsten Haese
+
 	* sybasect.c: Expose sybase date type functions
 
 2007-08-28  Sébastien Sablé  <sable@users.sourceforge.net>

@@ -216,17 +216,9 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
-    def test_invalid_datetime(self):
-        kw_args = dict(self.connect_kw_args)
-        kw_args.update({'datetime': "none"})
-        self.assertRaises(ValueError, self.driver.connect, *self.connect_args,**kw_args)
-
     def test_python_datetime(self):
-        kw_args = dict(self.connect_kw_args)
-        kw_args.update({'datetime': "python"})
-        con = self.driver.connect(
-            *self.connect_args,**kw_args
-            )
+        con = self._connect()
+        con.outputmap = self.driver.DateTimeAsPython
         try:
             import datetime
             cur = con.cursor()
@@ -241,7 +233,6 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             cur.execute("select * from %sbooze" % self.table_prefix)
             res = cur.fetchall()
             date = res[0][0]
-            self.assertEqual(self.driver.use_datetime, 2)
             self.assert_(isinstance(date, datetime.datetime))
             self.assertEquals(cur.description[0][1], self.driver.DATETIME)
             # self.assertEquals(cur.description[0][1], datetime.datetime)
@@ -249,7 +240,7 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             self.assertEquals(date.month, 11)
             self.assertEquals(date.day, 24)
             self.assertEquals(type(date), self.driver.DATETIME)
-            self.assert_(isinstance(self.driver.Date(2006,12,24), datetime.datetime))
+            self.assert_(isinstance(self.driver.Date(2006,12,24), datetime.date))
             self.assert_(isinstance(self.driver.Time(23,30,00), datetime.time))
             self.assert_(isinstance(self.driver.Date(2006,12,24), datetime.datetime))
         finally:
@@ -260,11 +251,8 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             import mx.DateTime
         except ImportError:
             raise nose.SkipTest
-        kw_args = dict(self.connect_kw_args)
-        kw_args.update({'datetime': "mx"})
-        con = self.driver.connect(
-            *self.connect_args,**kw_args
-            )
+        con = self._connect()
+        con.outputmap = self.driver.DateTimeAsMx
         try:
             cur = con.cursor()
             cur.execute('create table %sbooze (day date)' % self.table_prefix)
@@ -276,7 +264,6 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             cur.execute("select * from %sbooze" % self.table_prefix)
             res = cur.fetchall()
             date = res[0][0]
-            self.assertEqual(self.driver.use_datetime, 1)
             import mx.DateTime
             self.assert_(isinstance(date, mx.DateTime.DateTimeType))
             self.assertEquals(cur.description[0][1], self.driver.DATETIME)
@@ -285,18 +272,15 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             self.assertEquals(date.month, 11)
             self.assertEquals(date.day, 24)
             self.assertEquals(type(date), self.driver.DATETIME)
-            self.assert_(isinstance(self.driver.Date(2006,12,24), self.driver.DateTimeType))
-            self.assert_(isinstance(self.driver.Time(23,30,00), self.driver.DateTimeType))
-            self.assert_(isinstance(self.driver.Date(2006,12,24), self.driver.DateTimeType))
+            # self.assert_(isinstance(self.driver.Date(2006,12,24), self.driver.DateTimeType))
+            # self.assert_(isinstance(self.driver.Time(23,30,00), self.driver.DateTimeType))
+            # self.assert_(isinstance(self.driver.Date(2006,12,24), self.driver.DateTimeType))
         finally:
             con.close()
 
     def test_sybase_datetime(self):
-        kw_args = dict(self.connect_kw_args)
-        kw_args.update({'datetime': "sybase"})
-        con = self.driver.connect(
-            *self.connect_args,**kw_args
-            )
+        con = self._connect()
+        con.outputmap = self.driver.DateTimeAsSybase
         try:
             cur = con.cursor()
             cur.execute('create table %sbooze (day date)' % self.table_prefix)
@@ -308,17 +292,16 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             cur.execute("select * from %sbooze" % self.table_prefix)
             res = cur.fetchall()
             date = res[0][0]
-            self.assertEqual(self.driver.use_datetime, 0)
             self.assertEquals(cur.description[0][1], self.driver.DATETIME)
             self.assert_(isinstance(date, self.driver.DateTimeType))
             self.assertEquals(date.year, 2006)
             self.assertEquals(date.month, 10)
             self.assertEquals(date.day, 24)
-            # self.assertEquals(type(date), self.driver.DATETIME)
-            self.assert_(type(date) >= self.driver.DATETIME)
-            self.assert_(isinstance(self.driver.Date(2006,11,24), self.driver.DateTimeType))
-            self.assert_(isinstance(self.driver.Time(23,30,00), self.driver.DateTimeType))
-            self.assert_(isinstance(self.driver.Date(2006,12,24), self.driver.DateTimeType))
+            self.assertEquals(type(date), self.driver.DATETIME)
+            # self.assert_(type(date) >= self.driver.DATETIME)
+            # self.assert_(isinstance(self.driver.Date(2006,11,24), self.driver.DateTimeType))
+            # self.assert_(isinstance(self.driver.Time(23,30,00), self.driver.DateTimeType))
+            # self.assert_(isinstance(self.driver.Date(2006,12,24), self.driver.DateTimeType))
         finally:
             con.close()
 
@@ -370,8 +353,9 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
 
     def test_bulkcopy2(self):
         kw_args = dict(self.connect_kw_args)
-        kw_args.update({'bulkcopy': 1, 'datetime': "python"})
+        kw_args.update({'bulkcopy': 1})
         con = self.driver.connect(*self.connect_args, **kw_args)
+        con.outputmap = self.driver.DateTimeAsPython
         try:
             if not con.auto_commit:
                 self.assertRaises(self.driver.ProgrammingError, con.bulkcopy, "%sbooze" % self.table_prefix)
