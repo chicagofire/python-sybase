@@ -1,5 +1,8 @@
 2007-09-14  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Sybase.py: corrected CS_CURSOR_CLOSE acts as ct_cancel on a
+	ct_cursor
+	
 	* Sybase.py: Add type mapping as proposed in
 	http://www.uniqsys.com/~carsten/typemap.html by Carsten Haese
 
