@@ -7,8 +7,10 @@ import sys
 import time
 import string
 import threading
+import copy
 from sybasect import *
 from sybasect import __have_freetds__
+from sybasect import datetime as sybdatetime
 
 set_debug(sys.stderr)
 
@@ -23,8 +25,6 @@ threadsafety = 2                        # Threads may share the module
 
 paramstyle = 'named'                    # Named style, 
                                         # e.g. '...WHERE name=@name'
-
-use_datetime = 0                        # Deprecated: date type
 
 # DB-API exceptions
 #
@@ -109,6 +109,14 @@ class DBAPITypeObject:
 	else:
 	    return -1
 
+    def __add__(self, other):
+        values = self.values + other.values
+        return DBAPITypeObject(*values)
+
+try:
+    _have_cs_date_type = DateType and CS_DATE_TYPE and True
+except NameError:
+    _have_cs_date_type = False
 
 STRING = DBAPITypeObject(CS_LONGCHAR_TYPE, CS_VARCHAR_TYPE,
                          CS_TEXT_TYPE, CS_CHAR_TYPE)
@@ -118,7 +126,9 @@ NUMBER = DBAPITypeObject(CS_BIT_TYPE, CS_TINYINT_TYPE,
                          CS_SMALLINT_TYPE, CS_INT_TYPE,
                          CS_MONEY_TYPE, CS_REAL_TYPE, CS_FLOAT_TYPE,
                          CS_DECIMAL_TYPE, CS_NUMERIC_TYPE)
-DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE)
+DATETIME = DBAPITypeObject(DateTimeType, CS_DATETIME4_TYPE, CS_DATETIME_TYPE)
+if _have_cs_date_type:
+    DATETIME += DBAPITypeObject(DateType, CS_DATE_TYPE)
 ROWID = DBAPITypeObject(CS_DECIMAL_TYPE, CS_NUMERIC_TYPE)
 
 
@@ -127,38 +137,85 @@ def OUTPUT(value):
     buf.status = CS_RETURN
     return buf
 
-
 def Date(year, month, day):
-    return datetime('%s-%s-%s' % (year, month, day))
-
+    return sybdatetime('%s-%s-%s' % (year, month, day))
 
 def Time(hour, minute, second):
-    return datetime('%d:%d:%d' % (hour, minute, second))
-
+    return sybdatetime('%d:%d:%d' % (hour, minute, second))
 
 def Timestamp(year, month, day, hour, minute, second):
-    return datetime('%s-%s-%s %d:%d:%d' % (year, month, day,
-                                           hour, minute, second))
-
-
+    return sybdatetime('%s-%s-%s %d:%d:%d' % (year, month, day,
+                                              hour, minute, second))
 def DateFromTicks(ticks):
     return apply(Date, time.localtime(ticks)[:3])
-
 
 def TimeFromTicks(ticks):
     return apply(Time, time.localtime(ticks)[3:6])
 
-
 def TimestampFromTicks(ticks):
     return apply(Timestamp, time.localtime(ticks)[:6])
-
 
 def Binary(str):
     return str
 
+DateTimeAsSybase = {}
+
+try:
+    import DateTime as mxDateTime
+except ImportError:
+    try:
+        import mx.DateTime as mxDateTime
+    except:
+        mxDateTime = None
+if mxDateTime:
+    DateTimeAsMx = {
+        CS_DATETIME_TYPE: lambda val: mxDateTime.DateTime(val.year, val.month + 1, val.day,
+                                                          val.hour, val.minute,
+                                                          val.second + val.msecond / 1000.0),
+        CS_DATETIME4_TYPE: lambda val: mxDateTime.DateTime(val.year, val.month + 1, val.day,
+                                                           val.hour, val.minute,
+                                                           val.second + val.msecond / 1000.0)}
+    if _have_cs_date_type:
+        DateTimeAsMx.update({
+            CS_DATE_TYPE: lambda val: mxDateTime.DateTime(val.year, val.month + 1, val.day) })
+    DATETIME += DBAPITypeObject(mxDateTime.DateTimeType)
+    def Date(year, month, day):
+        return mxDateTime.Date(year, month, day)
+    def Time(hour, minute, second):
+        return mxDateTime.Time(hour, minute, second)
+    def Timestamp(year, month, day, hour, minute, second):
+        return mxDateTime.Timestamp(year, month, day, hour, minute, second)
+else:
+    def mx_import_error(val): raise ImportError, "mx module could not be loaded"
+    DateTimeAsMx = { CS_DATETIME_TYPE: mx_import_error,
+                     CS_DATETIME4_TYPE: mx_import_error }
+
+try:
+    import datetime
+    DateTimeAsPython = {
+        CS_DATETIME_TYPE: lambda val: datetime.datetime(val.year, val.month + 1, val.day,
+                                                        val.hour, val.minute,
+                                                        val.second, val.msecond * 1000),
+        CS_DATETIME4_TYPE: lambda val: datetime.datetime(val.year, val.month + 1, val.day,
+                                                         val.hour, val.minute,
+                                                         val.second, val.msecond * 1000) }
+    if _have_cs_date_type:
+        DateTimeAsPython.update({
+            CS_DATE_TYPE: lambda val: datetime.date(val.year, val.month + 1, val.day) })
+    DATETIME += DBAPITypeObject(datetime.datetime, datetime.date, datetime.time)
+    def Date(year, month, day):
+        return datetime.datetime(year, month, day)
+    def Time(hour, minute, second):
+        return datetime.time(hour, minute, second)
+    def Timestamp(year, month, day, hour, minute, second):
+        return datetime.datetime(year, month, day, hour, minute, second)
+except ImportError:
+    def datetime_import_error(val): raise ImportError, "datetime module could not be loaded"
+    DateTimeAsPython = { CS_DATETIME_TYPE: datetime_import_error,
+                         CS_DATETIME4_TYPE: datetime_import_error }    
+
 
 _output_hooks = {}
-
 
 def _fmt_server(msg):
     parts = []
@@ -211,17 +268,21 @@ def _servermsg_cb(ctx, conn, msg):
         raise DatabaseError(msg)
 
 
-def _column_value(val):
+def _column_value(val, dbtype, outputmap):
+    if outputmap is not None:
+        converter = outputmap.get(dbtype, None)
+        if converter is not None:
+            val = converter(val)
     return val
 
 
-def _extract_row(bufs, n):
+def _extract_row(bufs, n, outputmap=None):
     '''Extract a row tuple from buffers.
     '''
     row = [None] * len(bufs)
     col = 0
     for buf in bufs:
-        row[col] = _column_value(buf[n])
+        row[col] = _column_value(buf[n], buf.datatype, outputmap)
         col = col + 1
     _ctx.debug_msg("_extract_row %s\n" % row)
     return tuple(row)
@@ -252,13 +313,16 @@ if _ctx.ct_config(CS_SET, CS_NETIO, CS_SYNC_IO) != CS_SUCCEED:
 
 
 class Cursor:
-    def __init__(self, owner):
+
+    def __init__(self, owner, inputmap=None, outputmap=None):
         '''Implements DB-API Cursor object
         '''
         self.description = None         # DB-API
         self.rowcount = -1              # DB-API
         self.arraysize = 1              # DB-API
         self._owner = owner
+        self.inputmap = inputmap
+        self.outputmap = outputmap
         self._ct_cursor = False
         self._cmd = None
         self._fetching = False
@@ -274,7 +338,7 @@ class Cursor:
         if self._ct_cursor:
             self._close_ct_cursor()
         self._result_list = []
-        self._description_list = []
+        self.description = []
         self._rownum = -1
         self._fetching = False
         self._arraysize = 1
@@ -562,7 +626,7 @@ class Cursor:
         #         pass
 
         self._result_list = []
-        self._description_list = []
+        # self._description_list = []
         self._rownum = 0
         self.rowcount = -1
 
@@ -585,7 +649,7 @@ class Cursor:
         self._row_result()
 
         if self._result_list:
-            self.description = self._description_list[0]
+            # self.description = self._description_list[0]
             return True
         return None
 
@@ -636,11 +700,11 @@ class Cursor:
             raise Error('ct_fetch')
         if bufs[0].count > 1:
             for i in xrange(rows_read):
-                rows.append(_extract_row(bufs, i))
+                rows.append(_extract_row(bufs, i, self.outputmap))
             _ctx.debug_msg('_fetch_rows -> %s\n' % rows)
             return rows_read
         else:
-            rows.append(_extract_row(bufs, 0))
+            rows.append(_extract_row(bufs, 0, self.outputmap))
             _ctx.debug_msg('_fetch_rows -> %s\n' % rows)
             return 1
 
@@ -648,7 +712,7 @@ class Cursor:
         self._params = params
         self._arraysize = arraysize
         self._result_list = []
-        self._description_list = []
+        # self._description_list = []
         self._rownum = -1
         self.rowcount = -1
 
@@ -671,29 +735,23 @@ class Cursor:
                 # A single row
                 self._rownum = 0
                 self._bufs = self._row_bind(1)
-                self._description_list.append(_bufs_description(self._bufs))
+                self.description = _bufs_description(self._bufs)
                 self._read_results()
-                if self._description_list:
-                    return self._description_list[0]
-                return None
+                return self.description
             elif result == CS_ROW_RESULT:
                 # Zero or more rows of tabular data.
                 self._rownum = 0
                 self._bufs = self._row_bind(self._arraysize)
-                self._description_list.append(_bufs_description(self._bufs))
+                self.description = _bufs_description(self._bufs)
                 self._row_result()
-                if self._description_list:
-                    return self._description_list[0]
-                return None            
+                return self.description
             elif result == CS_CURSOR_RESULT:
                 # Zero or more rows of tabular data.
                 self._rownum = 0
                 self._bufs = self._row_bind(self._arraysize)
-                self._description_list.append(_bufs_description(self._bufs))
+                self.description = _bufs_description(self._bufs)
                 self._row_result()
-                if self._description_list:
-                    return self._description_list[0]
-                return None            
+                return self.description
             elif result == CS_STATUS_RESULT:
                 # Stored procedure return status results - A single row containing a single status.
                 self._rownum = 0
@@ -718,14 +776,14 @@ class Cursor:
             count = self._fetch_rows(self._bufs, logical_result)
             self._rownum += count
         self._result_list += logical_result
-        _ctx.debug_msg("_read_result -> %s, %s\n" % (self._result_list, self._description_list))
+        _ctx.debug_msg("_read_result -> %s, %s\n" % (self._result_list, self.description))
 
     def _row_result(self):
         logical_result = []
         count = self._fetch_rows(self._bufs, logical_result)
         self._rownum += count
         self._result_list += logical_result
-        _ctx.debug_msg("_cursor_result -> %s, %s\n" % (self._result_list, self._description_list))
+        _ctx.debug_msg("_cursor_result -> %s, %s\n" % (self._result_list, self.description))
 
     def _status_result(self):
         status_result = []
@@ -764,7 +822,8 @@ class Connection:
 
     def __init__(self, dsn, user, passwd, database = None,
                  strip = 0, auto_commit = 0, delay_connect = 0, locking = 1,
-                 datetime = None, bulkcopy = 0, locale = None):
+                 bulkcopy = 0, locale = None,
+                 inputmap = None, outputmap = None ):
         '''DB-API Sybase.Connect()
         '''
         self._conn = self._cmd = None
@@ -776,6 +835,8 @@ class Connection:
         self._do_locking = locking
         self._is_connected = 0
         self.arraysize = 32
+        self.inputmap = inputmap
+        self.outputmap = outputmap
         if locking:
             self._connlock = threading.RLock()
 
@@ -808,80 +869,6 @@ class Connection:
         if not delay_connect:
             self.connect()
 
-        global use_datetime, _column_value, DATETIME, Date, Time, Timestamp
-
-        if datetime == None:
-            import warnings
-            warnings.warn("native python datetime will be used by default in sybase-python 0.39 - specify datetime argument to choose another type", DeprecationWarning)
-            datetime = "auto"
-        if datetime == "auto":
-            try:
-                import DateTime as DT
-                use_datetime = 1
-            except ImportError:
-                try:
-                    import mx.DateTime as DT
-                    use_datetime = 1
-                except ImportError:
-                    use_datetime = 0
-        elif datetime == "sybase":
-            use_datetime = 0
-        elif datetime == "mx":
-            try:
-                import DateTime as DT
-            except ImportError:
-                import mx.DateTime as DT
-            use_datetime = 1
-        elif datetime == "python":
-            import datetime
-            use_datetime = 2
-        else:
-            raise ValueError, "Unknown datetime value: %s" % datetime
-
-        if use_datetime == 0:
-            DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE)
-            datetime = globals()["datetime"]
-            def _column_value(val):
-                return val
-            def Date(year, month, day):
-                return datetime('%s-%s-%s' % (year, month, day))
-            def Time(hour, minute, second):
-                return datetime('%d:%d:%d' % (hour, minute, second))
-            def Timestamp(year, month, day, hour, minute, second):
-                return datetime('%s-%s-%s %d:%d:%d' % (year, month, day,
-                                           hour, minute, second))
-        elif use_datetime == 1:
-            DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE, DT.DateTimeType)
-            datetime = globals()["datetime"]
-            def _column_value(val):
-                if type(val) is DateTimeType:
-                    return DT.DateTime(val.year, val.month + 1, val.day,
-                                       val.hour, val.minute,
-                                       val.second + val.msecond / 1000.0)
-                else:
-                    return val
-            def Date(year, month, day):
-                return datetime('%s-%s-%s' % (year, month, day))
-            def Time(hour, minute, second):
-                return datetime('%d:%d:%d' % (hour, minute, second))
-            def Timestamp(year, month, day, hour, minute, second):
-                return datetime('%s-%s-%s %d:%d:%d' % (year, month, day,
-                                           hour, minute, second))
-        elif use_datetime == 2:
-            DATETIME = DBAPITypeObject(CS_DATETIME4_TYPE, CS_DATETIME_TYPE, datetime.datetime, datetime.time)
-            def _column_value(val):
-                if type(val) is DateTimeType:
-                    return datetime.datetime(val.year, val.month + 1, val.day,
-                                             val.hour, val.minute,
-                                             val.second, val.msecond * 1000)
-                else:
-                    return val
-            def Date(year, month, day):
-                return datetime.datetime(year, month, day)
-            def Time(hour, minute, second):
-                return datetime.time(hour, minute, second)
-            def Timestamp(year, month, day, hour, minute, second):
-                return datetime.datetime(year, month, day, hour, minute, second)
 
     def __getattr__(self, name):
         # Expose exception classes via the Connection object so
@@ -1041,11 +1028,15 @@ class Connection:
         else:
             self.execute('rollback transaction')
 
-    def cursor(self):
+    def cursor(self, inputmap = None, outputmap = None):
         '''DB-API Connection.cursor()
         '''
-        return Cursor(self)
-
+        if inputmap is None and self.inputmap:
+            inputmap = copy.copy(self.inputmap)
+        if outputmap is None and self.outputmap:
+            outputmap = copy.copy(self.outputmap)
+        return Cursor(self, inputmap, outputmap)
+ 
     def bulkcopy(self, tablename, *args, **kw):
         # Fake an alternate way to specify direction=CS_BLK_OUT
         if kw.get('out', 0):
@@ -1208,8 +1199,6 @@ class Bulkcopy(object):
             self._nextrow = 0
             self._batchcount = num
             assert num > 0
-            
-
         self._totalcount += 1
         rownum = self._nextrow
         self._nextrow += 1
@@ -1217,8 +1206,8 @@ class Bulkcopy(object):
 
 
 def connect(dsn, user, passwd, database = None,
-            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1, datetime = None,
-            bulkcopy = 0, locale = None):
+            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1,
+            bulkcopy = 0, locale = None, inputmap = None, outputmap = None):
     return Connection(dsn, user, passwd, database,
                       strip, auto_commit, delay_connect, locking,
-                      datetime, bulkcopy, locale)
+                      bulkcopy, locale, inputmap, outputmap)
