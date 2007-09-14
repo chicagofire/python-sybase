@@ -384,7 +384,13 @@ static struct PyMethodDef sybasect_methods[] = {
     { "numeric", (PyCFunction)NumericType_new, METH_VARARGS, NumericType_new__doc__ },
     { "money", (PyCFunction)MoneyType_new, METH_VARARGS, MoneyType_new__doc__ },
     { "datetime", (PyCFunction)DateTimeType_new, METH_VARARGS, DateTimeType_new__doc__ },
+#ifdef CS_DATE_TYPE
+    { "date", (PyCFunction)DateType_new, METH_VARARGS, DateType_new__doc__ },
+#endif
     { "pickle_datetime", (PyCFunction)pickle_datetime, METH_VARARGS, pickle_datetime__doc__ },
+#ifdef CS_DATE_TYPE
+    { "pickle_date", (PyCFunction)pickle_date, METH_VARARGS, pickle_date__doc__ },
+#endif
     { "pickle_money", (PyCFunction)pickle_money, METH_VARARGS, pickle_money__doc__ },
     { "pickle_numeric", (PyCFunction)pickle_numeric, METH_VARARGS, pickle_numeric__doc__ },
     { "sizeof_type", (PyCFunction)sybasect_sizeof_type, METH_VARARGS, sybasect_sizeof_type__doc__ },
@@ -1570,6 +1576,9 @@ void initsybasect(void)
     CS_SERVERMSGType.ob_type = &PyType_Type;
     NumericType.ob_type = &PyType_Type;
     DateTimeType.ob_type = &PyType_Type;
+#ifdef CS_DATE_TYPE
+    DateType.ob_type = &PyType_Type;
+#endif
     MoneyType.ob_type = &PyType_Type;
     DataBufType.ob_type = &PyType_Type;
 
@@ -1649,13 +1658,19 @@ void initsybasect(void)
 	|| dict_add_type(d, &NumericType)
 	|| dict_add_type(d, &MoneyType)
 	|| dict_add_type(d, &DateTimeType)
+#ifdef CS_DATE_TYPE
+	|| dict_add_type(d, &DateType)
+#endif
 	|| dict_add_type(d, &DataBufType)
 
 	/* Register pickler functions */
 	|| copy_reg_numeric(d)
 	|| copy_reg_money(d)
-	|| copy_reg_datetime(d))
-	;
+	|| copy_reg_datetime(d)
+#ifdef CS_DATE_TYPE
+	|| copy_reg_date(d)
+#endif
+	);
 
 
 
