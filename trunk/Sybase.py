@@ -344,7 +344,6 @@ class Cursor:
         self._arraysize = 1
         self._params = None
         self.rowcount = -1
-        self.return_status = None
 
     def _lock(self):
         self._owner._lock()
@@ -691,11 +690,17 @@ class Cursor:
                 status, result = self._cmd.ct_results()
                 if status == CS_END_RESULTS:
                     self._fetching = False
-                    _ctx.debug_msg('_fetch_rows -> 0\n')
                     return 0
                 elif status != CS_SUCCEED: 
-                    if result not in (CS_CMD_DONE, CS_CMD_SUCCEED):
-                        self._raise_error(Error('ct_results'))
+                    self._raise_error(Error('ct_results'))
+
+                if result == CS_STATUS_RESULT:
+                    _bufs = self._row_bind(1)
+                    status_result = []
+                    while self._fetch_rows(_bufs, status_result):
+                        pass
+                    return 0
+
         elif status in (CS_ROW_FAIL, CS_FAIL, CS_CANCELED):
             raise Error('ct_fetch')
         if bufs[0].count > 1:
@@ -779,43 +784,18 @@ class Cursor:
         _ctx.debug_msg("_read_result -> %s, %s\n" % (self._result_list, self.description))
 
     def _row_result(self):
+        _ctx.debug_msg("_row_result\n")
         logical_result = []
         count = self._fetch_rows(self._bufs, logical_result)
+        _ctx.debug_msg("_row_result - after _fetch_rows\n")
         self._rownum += count
         self._result_list += logical_result
         _ctx.debug_msg("_cursor_result -> %s, %s\n" % (self._result_list, self.description))
 
     def _status_result(self):
         status_result = []
-        while self._fetch_rows(bufs, status_result):
+        while self._fetch_rows(self._bufs, status_result):
             pass
-        if len(status_result) == 1:
-            row = status_result[0]
-            if len(row) == 1:
-                self.return_status = row[0]
-
-#     def _param_result(self):
-#         bufs = _row_bind(self._cmd, 1)
-#         while 1:
-#             status, rows_read = self._cmd.ct_fetch()
-#             if status == CS_SUCCEED:
-#                 pass
-#             elif status == CS_END_DATA:
-#                 break
-#             elif status in (CS_ROW_FAIL, CS_FAIL, CS_CANCELED):
-#                 self._raise_error(Error('ct_fetch'))
-#             pos = -1
-#             for buf in bufs:
-#                 if type(self._params) is type({}):
-#                     self._params[buf.name] = _column_value(buf[0])
-#                 else:
-#                     while 1:
-#                         pos += 1
-#                         param = self._params[pos]
-#                         if (type(param) is DataBufType
-#                             and param.status & CS_RETURN):
-#                             break
-#                     self._params[pos] = _column_value(buf[0])
 
 
 class Connection:
