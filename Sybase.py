@@ -250,7 +250,9 @@ def _clientmsg_cb(ctx, conn, msg):
 
 def _servermsg_cb(ctx, conn, msg):
     mn = msg.msgnumber
-    if mn == 2601: ## Attempt to insert duplicate key row in object with unique index
+    if mn == 208: ## Object not found
+        raise ProgrammingError(msg)
+    elif mn == 2601: ## Attempt to insert duplicate key row in object with unique index
         raise IntegrityError(msg)
     elif mn == 2812: ## Procedure not found
         raise StoredProcedureError(msg)
@@ -353,33 +355,23 @@ class Cursor:
 
     def _cancel_cmd(self):
         _ctx.debug_msg('_cancel_cmd\n')
-        try:
-            if self._fetching:
-                status = self._cmd.ct_cancel(CS_CANCEL_CURRENT)
-            while 1:
-                status, result = self._cmd.ct_results()
-                if status != CS_SUCCEED:
-                    self._fetching = False
-                    break
-                if result in (CS_ROW_RESULT,):
-                    status = self._cmd.ct_cancel(CS_CANCEL_CURRENT)
-                elif result == CS_STATUS_RESULT:
-                    _bufs = self._row_bind(1)
-                    status_result = []
-                    while 1:
-                        if not self._fetch_rows(_bufs, status_result):
-                            self._mainloop()
-        except:
+        if self._fetching:
+            status = self._cmd.ct_cancel(CS_CANCEL_CURRENT)
+        while 1:
             try:
-                if self._fetching:
-                    status = self._cmd.ct_cancel(CS_CANCEL_CURRENT)
-                while 1:
-                    status, result = self._cmd.ct_results()
-                    if status != CS_SUCCEED:
-                        self._fetching = False
-                        break
-            except:
-                pass
+                status, result = self._cmd.ct_results()
+            except DatabaseError:
+                continue
+            if status == CS_END_RESULTS:
+                self._fetching = False
+                break
+            if result in (CS_ROW_RESULT, CS_PARAM_RESULT, CS_COMPUTE_RESULT):
+                status = self._cmd.ct_cancel(CS_CANCEL_CURRENT)
+            elif result == CS_STATUS_RESULT:
+                _bufs = self._row_bind(1)
+                status_result = []
+                while self._fetch_rows(_bufs, status_result):
+                    pass
 
     def callproc(self, name, params = ()):
         '''DB-API Cursor.callproc()
@@ -694,6 +686,9 @@ class Cursor:
             try:
                 status, result = self._cmd.ct_results()
             except Exception, e:
+                # When an exception occurs on a ct_cursor, the
+                # ct_cursor can get lost by sybase
+                self._ct_cursor = False
                 self._raise_error(e)
             if status == CS_END_RESULTS:
                 self._fetching = False

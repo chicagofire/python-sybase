@@ -1,5 +1,7 @@
 2007-09-19  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Refactoring _cancel_cmd
+
 	* Corrected nextset after refactoring
 
 2007-09-18  Sébastien Sablé  <sable@users.sourceforge.net>
