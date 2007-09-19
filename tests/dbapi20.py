@@ -739,6 +739,7 @@ class DatabaseAPI20Test(unittest.TestCase):
                 sql=self._populate()
                 for sql in self._populate():
                     cur.execute(sql)
+                self.commit(con)
 
                 self.help_nextset_setUp(cur)
                 self.commit(con)

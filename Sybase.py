@@ -366,8 +366,9 @@ class Cursor:
                 elif result == CS_STATUS_RESULT:
                     _bufs = self._row_bind(1)
                     status_result = []
-                    while self._fetch_rows(_bufs, status_result):
-                        pass
+                    while 1:
+                        if not self._fetch_rows(_bufs, status_result):
+                            self._mainloop()
         except:
             try:
                 if self._fetching:
@@ -417,7 +418,7 @@ class Cursor:
                     if status != CS_SUCCEED:
                         self._raise_error(Error('ct_param'))
             # Start retreiving results.
-            self.description = self._start(self.arraysize, out_params)
+            self._start(self.arraysize, out_params)
             self.rowcount = len(out_params)
             return out_params
         finally:
@@ -485,7 +486,7 @@ class Cursor:
                 status = self._cmd.ct_param(buf)
                 if status != CS_SUCCEED:
                     self._raise_error(Error('ct_param'))
-            self.description = self._start(self.arraysize)
+            self._start(self.arraysize)
         finally:
             self._unlock()
 
@@ -541,7 +542,7 @@ class Cursor:
                 if status != CS_SUCCEED:
                     self._raise_error(Error('ct_param'))
 
-            self.description = self._start(self.arraysize)
+            self._start(self.arraysize)
         finally:
             self._unlock()
 
@@ -577,7 +578,7 @@ class Cursor:
         '''DB-API Cursor.fetchone()
         '''
         if self._rownum == -1:
-            self._raise_error(Error('No request executed yet'))
+            self._raise_error(Error('No result set'))
         elif self._rownum == 0 and self._fetching:
             self._row_result()
         if self._rownum > 0:
@@ -614,41 +615,15 @@ class Cursor:
     def nextset(self):
         '''DB-API Cursor.nextset()
         '''
-        _ctx.debug_msg("Cursor.nextset\n")
+        if not self._fetching:
+            return None
 
-        logical_result = []
-        self._fetch_rows(self._bufs, logical_result)
-        
-        # if self._fetching:
-        #     logical_result = []
-        #     while self._fetch_rows(self._bufs, logical_result):
-        #         pass
-
+        status = self._cmd.ct_cancel(CS_CANCEL_CURRENT)
         self._result_list = []
-        # self._description_list = []
-        self._rownum = 0
+        self._rownum = -1
         self.rowcount = -1
-
-        # try:
-        #     status, result = self._cmd.ct_results()
-        # except Exception, e:
-        #     self._cancel_cmd()
-        #     raise e
-        # if status == CS_END_RESULTS:
-        #     self._fetching = False
-        #     # self.rowcount = 0
-        #     # if self._description_list:
-        #     #     return self._description_list[0]
-        #     return None
-        # elif status != CS_SUCCEED:
-        #     self._raise_error(Error('ct_results'))
-
-        # self._bufs = self._row_bind(self._arraysize)
-        # self._description_list.append(_bufs_description(self._bufs))
-        self._row_result()
-
+        self._mainloop()
         if self._result_list:
-            # self.description = self._description_list[0]
             return True
         return None
 
@@ -686,21 +661,8 @@ class Cursor:
         if status == CS_SUCCEED:
             pass
         elif status == CS_END_DATA:
-            while 1:
-                status, result = self._cmd.ct_results()
-                if status == CS_END_RESULTS:
-                    self._fetching = False
-                    return 0
-                elif status != CS_SUCCEED: 
-                    self._raise_error(Error('ct_results'))
-
-                if result == CS_STATUS_RESULT:
-                    _bufs = self._row_bind(1)
-                    status_result = []
-                    while self._fetch_rows(_bufs, status_result):
-                        pass
-                    return 0
-
+            # return self._mainloop()
+            return 0
         elif status in (CS_ROW_FAIL, CS_FAIL, CS_CANCELED):
             raise Error('ct_fetch')
         if bufs[0].count > 1:
@@ -717,14 +679,17 @@ class Cursor:
         self._params = params
         self._arraysize = arraysize
         self._result_list = []
-        # self._description_list = []
         self._rownum = -1
         self.rowcount = -1
+        self.description = None
 
         status = self._cmd.ct_send()
         if status != CS_SUCCEED:
             self._raise_error(Error('ct_send'))
         self._fetching = True
+        return self._mainloop()
+
+    def _mainloop(self):
         while 1:
             try:
                 status, result = self._cmd.ct_results()
@@ -732,38 +697,43 @@ class Cursor:
                 self._raise_error(e)
             if status == CS_END_RESULTS:
                 self._fetching = False
-                return None
+                return 0
             elif status != CS_SUCCEED:
                 self._raise_error(Error('ct_results'))
-
+    
             if result in (CS_PARAM_RESULT, CS_COMPUTE_RESULT):
                 # A single row
                 self._rownum = 0
                 self._bufs = self._row_bind(1)
                 self.description = _bufs_description(self._bufs)
                 self._read_results()
-                return self.description
+                return 1
             elif result == CS_ROW_RESULT:
                 # Zero or more rows of tabular data.
                 self._rownum = 0
                 self._bufs = self._row_bind(self._arraysize)
                 self.description = _bufs_description(self._bufs)
                 self._row_result()
-                return self.description
+                return 1
             elif result == CS_CURSOR_RESULT:
                 # Zero or more rows of tabular data.
                 self._rownum = 0
                 self._bufs = self._row_bind(self._arraysize)
                 self.description = _bufs_description(self._bufs)
                 self._row_result()
-                return self.description
+                return 1
             elif result == CS_STATUS_RESULT:
                 # Stored procedure return status results - A single row containing a single status.
                 self._rownum = 0
                 self._bufs = self._row_bind(1)
                 self._status_result()
-                return None
-            elif result not in (CS_CMD_DONE, CS_CMD_SUCCEED):
+                return 0
+            elif result == CS_CMD_DONE:
+                # End of a result set
+                continue
+            elif result == CS_CMD_SUCCEED:
+                continue
+            else:
                 self._raise_error(Error('ct_results'))
 
     def _is_idle(self):
@@ -780,6 +750,8 @@ class Cursor:
         while self._fetching:
             count = self._fetch_rows(self._bufs, logical_result)
             self._rownum += count
+            if not count:
+                self._mainloop()
         self._result_list += logical_result
         _ctx.debug_msg("_read_result -> %s, %s\n" % (self._result_list, self.description))
 
@@ -787,6 +759,8 @@ class Cursor:
         _ctx.debug_msg("_row_result\n")
         logical_result = []
         count = self._fetch_rows(self._bufs, logical_result)
+        if not count:
+            self._mainloop()
         _ctx.debug_msg("_row_result - after _fetch_rows\n")
         self._rownum += count
         self._result_list += logical_result
@@ -796,6 +770,7 @@ class Cursor:
         status_result = []
         while self._fetch_rows(self._bufs, status_result):
             pass
+        self._mainloop()
 
 
 class Connection:
