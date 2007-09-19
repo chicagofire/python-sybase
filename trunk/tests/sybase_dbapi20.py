@@ -139,7 +139,7 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             cur = con.cursor()
             try:
                 cur.execute('select * from %sdummy' % self.table_prefix)
-            except:
+            except self.driver.ProgrammingError:
                 pass
             cur.execute('create table %sbooze (name varchar(20))' % self.table_prefix)
             con.commit()
