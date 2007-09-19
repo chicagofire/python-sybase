@@ -517,13 +517,24 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             that returns two result sets, first the 
 	    number of rows in booze then "name from booze"
         '''
-        sql="""
-            create procedure deleteme as
-            begin
-                select count(*) from %sbooze
-                select name from %sbooze
-            end
-        """ % (self.table_prefix, self.table_prefix)
+        if not self.connect_kw_args.get("auto_commit", 0) or self.force_commit:
+            sql="""
+                create procedure deleteme as
+                begin
+                    begin transaction
+                    select count(*) from %sbooze
+                    select name from %sbooze
+                    commit transaction
+                end
+            """ % (self.table_prefix, self.table_prefix)
+        else:
+            sql="""
+                create procedure deleteme as
+                begin
+                    select count(*) from %sbooze
+                    select name from %sbooze
+                end
+            """ % (self.table_prefix, self.table_prefix)
         cur.execute(sql)
 
     def help_nextset_tearDown(self,cur):

@@ -1,3 +1,7 @@
+2007-09-19  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Corrected nextset after refactoring
+
 2007-09-18  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: Corrected callproc after refactoring
