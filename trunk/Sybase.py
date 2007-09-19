@@ -290,16 +290,6 @@ def _extract_row(bufs, n, outputmap=None):
     return tuple(row)
 
 
-def _bufs_description(bufs):
-    desc = []
-    for buf in bufs:
-        desc.append((buf.name, buf.datatype, 0,
-                     buf.maxlength, buf.precision, buf.scale,
-                     buf.status & CS_CANBENULL))
-    return desc
-
-
-
 # Setup global library context
 status, _ctx = cs_ctx_alloc()
 if status != CS_SUCCEED:
@@ -680,6 +670,10 @@ class Cursor:
         self._fetching = True
         return self._mainloop()
 
+    def _bufs_description(self):
+        self.description = [(buf.name, buf.datatype, 0, buf.maxlength, buf.precision, buf.scale,
+                             buf.status & CS_CANBENULL) for buf in self._bufs]
+
     def _mainloop(self):
         while 1:
             try:
@@ -699,14 +693,14 @@ class Cursor:
                 # A single row
                 self._rownum = 0
                 self._bufs = self._row_bind(1)
-                self.description = _bufs_description(self._bufs)
+                self._bufs_description()
                 self._read_results()
                 return 1
             elif result in (CS_ROW_RESULT, CS_CURSOR_RESULT):
                 # Zero or more rows of tabular data.
                 self._rownum = 0
                 self._bufs = self._row_bind(self._arraysize)
-                self.description = _bufs_description(self._bufs)
+                self._bufs_description()
                 self._row_result()
                 return 1
             elif result == CS_STATUS_RESULT:
