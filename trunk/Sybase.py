@@ -411,7 +411,6 @@ class Cursor:
                         self._raise_error(Error('ct_param'))
             # Start retreiving results.
             self._start(self.arraysize, out_params)
-            self.rowcount = len(out_params)
             return out_params
         finally:
             self._unlock()
@@ -695,7 +694,7 @@ class Cursor:
                 return 0
             elif status != CS_SUCCEED:
                 self._raise_error(Error('ct_results'))
-    
+
             if result in (CS_PARAM_RESULT, CS_COMPUTE_RESULT):
                 # A single row
                 self._rownum = 0
@@ -703,14 +702,7 @@ class Cursor:
                 self.description = _bufs_description(self._bufs)
                 self._read_results()
                 return 1
-            elif result == CS_ROW_RESULT:
-                # Zero or more rows of tabular data.
-                self._rownum = 0
-                self._bufs = self._row_bind(self._arraysize)
-                self.description = _bufs_description(self._bufs)
-                self._row_result()
-                return 1
-            elif result == CS_CURSOR_RESULT:
+            elif result in (CS_ROW_RESULT, CS_CURSOR_RESULT):
                 # Zero or more rows of tabular data.
                 self._rownum = 0
                 self._bufs = self._row_bind(self._arraysize)
@@ -725,6 +717,9 @@ class Cursor:
                 return 0
             elif result == CS_CMD_DONE:
                 # End of a result set
+                # status, self.rowcount = self._cmd.ct_res_info(CS_ROW_COUNT)
+                # if status != CS_SUCCEED:
+                #     self._raise_error(Error, 'ct_res_info')
                 continue
             elif result == CS_CMD_SUCCEED:
                 continue
