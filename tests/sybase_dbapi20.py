@@ -226,7 +226,7 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             self.commit(con)
             cur.execute("insert into %sbooze values ('20061124')" % self.table_prefix)
             self.commit(con)
-            cur.execute("insert into %sbooze values (@beer)" % self.table_prefix, {'@beer': datetime.datetime(2006,11,24)})
+            cur.execute("insert into %sbooze values (@beer)" % self.table_prefix, {'@beer': datetime.date(2006,11,24)})
             self.commit(con)
             cur.execute("insert into %sbooze values (@beer)" % self.table_prefix, {'@beer': self.driver.Date(2006,11,24)})
             self.commit(con)
@@ -242,7 +242,7 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             self.assertEquals(type(date), self.driver.DATETIME)
             self.assert_(isinstance(self.driver.Date(2006,12,24), datetime.date))
             self.assert_(isinstance(self.driver.Time(23,30,00), datetime.time))
-            self.assert_(isinstance(self.driver.Date(2006,12,24), datetime.datetime))
+            self.assert_(isinstance(self.driver.Date(2006,12,24), datetime.date))
         finally:
             con.close()
 
@@ -552,3 +552,55 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         conn = MyConnection(*self.connect_args,**self.connect_kw_args)
         conn.close()
             
+### arraysize
+
+    def test_ct_cursor_arraysize(self):
+        # test for some locking which happened with arraysize
+        con = self._connect()
+        try:
+            cur = con.cursor()
+            cur.execute('create table %sbooze (name varchar(2) NULL)' % self.table_prefix)
+            self.commit(con)
+            for i in xrange(25):
+                cur.execute("insert into %sbooze values ('%d')" % (self.table_prefix, i))
+            self.commit(con)
+            cur.arraysize = 10
+            cur.execute("select * from %sbooze" % self.table_prefix, select=True)
+            res = cur.fetchone()
+            while res:
+                last = res[0]
+                res = cur.fetchone()
+            self.assertEquals(last, '24')
+        finally:
+            con.close()
+
+# ### inputmap / outputmap
+# 
+#     def test_datetime_origin(self):
+#         kw_args = dict(self.connect_kw_args)
+#         kw_args.update({'datetime': "python"})
+#         con = self.driver.connect(
+#             *self.connect_args,**kw_args
+#             )
+#         try:
+#             import datetime
+#             cur = con.cursor()
+#             cur.execute('create table %sbooze (day date)' % self.table_prefix)
+#             self.commit(con)
+#             cur.execute("insert into %sbooze values ('17530101')" % self.table_prefix)
+#             self.commit(con)
+#             cur.execute("select * from %sbooze" % self.table_prefix)
+#             res = cur.fetchall()
+#             date = res[0][0]
+#             self.assertEqual(self.driver.use_datetime, 2)
+#             self.assert_(isinstance(date, datetime.datetime))
+#             self.assertEquals(cur.description[0][1], self.driver.DATETIME)
+#             # self.assertEquals(cur.description[0][1], datetime.datetime)
+#             self.assertEquals(date.year, 1752)
+#             self.assertEquals(date.month, 9)
+#             self.assertEquals(date.day, 14)
+#             self.assertEquals(type(date), self.driver.DATETIME)
+#             self.assert_(isinstance(self.driver.Date(1752,9,14), datetime.date))
+#         finally:
+#             con.close()
+
