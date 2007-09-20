@@ -309,17 +309,13 @@ class Cursor:
     def __init__(self, owner, inputmap=None, outputmap=None):
         '''Implements DB-API Cursor object
         '''
-        self.description = None         # DB-API
-        self.rowcount = -1              # DB-API
-        self.arraysize = 1              # DB-API
         self._owner = owner
         self.inputmap = inputmap
         self.outputmap = outputmap
+        self.arraysize = 1              # DB-API
         self._ct_cursor = False
-        self._cmd = None
         self._fetching = False
         self._reset()
-
         status, self._cmd = self._owner._conn.ct_cmd_alloc()
         if status != CS_SUCCEED:
             self._raise_error(Error('ct_cmd_alloc'))
@@ -329,13 +325,12 @@ class Cursor:
             self._close_ct_cursor()
         elif self._fetching:
             self._cancel_cmd()
+        self.rowcount = -1              # DB-API
+        self.description = None         # DB-API
         self._result_list = []
-        self.description = []
         self._rownum = -1
         self._fetching = False
-        self._arraysize = 1
         self._params = None
-        self.rowcount = -1
 
     def _lock(self):
         self._owner._lock()
@@ -400,7 +395,7 @@ class Cursor:
                     if status != CS_SUCCEED:
                         self._raise_error(Error('ct_param'))
             # Start retreiving results.
-            self._start(self.arraysize, out_params)
+            self._start()
             return out_params
         finally:
             self._unlock()
@@ -442,108 +437,65 @@ class Cursor:
             if status != CS_SUCCEED:
                 break
 
-    def execute(self, sql, params = {}, ct_cursor = None):
+    def prepare(self, sql, select = None):
+        # Prepare to retrieve new results.
         if not self._owner._is_connected:
             raise ProgrammingError('Connection is not connected')
         self._reset()
-
-        if ct_cursor is True or (ct_cursor is None and sql.lower().startswith("select")):
+        if select is True or (select is None and sql.lower().startswith("select")):
             self._ct_cursor = True
-            self._execute_ct_cursor(sql, params)
+            self._prepare_ct_cursor(sql)
         else:
             self._ct_cursor = False
-            self._execute_cmd(sql, params)
+            self._prepare_cmd(sql)
 
-    def _execute_cmd(self, sql, params = {}):
+    def execute(self, sql, params = {}, select = None):
         '''DB-API Cursor.execute()
         '''
-        self._lock()
-        try:
-            # Prepare to retrieve new results.
-            self._cmd.ct_command(CS_LANG_CMD, sql)
+        if sql is not None:
+            self.prepare(sql, select)
+        if self._params is None:
+            self._params = {}
             for name, value in params.items():
                 buf = DataBuf(value)
                 buf.name = name
-                status = self._cmd.ct_param(buf)
+                self._params[name] = buf
+                status = self._cmd.ct_setparam(buf)
                 if status != CS_SUCCEED:
                     self._raise_error(Error('ct_param'))
-            self._start(self.arraysize)
-        finally:
-            self._unlock()
-
-    def _execute_ct_cursor(self, sql, params = {}):
-        '''DB-API Cursor.execute()
-        '''
-        self._lock()
-        try:
-            _ctx.debug_msg("using ct_cursor, %s\n" % sql)
-            status = self._cmd.ct_cursor(CS_CURSOR_DECLARE, "ctmp%x" % id(self), sql, CS_UNUSED)
-            if status != CS_SUCCEED:
-                self._raise_error(Error('ct_cursor declare'))
-
-            _ctx.debug_msg("cursor define params type\n")
+        else:
             for name, value in params.items():
-                _ctx.debug_msg("params: name '%s' value '%s'\n" % (name, value))
+                self._params[name][0] = value
+        self._start()
 
-                buf = DataBuf(value)
-                buf.name = name
+    def _prepare_cmd(self, sql):
+        self._cmd.ct_command(CS_LANG_CMD, sql)
 
-                fmt = CS_DATAFMT()
-                fmt.count = buf.count
-                fmt.datatype = buf.datatype
-                fmt.format = CS_FMT_UNUSED
-                fmt.maxlength = buf.maxlength
-                fmt.name = buf.name
-                fmt.precision = buf.precision
-                fmt.scale = buf.scale
-                fmt.status = CS_INPUTVALUE
-                fmt.strip = buf.strip
-                fmt.usertype = buf.usertype
+    def _prepare_ct_cursor(self, sql):
+        _ctx.debug_msg("using ct_cursor, %s\n" % sql)
+        status = self._cmd.ct_cursor(CS_CURSOR_DECLARE, "ctmp%x" % id(self), sql, CS_UNUSED)
+        if status != CS_SUCCEED:
+            self._raise_error(Error('ct_cursor declare'))
 
-                status = self._cmd.ct_param(fmt)
-                if status != CS_SUCCEED:
-                    fetcher._raise_error(Error('ct_param'))
+        nb_rows = 100
+        self._cmd.ct_cursor(CS_CURSOR_ROWS, nb_rows)
+        _ctx.debug_msg("using ct_cursor nb_rows %d\n" % nb_rows)
+        if status != CS_SUCCEED:
+            self._raise_error(Error('ct_cursor rows'))
 
-            nb_rows = 100
-            self._cmd.ct_cursor(CS_CURSOR_ROWS, nb_rows)
-            _ctx.debug_msg("using ct_cursor nb_rows %d\n" % nb_rows)
-            if status != CS_SUCCEED:
-                self._raise_error(Error('ct_cursor rows'))
-
-            _ctx.debug_msg("cursor open\n")
-            status = self._cmd.ct_cursor(CS_CURSOR_OPEN)
-            if status != CS_SUCCEED:
-                self._raise_error(Error('ct_cursor open'))
-                
-            _ctx.debug_msg("cursor define params value\n")
-            for name, value in params.items():
-                buf = DataBuf(value)
-                buf.name = name
-                status = self._cmd.ct_param(buf)
-                if status != CS_SUCCEED:
-                    self._raise_error(Error('ct_param'))
-
-            self._start(self.arraysize)
-        finally:
-            self._unlock()
+        _ctx.debug_msg("cursor open\n")
+        status = self._cmd.ct_cursor(CS_CURSOR_OPEN)
+        if status != CS_SUCCEED:
+            self._raise_error(Error('ct_cursor open'))
 
     def executemany(self, sql, params_seq = []):
         '''DB-API Cursor.executemany()
         '''
-        if not self._owner._is_connected:
-            raise ProgrammingError('Connection is not connected')
-        self._lock()
-        try:
-            rowcount = 0
-            for params in params_seq:
-                # TODO: separate prepare from execute
-                self.execute(sql, params, False)
-                rowcount += self.rowcount
-                if not self._is_idle():
-                    self._raise_error(ProgrammingError('fetchable results on cursor'))
-            self.rowcount = -1
-        finally:
-            self._unlock()
+        self.prepare(sql, False)
+        for params in params_seq:
+            self.execute(None, params)
+            if self._fetching:
+                self._raise_error(ProgrammingError('fetchable results on cursor'))
 
     def setinputsizes(self, *sizes):
         '''DB-API Cursor.setinputsizes()
@@ -656,9 +608,7 @@ class Cursor:
             _ctx.debug_msg('_fetch_rows -> %s\n' % rows)
             return 1
 
-    def _start(self, arraysize, params = None):
-        self._params = params
-        self._arraysize = arraysize
+    def _start(self):
         self._result_list = []
         self._rownum = -1
         self.rowcount = -1
@@ -699,7 +649,7 @@ class Cursor:
             elif result in (CS_ROW_RESULT, CS_CURSOR_RESULT):
                 # Zero or more rows of tabular data.
                 self._rownum = 0
-                self._bufs = self._row_bind(self._arraysize)
+                self._bufs = self._row_bind(self.arraysize)
                 self._bufs_description()
                 self._row_result()
                 return 1
@@ -737,18 +687,14 @@ class Cursor:
             if not count:
                 self._mainloop()
         self._result_list += logical_result
-        _ctx.debug_msg("_read_result -> %s, %s\n" % (self._result_list, self.description))
 
     def _row_result(self):
-        _ctx.debug_msg("_row_result\n")
         logical_result = []
         count = self._fetch_rows(self._bufs, logical_result)
         if not count:
             self._mainloop()
-        _ctx.debug_msg("_row_result - after _fetch_rows\n")
         self._rownum += count
         self._result_list += logical_result
-        _ctx.debug_msg("_cursor_result -> %s, %s\n" % (self._result_list, self.description))
 
     def _status_result(self):
         status_result = []
