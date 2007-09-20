@@ -548,7 +548,7 @@ static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 	/* PyErr_Clear(); */
 
 	SY_CONN_BEGIN_THREADS(self->conn);
-	status = blk_textxfer(self->blk, buff, buff_len, NULL);
+	status = blk_textxfer(self->blk, (CS_BYTE *)buff, buff_len, NULL);
 	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
@@ -570,7 +570,7 @@ static PyObject *CS_BLKDESC_blk_textxfer(CS_BLKDESCObj *self, PyObject *args)
 	/* PyErr_Clear(); */
 
 	SY_CONN_BEGIN_THREADS(self->conn);
-	status = blk_textxfer(self->blk, buff, sizeof(buff), &outlen);
+	status = blk_textxfer(self->blk, (CS_BYTE *)buff, sizeof(buff), &outlen);
 	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)

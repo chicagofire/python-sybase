@@ -63,7 +63,7 @@ static PyObject *CS_CLIENTMSG_getattr(CS_CLIENTMSGObj *self, char *name)
 					  self->msg.osstringlen);
 #ifndef HAVE_FREETDS
     if (strcmp(name, "sqlstate") == 0)
-	return PyString_FromStringAndSize(self->msg.sqlstate,
+	return PyString_FromStringAndSize((char *)self->msg.sqlstate,
 					  self->msg.sqlstatelen);
 #endif
     return PyMember_Get((char *)&self->msg, CS_CLIENTMSG_memberlist, name);
@@ -161,7 +161,7 @@ static PyObject *CS_SERVERMSG_getattr(CS_SERVERMSGObj *self, char *name)
 					  self->msg.proclen);
 #ifndef HAVE_FREETDS
     if (strcmp(name, "sqlstate") == 0)
-	return PyString_FromStringAndSize(self->msg.sqlstate,
+	return PyString_FromStringAndSize((char *)self->msg.sqlstate,
 					  self->msg.sqlstatelen);
 #endif
     return PyMember_Get((char *)&self->msg, CS_SERVERMSG_memberlist, name);

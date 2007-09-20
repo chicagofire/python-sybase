@@ -1,5 +1,8 @@
 2007-09-20  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Corrected various compilation warnings (some linked to python
+	2.5)
+
 	* Sybase.py: Added a prepare method to Cursor
 
 2007-09-19  Sébastien Sablé  <sable@users.sourceforge.net>

@@ -83,10 +83,10 @@ static PyObject *CS_IODESC_getattr(CS_IODESCObj *self, char *name)
 	return PyString_FromStringAndSize(self->iodesc.name,
 					  self->iodesc.namelen);
     if (strcmp(name, "timestamp") == 0)
-	return PyString_FromStringAndSize(self->iodesc.timestamp,
+        return PyString_FromStringAndSize((char *)self->iodesc.timestamp,
 					  self->iodesc.timestamplen);
     if (strcmp(name, "textptr") == 0)
-	return PyString_FromStringAndSize(self->iodesc.textptr,
+	return PyString_FromStringAndSize((char *)self->iodesc.textptr,
 					  self->iodesc.textptrlen);
 
     rv = PyMember_Get((char *)self, CS_IODESC_memberlist, name);

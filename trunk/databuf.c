@@ -9,6 +9,10 @@
 #include "sybasect.h"
 #include "time.h"
 
+#if (PY_VERSION_HEX < 0x02050000)
+ typedef int Py_ssize_t;
+#endif
+
 static struct PyMethodDef DataBuf_methods[] = {
     { NULL }			/* sentinel */
 };
@@ -34,7 +38,7 @@ static PyObject *allocate_buffers(DataBufObj *self)
     return (PyObject*)self;
 }
 
-static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v);
+static Py_ssize_t DataBuf_ass_item(PyObject *self, Py_ssize_t i, PyObject *v);
 
 static int databuf_serial;
 
@@ -109,7 +113,7 @@ PyObject *databuf_alloc(PyObject *obj)
 	self->fmt.count = 1;
 
 	if (allocate_buffers(self) == NULL
-	    || DataBuf_ass_item(self, 0, obj) < 0) {
+	    || DataBuf_ass_item((PyObject*)self, 0, obj) < 0) {
 	    Py_DECREF(self);
 	    return NULL;
 	}
@@ -133,25 +137,26 @@ static void DataBuf_dealloc(DataBufObj *self)
 }
 
 /* Code to handle accessing DataBuf objects as sequence objects */
-static int DataBuf_length(DataBufObj *self)
+static Py_ssize_t DataBuf_length(PyObject *self)
 {
-    return self->fmt.count;
+    return ((DataBufObj *)self)->fmt.count;
 }
 
-static PyObject *DataBuf_concat(DataBufObj *self, PyObject *bb)
+static PyObject *DataBuf_concat(PyObject *self, PyObject *bb)
 {
     PyErr_SetString(PyExc_TypeError, "buffer concat not supported");
     return NULL;
 }
 
-static PyObject *DataBuf_repeat(DataBufObj *self, int n)
+static PyObject *DataBuf_repeat(PyObject *self, Py_ssize_t n)
 {
     PyErr_SetString(PyExc_TypeError, "buffer repeat not supported");
     return NULL;
 }
 
-static PyObject *DataBuf_item(DataBufObj *self, int i)
+static PyObject *DataBuf_item(PyObject *_self, Py_ssize_t i)
 {
+    DataBufObj *self = (DataBufObj *)_self;
     void *item;
 
     if (i < 0 || i >= self->fmt.count)
@@ -233,19 +238,20 @@ static PyObject *DataBuf_item(DataBufObj *self, int i)
     }
 }
 
-static PyObject *DataBuf_slice(DataBufObj *self, int ilow, int ihigh)
+static PyObject *DataBuf_slice(PyObject *self, Py_ssize_t ilow, Py_ssize_t ihigh)
 {
     PyErr_SetString(PyExc_TypeError, "buffer slice not supported");
     return NULL;
 }
 
 /* Assign to the i-th element of self */
-static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
+static Py_ssize_t DataBuf_ass_item(PyObject *_self, Py_ssize_t i, PyObject *v)
 {
+    DataBufObj *self = (DataBufObj *)_self;
     void *item;
     PyObject *obj = NULL;
     PyObject *obj2 = NULL;
-    int size;
+    Py_ssize_t size;
 
     if (v == NULL) {
 	PyErr_SetString(PyExc_TypeError, "buffer delete not supported");
@@ -471,7 +477,7 @@ static int DataBuf_ass_item(DataBufObj *self, int i, PyObject *v)
     return 0;
 }
 
-static int DataBuf_ass_slice(PyListObject *self, int ilow, int ihigh, PyObject *v)
+static int DataBuf_ass_slice(PyObject *self, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
 {
     PyErr_SetString(PyExc_TypeError, "buffer slice not supported");
     /* XXXX Replace ilow..ihigh slice of self with v */
@@ -479,13 +485,13 @@ static int DataBuf_ass_slice(PyListObject *self, int ilow, int ihigh, PyObject *
 }
 
 static PySequenceMethods DataBuf_as_sequence = {
-    (inquiry)DataBuf_length,	/*sq_length*/
-    (binaryfunc)DataBuf_concat,	/*sq_concat*/
-    (intargfunc)DataBuf_repeat,	/*sq_repeat*/
-    (intargfunc)DataBuf_item,	/*sq_item*/
-    (intintargfunc)DataBuf_slice, /*sq_slice*/
-    (intobjargproc)DataBuf_ass_item, /*sq_ass_item*/
-    (intintobjargproc)DataBuf_ass_slice, /*sq_ass_slice*/
+    DataBuf_length,	/*sq_length*/
+    DataBuf_concat,	/*sq_concat*/
+    DataBuf_repeat,	/*sq_repeat*/
+    DataBuf_item,	/*sq_item*/
+    DataBuf_slice,      /*sq_slice*/
+    DataBuf_ass_item,   /*sq_ass_item*/
+    DataBuf_ass_slice,  /*sq_ass_slice*/
 };
 
 /* Code to access structure members by accessing attributes */
