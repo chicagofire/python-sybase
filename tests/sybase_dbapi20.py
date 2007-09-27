@@ -574,33 +574,68 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
-# ### inputmap / outputmap
-# 
-#     def test_datetime_origin(self):
-#         kw_args = dict(self.connect_kw_args)
-#         kw_args.update({'datetime': "python"})
-#         con = self.driver.connect(
-#             *self.connect_args,**kw_args
-#             )
-#         try:
-#             import datetime
-#             cur = con.cursor()
-#             cur.execute('create table %sbooze (day date)' % self.table_prefix)
-#             self.commit(con)
-#             cur.execute("insert into %sbooze values ('17530101')" % self.table_prefix)
-#             self.commit(con)
-#             cur.execute("select * from %sbooze" % self.table_prefix)
-#             res = cur.fetchall()
-#             date = res[0][0]
-#             self.assertEqual(self.driver.use_datetime, 2)
-#             self.assert_(isinstance(date, datetime.datetime))
-#             self.assertEquals(cur.description[0][1], self.driver.DATETIME)
-#             # self.assertEquals(cur.description[0][1], datetime.datetime)
-#             self.assertEquals(date.year, 1752)
-#             self.assertEquals(date.month, 9)
-#             self.assertEquals(date.day, 14)
-#             self.assertEquals(type(date), self.driver.DATETIME)
-#             self.assert_(isinstance(self.driver.Date(1752,9,14), datetime.date))
-#         finally:
-#             con.close()
+### inputmap / outputmap
+
+    def test_in_out_map(self):
+        con = self._connect()
+        try:
+            import datetime
+
+            ALTER_DATE_ORIGIN = datetime.date(1752, 9, 14)
+            ALTER_DATETIME_ORIGIN = datetime.datetime(1752, 9, 14, 0, 0)
+            SYBASE_DATE_ORIGIN = datetime.date(1753, 1, 1)
+            SYBASE_DATETIME_ORIGIN = datetime.datetime(1753, 1, 1, 0, 0)
+    
+            outputmap = self.driver.DateTimeAsPython
+            def change_outdatetime_origin(val):
+                d = datetime.datetime(val.year, val.month + 1, val.day,
+                                      val.hour, val.minute,
+                                      val.second, val.msecond * 1000)
+                if d.date() == SYBASE_DATE_ORIGIN:
+                    d = ALTER_DATETIME_ORIGIN
+                return d
+            outputmap.update({
+                self.driver.CS_DATETIME_TYPE: change_outdatetime_origin,
+                self.driver.CS_DATETIME4_TYPE: change_outdatetime_origin })
+    
+            if self.driver._have_cs_date_type:
+                def change_outdate_origin(val):
+                    d = datetime.date(val.year, val.month + 1, val.day)
+                    if d == SYBASE_DATE_ORIGIN:
+                        d = ALTER_DATE_ORIGIN
+                    return d
+                outputmap.update({
+                    self.driver.CS_DATE_TYPE: change_outdate_origin })
+            con.outputmap = outputmap
+
+            def change_indate_origin(val):
+                if val < SYBASE_DATE_ORIGIN:
+                    val = SYBASE_DATE_ORIGIN
+                return val
+            def change_indatetime_origin(val):
+                if val < SYBASE_DATETIME_ORIGIN:
+                    val = SYBASE_DATETIME_ORIGIN
+                return val
+            inputmap = { datetime.datetime: change_indatetime_origin,
+                         datetime.date: change_indate_origin }
+            con.inputmap = inputmap
+
+            cur = con.cursor()
+            cur.execute('create table %sbooze (day date)' % self.table_prefix)
+            self.commit(con)
+            cur.execute("insert into %sbooze values (@origin)" % self.table_prefix,
+                        {'@origin': datetime.date(1752, 11, 15)})
+            self.commit(con)
+            cur.execute("select * from %sbooze" % self.table_prefix)
+            res = cur.fetchall()
+            date = res[0][0]
+            self.assert_(isinstance(date, datetime.datetime))
+            self.assertEquals(cur.description[0][1], self.driver.DATETIME)
+            self.assertEquals(date.year, 1752)
+            self.assertEquals(date.month, 9)
+            self.assertEquals(date.day, 14)
+            self.assertEquals(type(date), self.driver.DATETIME)
+            self.assert_(isinstance(self.driver.Date(1752,9,14), datetime.date))
+        finally:
+            con.close()
 

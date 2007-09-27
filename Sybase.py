@@ -378,6 +378,13 @@ class Cursor:
                     if isinstance(value, DataBufType):
                         buf = value
                     else:
+                        if self.inputmap is not None:
+                            for tp in type(value).__mro__:
+                                converter = cursor.inputmap.get(tp, None)
+                                if converter is not None:
+                                    break
+                            if converter is not None:
+                                value = converter(value)
                         buf = DataBuf(value)
                     buf.name = name
                     status = self._cmd.ct_param(buf)
@@ -386,6 +393,13 @@ class Cursor:
             else:
                 out_params = []
                 for value in params:
+                    if self.inputmap is not None:
+                        for tp in type(value).__mro__:
+                            converter = cursor.inputmap.get(tp, None)
+                            if converter is not None:
+                                break
+                        if converter is not None:
+                            value = converter(value)
                     out_params.append(value)
                     if isinstance(value, DataBufType):
                         buf = value
@@ -457,6 +471,13 @@ class Cursor:
         if self._params is None:
             self._params = {}
             for name, value in params.items():
+                if self.inputmap is not None:
+                    for tp in type(value).__mro__:
+                        converter = self.inputmap.get(tp, None)
+                        if converter is not None:
+                            break
+                    if converter is not None:
+                        value = converter(value)
                 buf = DataBuf(value)
                 buf.name = name
                 self._params[name] = buf
@@ -465,6 +486,13 @@ class Cursor:
                     self._raise_error(Error('ct_param'))
         else:
             for name, value in params.items():
+                if self.inputmap is not None:
+                    for tp in type(value).__mro__:
+                        converter = self.inputmap.get(tp, None)
+                        if converter is not None:
+                            break
+                    if converter is not None:
+                        value = converter(value)
                 self._params[name][0] = value
         self._start()
 
