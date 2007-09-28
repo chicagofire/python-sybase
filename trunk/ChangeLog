@@ -1,3 +1,7 @@
+2007-09-28  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Sybase.py: Corrected bug on ct_cursor with parameters
+
 2007-09-27  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: Completed input type mapping

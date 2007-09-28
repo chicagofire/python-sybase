@@ -458,10 +458,13 @@ class Cursor:
         self._reset()
         if select is True or (select is None and sql.lower().startswith("select")):
             self._ct_cursor = True
-            self._prepare_ct_cursor(sql)
+            _ctx.debug_msg("using ct_cursor, %s\n" % sql)
+            status = self._cmd.ct_cursor(CS_CURSOR_DECLARE, "ctmp%x" % id(self), sql, CS_UNUSED)
+            if status != CS_SUCCEED:
+                self._raise_error(Error('ct_cursor declare'))
         else:
             self._ct_cursor = False
-            self._prepare_cmd(sql)
+            self._cmd.ct_command(CS_LANG_CMD, sql)
 
     def execute(self, sql, params = {}, select = None):
         '''DB-API Cursor.execute()
@@ -478,10 +481,42 @@ class Cursor:
                             break
                     if converter is not None:
                         value = converter(value)
+
                 buf = DataBuf(value)
                 buf.name = name
                 self._params[name] = buf
-                status = self._cmd.ct_setparam(buf)
+
+                if self._ct_cursor:
+                    # declaring parameters fmt
+                    fmt = CS_DATAFMT()
+                    fmt.count = buf.count
+                    fmt.datatype = buf.datatype
+                    fmt.format = CS_FMT_UNUSED
+                    fmt.maxlength = buf.maxlength
+                    fmt.name = buf.name
+                    fmt.precision = buf.precision
+                    fmt.scale = buf.scale
+                    fmt.status = CS_INPUTVALUE
+                    fmt.strip = buf.strip
+                    fmt.usertype = buf.usertype
+                    status = self._cmd.ct_param(fmt)
+                    if status != CS_SUCCEED:
+                        self._raise_error(Error('ct_param'))
+
+            if self._ct_cursor:
+                # nb_rows = 100
+                # self._cmd.ct_cursor(CS_CURSOR_ROWS, nb_rows)
+                # _ctx.debug_msg("using ct_cursor nb_rows %d\n" % nb_rows)
+                # if status != CS_SUCCEED:
+                #     self._raise_error(Error('ct_cursor rows'))
+
+                _ctx.debug_msg("cursor open\n")
+                status = self._cmd.ct_cursor(CS_CURSOR_OPEN)
+                if status != CS_SUCCEED:
+                    self._raise_error(Error('ct_cursor open'))
+
+            for name in params.keys():
+                status = self._cmd.ct_setparam(self._params[name])
                 if status != CS_SUCCEED:
                     self._raise_error(Error('ct_param'))
         else:
@@ -495,26 +530,6 @@ class Cursor:
                         value = converter(value)
                 self._params[name][0] = value
         self._start()
-
-    def _prepare_cmd(self, sql):
-        self._cmd.ct_command(CS_LANG_CMD, sql)
-
-    def _prepare_ct_cursor(self, sql):
-        _ctx.debug_msg("using ct_cursor, %s\n" % sql)
-        status = self._cmd.ct_cursor(CS_CURSOR_DECLARE, "ctmp%x" % id(self), sql, CS_UNUSED)
-        if status != CS_SUCCEED:
-            self._raise_error(Error('ct_cursor declare'))
-
-        nb_rows = 100
-        self._cmd.ct_cursor(CS_CURSOR_ROWS, nb_rows)
-        _ctx.debug_msg("using ct_cursor nb_rows %d\n" % nb_rows)
-        if status != CS_SUCCEED:
-            self._raise_error(Error('ct_cursor rows'))
-
-        _ctx.debug_msg("cursor open\n")
-        status = self._cmd.ct_cursor(CS_CURSOR_OPEN)
-        if status != CS_SUCCEED:
-            self._raise_error(Error('ct_cursor open'))
 
     def executemany(self, sql, params_seq = []):
         '''DB-API Cursor.executemany()

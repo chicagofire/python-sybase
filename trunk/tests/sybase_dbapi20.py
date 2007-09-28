@@ -552,6 +552,29 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         conn = MyConnection(*self.connect_args,**self.connect_kw_args)
         conn.close()
             
+### ct_cursor
+
+    def test_ct_cursor_parameter(self):
+        # test for parameter pb which happened with ct_cursor
+        con = self._connect()
+        try:
+            cur = con.cursor()
+            cur.execute('create table %sbooze (value int)' % self.table_prefix)
+            self.commit(con)
+            for i in xrange(25):
+                cur.execute("insert into %sbooze values (%d)" % (self.table_prefix, i))
+            self.commit(con)
+            cur.arraysize = 10
+            cur.execute("select * from %sbooze where value > @0" % self.table_prefix, {"@0": 10}, select=True)
+            res = cur.fetchone()
+            self.assertEquals(res[0], 11)
+            while res:
+                last = res[0]
+                res = cur.fetchone()
+            self.assertEquals(last, 24)
+        finally:
+            con.close()
+
 ### arraysize
 
     def test_ct_cursor_arraysize(self):
