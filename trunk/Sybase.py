@@ -750,7 +750,7 @@ class Connection:
 
     def __init__(self, dsn, user, passwd, database = None,
                  strip = 0, auto_commit = 0, delay_connect = 0, locking = 1,
-                 bulkcopy = 0, locale = None,
+                 datetime = None, bulkcopy = 0, locale = None,
                  inputmap = None, outputmap = None ):
         '''DB-API Sybase.Connect()
         '''
@@ -765,6 +765,22 @@ class Connection:
         self.arraysize = 32
         self.inputmap = inputmap
         self.outputmap = outputmap
+
+        # Backward compatibility with datetime kwarg
+        if datetime is not None:
+            import warnings
+            warnings.warn("native python datetime is deprecated - use inputmap and outputmap instead", DeprecationWarning)
+            if datetime == "auto":
+                self.outputmap = DateTimeAsPython
+            elif datetime == "sybase":
+                self.outputmap = DateTimeAsSybase
+            elif datetime == "mx":
+                self.outputmap = DateTimeAsMx
+            elif datetime == "python":
+                self.outputmap = DateTimeAsPython
+            else:
+                raise ValueError, "Unknown datetime value: %s" % datetime
+
         if locking:
             self._connlock = threading.RLock()
 
@@ -1134,8 +1150,8 @@ class Bulkcopy(object):
 
 
 def connect(dsn, user, passwd, database = None,
-            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1,
+            strip = 0, auto_commit = 0, delay_connect = 0, locking = 1, datetime = None,
             bulkcopy = 0, locale = None, inputmap = None, outputmap = None):
     return Connection(dsn, user, passwd, database,
                       strip, auto_commit, delay_connect, locking,
-                      bulkcopy, locale, inputmap, outputmap)
+                      datetime, bulkcopy, locale, inputmap, outputmap)
