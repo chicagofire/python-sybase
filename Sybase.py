@@ -340,6 +340,10 @@ class Cursor:
     def _unlock(self):
         self._owner._unlock()
 
+    def __del__(self):
+        if self._owner._is_connected and self._cmd:
+            self.close()
+
     def _cancel_cmd(self):
         _ctx.debug_msg('_cancel_cmd\n')
         if self._fetching:
