@@ -506,6 +506,7 @@ class Cursor:
                         self._raise_error(Error('ct_param'))
 
             if self._ct_cursor:
+                ## SSA: CS_CURSOR_ROWS does not seem to be taken into account
                 # nb_rows = 100
                 # self._cmd.ct_cursor(CS_CURSOR_ROWS, nb_rows)
                 # _ctx.debug_msg("using ct_cursor nb_rows %d\n" % nb_rows)
@@ -949,7 +950,6 @@ class Connection:
             conn.ct_con_drop()
             self._conn = conn = None
         finally:
-            _ctx.debug_msg('_is_connected = 0\n')
             self._is_connected = 0
             self._unlock()
 
