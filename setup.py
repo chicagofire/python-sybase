@@ -62,7 +62,7 @@ if os.environ.has_key('SYBASE'):
         ocs = os.environ['SYBASE_OCS']
         sybase = os.path.join(sybase, ocs)
 
-have64bit = False        
+have64bit = False
 if sys.maxint > 2147483647:
     have64bit = True
 
@@ -88,7 +88,7 @@ if os.name == 'posix':                  # unix
     # for Sybase 15.0
     lib_names += ['sybblk', 'sybct', 'sybcs', 'sybtcl', 'sybinsck', 'sybcomn', 'sybintl', 'sybunic']
     for name in lib_names:
-        if have64bit:
+        if have64bit and sys.platform not in ['osf1V5']:
             name += '_r64'
         lib_name = os.path.join(sybase, 'lib', 'lib%s.a' % name)
         if os.access(lib_name, os.R_OK):
