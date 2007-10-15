@@ -1,6 +1,7 @@
 include ChangeLog LICENCE TODO
 include *.c *.h
 include doc/*.tex doc/pstumble doc/Makefile
+include ez_setup.py
 recursive-include examples README *.py *.sql *.readme
 recursive-include tests *.py
 global-include .cvsignore
