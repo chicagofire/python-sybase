@@ -1,3 +1,7 @@
+2007-10-15  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Use setuptools and distribute ez_setup.py
+
 2007-10-08  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Restored datetime kwarg for backward compatibility

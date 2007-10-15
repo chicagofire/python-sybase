@@ -29,13 +29,13 @@ Operating System :: Unix
 
 from ez_setup import use_setuptools
 use_setuptools()
+from setuptools import setup, find_packages, Extension
 
 import distutils
 import os
 import sys
 import string
 import re
-from distutils.core import setup, Extension
 from distutils.command.sdist import sdist
 
 if sys.version_info < (2, 3):
@@ -238,7 +238,7 @@ class my_sdist(sdist):
         sdist.run(self)
 
 setup(name="python-sybase",
-      version="0.39alpha1",
+      version="0.39pre1",
       maintainer=u"Sebastien Sable",
       maintainer_email="sable@users.sourceforge.net",
       description=doclines[0],
