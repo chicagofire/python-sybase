@@ -26,6 +26,8 @@ threadsafety = 2                        # Threads may share the module
 paramstyle = 'named'                    # Named style, 
                                         # e.g. '...WHERE name=@name'
 
+use_datetime = 0                        # Deprecated: date type
+
 # DB-API exceptions
 #
 # StandardError
@@ -768,16 +770,21 @@ class Connection:
 
         # Backward compatibility with datetime kwarg
         if datetime is not None:
+            global use_datetime
             import warnings
             warnings.warn("native python datetime is deprecated - use inputmap and outputmap instead", DeprecationWarning)
             if datetime == "auto":
                 self.outputmap = DateTimeAsPython
+                use_datetime = 2
             elif datetime == "sybase":
                 self.outputmap = DateTimeAsSybase
+                use_datetime = 0
             elif datetime == "mx":
                 self.outputmap = DateTimeAsMx
+                use_datetime = 1
             elif datetime == "python":
                 self.outputmap = DateTimeAsPython
+                use_datetime = 2
             else:
                 raise ValueError, "Unknown datetime value: %s" % datetime
 
@@ -898,7 +905,7 @@ class Connection:
         return _output_hooks.get(self._conn)
 
     def __del__(self):
-        if self._conn:
+        if self._is_connected:
             self.close()
 
     def close(self):
