@@ -1,5 +1,7 @@
 2007-10-15  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* setup.py: Sybase libraries do not have "_r64" at the end on OSF1
+
 	* Use setuptools and distribute ez_setup.py
 
 2007-10-08  Sébastien Sablé  <sable@users.sourceforge.net>
