@@ -1,5 +1,7 @@
 2007-10-15  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Sybase.py: Added destructor to Cursor
+
 	* Sybase.py: backward compatibility - restored deprecated
 	use_datetime attribut
 
