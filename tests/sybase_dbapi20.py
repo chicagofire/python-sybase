@@ -400,6 +400,19 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
+    def test_datatypes(self):
+        from Sybase import numeric
+        from decimal import Decimal
+
+        num = numeric(Decimal("100.5"))
+        self.assertEquals("%r" % num, "100.5")
+        num = numeric(Decimal("0.000001"))
+        self.assertEquals("%r" % num, "0.000001")
+        num = numeric(Decimal("-1e-23"))
+        self.assertEquals("%r" % num, "-0.00000000000000000000001")
+        num = numeric("-1111111111111111111111111111111111111111111111111111111111111111111111111111.1")
+        self.assertEquals("%r" % num, "-1111111111111111111111111111111111111111111111111111111111111111111111111111.1")
+
     def test_DataBuf(self):
         from Sybase import *
         import datetime
@@ -489,6 +502,14 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         self.assertEquals(buf[7], 107.0)
         self.assertEquals(buf[8], 108.0)
         self.assertEquals(buf[9], 109.0)
+
+        fmt = CS_DATAFMT()
+        fmt.datatype = CS_NUMERIC_TYPE
+        buf = DataBuf(fmt)
+        buf[0] = Decimal('0.00000000001')
+        self.assertEquals("%r" % buf[0], '0.00000000001')
+        buf[0] = Decimal('1E-8')
+        self.assertEquals("%r" % buf[0], '0.00000001')
 
 #     def testThreadLocking(self):
 #         con = self._connect()

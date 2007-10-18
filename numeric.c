@@ -156,26 +156,81 @@ static int numeric_from_string(CS_NUMERIC *num, int precision, int scale, char *
     CS_DATAFMT numeric_fmt;
     CS_CONTEXT *ctx;
     CS_INT numeric_len;
-    char *dp = strchr(str, '.');
+    char *dp, *ep;
     int len = strlen(str);
     CS_RETCODE conv_result;
 
     char_datafmt(&char_fmt);
     char_fmt.maxlength = len;
-    if (precision < 0) {
-	precision = len;
-	if (precision > CS_MAX_PREC)
-	    precision = CS_MAX_PREC;
+    if (scale < 0 || precision < 0) {
+      int integers = len;
+      int decimals = 0;
+      int exponent = 0;
+
+      if (str[0] == '-')
+	integers -= 1;
+
+      /* decimal notation */
+      dp = strchr(str, '.');
+      if (dp) {
+	decimals = len - (dp - str) - 1;
+	integers -= decimals + 1;
+      }
+
+      /* engineer notation */
+      ep = strchr(str, 'e');
+      if (!ep) ep = strchr(str, 'E');
+      if (ep) {
+	if (!decimals)
+	  integers -= len - (ep - str);
+	else
+	  decimals -= len - (ep - str);
+	exponent = atoi(ep+1);
+	integers += exponent;
+	if (integers < 0)
+	  integers = 0;
+	decimals -= exponent;
+	if (decimals < 0)
+	  decimals = 0;
+      }
+
+      if (precision < 0) {
+	precision = integers + decimals;
+	if (precision > CS_MAX_PREC) {
+	  precision = CS_MAX_PREC;
+	}
+      }
+
+      if (integers > precision) {
+	PyErr_SetString(PyExc_ValueError, "numeric from string conversion failed - number too big");
+	return 0;
+      }
+
+      if (integers + decimals > precision) {
+	/* TODO: warning truncating */
+	decimals = precision - integers;
+      }
+
+      if (scale < 0) {
+	if (decimals > CS_MAX_SCALE)
+	  decimals = CS_MAX_SCALE;
+	scale = decimals;
+      }
     }
-    if (scale < 0) {
-	if (dp) {
-	    int decimals = len - (dp - str) - 1;
-	    if (decimals > CS_MAX_SCALE)
-		decimals = CS_MAX_SCALE;
-	    scale = decimals;
-	} else
-	    scale = 0;
+
+    if (scale > precision) {
+      PyErr_SetString(PyExc_ValueError, "numeric from string conversion failed - scale > precision");
+      return 0;
     }
+    if (scale > CS_MAX_SCALE) {
+      PyErr_SetString(PyExc_ValueError, "numeric from string conversion failed - scale > CS_MAX_SCALE");
+      return 0;
+    }
+    if (precision > CS_MAX_PREC) {
+      PyErr_SetString(PyExc_ValueError, "numeric from string conversion failed - precision > CS_MAX_PREC");
+      return 0;
+    }
+
     numeric_datafmt(&numeric_fmt, precision, scale);
 
     /* PyErr_Clear(); */
