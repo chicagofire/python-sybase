@@ -346,5 +346,6 @@ enum { VAL_ACTION, VAL_BULK, VAL_BULKDIR, VAL_BULKPROPS, VAL_CANCEL,
 char *value_str(int type, int value);
 char *mask_str(int type, int value);
 
-#define NUMERIC_LEN (CS_MAX_PREC + 1)
+/* max NUMERIC_LEN = CS_MAX_SCALE * number + '-' + '.' + '\0' */
+#define NUMERIC_LEN (CS_MAX_SCALE + 3)
 #define MONEY_LEN   NUMERIC_LEN
