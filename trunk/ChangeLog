@@ -1,3 +1,7 @@
+2007-10-19  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Corrected python long handling (using CS_NUMERIC instead of CS_LONG which is unspecified)
+
 2007-10-18  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* numeric.c: Handle engineer notation of numbers in numeric

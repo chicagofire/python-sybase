@@ -76,9 +76,10 @@ PyObject *databuf_alloc(PyObject *obj)
 	}
     } else {
 	if (PyInt_Check(obj) || obj == Py_None)
+	    /* if (PyInt_AsLong(obj) <= INT32_MAX && PyInt_AsLong(obj) >= INT32_MIN) */
 	    int_datafmt(&self->fmt);
 	else if (PyLong_Check(obj))
-	    long_datafmt(&self->fmt);
+	    numeric_datafmt(&self->fmt, CS_SRC_VALUE, 0);
 	else if (PyFloat_Check(obj))
 	    float_datafmt(&self->fmt);
 	else if (Numeric_Check(obj))

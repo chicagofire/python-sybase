@@ -412,6 +412,8 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         self.assertEquals("%r" % num, "-0.00000000000000000000001")
         num = numeric("-1111111111111111111111111111111111111111111111111111111111111111111111111111.1")
         self.assertEquals("%r" % num, "-1111111111111111111111111111111111111111111111111111111111111111111111111111.1")
+        num = numeric(50000000000L)
+        self.assertEquals("%r" % num, "50000000000")        
 
     def test_DataBuf(self):
         from Sybase import *
@@ -428,7 +430,8 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         self.assertEquals(b[0], 100)
         
         b = DataBuf(long(123))
-        self.assertEquals((b.datatype, b.format), (CS_LONG_TYPE, CS_FMT_UNUSED))
+        self.assertEquals((b.datatype, b.format), (CS_NUMERIC_TYPE, CS_FMT_UNUSED))
+        # self.assertEquals((b.precision, b.scale), (3, 0))
         
         d = datetime.datetime(2007, 02, 16, 12, 25, 0)
         b = DataBuf(d)
@@ -510,6 +513,14 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         self.assertEquals("%r" % buf[0], '0.00000000001')
         buf[0] = Decimal('1E-8')
         self.assertEquals("%r" % buf[0], '0.00000001')
+
+        b = DataBuf(50000000000L)
+        self.assertEquals(b[0], 50000000000)
+        self.assertEquals((b.datatype, b.format), (CS_NUMERIC_TYPE, CS_FMT_UNUSED))
+        # self.assertEquals((b.precision, b.scale), (11, 0))
+        b[0] = 110.1
+        self.assertEquals(b[0], 110.1)
+        # self.assertEquals((b.precision, b.scale), (3, 1))
 
 #     def testThreadLocking(self):
 #         con = self._connect()
@@ -683,3 +694,13 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
+    def test_insert_out_of_bound(self):
+        con = self._connect()
+        try:
+            cur = con.cursor()
+            cur.execute('create table %sbooze (num numeric(12,0) NULL)' % self.table_prefix)
+            self.commit(con)
+            cur.execute("insert into %sbooze values (@beer)" % self.table_prefix, {'@beer': 50000000000})
+            self.failUnless(cur.rowcount in (-1,1))
+        finally:
+            con.close()
