@@ -141,12 +141,14 @@ syb_macros = [('WANT_BULKCOPY', None)]
 if have64bit:
     syb_macros.append(('SYB_LP64', None))
 
-try:
-    import datetime
-except ImportError:
-    pass
-else:
-    syb_macros.append(('HAVE_DATETIME', None))
+# the C API to datetime only exists since python 2.4
+if sys.version_info >= (2, 4):
+    try:
+        import datetime
+    except ImportError:
+        pass
+    else:
+        syb_macros.append(('HAVE_DATETIME', None))
 
 try:
     from decimal import Decimal
