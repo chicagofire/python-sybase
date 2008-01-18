@@ -704,3 +704,41 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             self.failUnless(cur.rowcount in (-1,1))
         finally:
             con.close()
+
+### Multi threads
+#
+#     def test_multi_threads(self):
+#         con = self._connect()
+#         try:
+#             cur1 = con.cursor()
+#             cur2 = con.cursor()
+#             self.executeDDL1(con,cur1)
+#             
+#             for i in xrange(10):
+#                 cur1.execute("insert into %sbooze values (@0)" % (self.table_prefix), {"@0": "%d" % i})
+#             con.commit()
+# 
+#             from threading import Thread
+#             
+#             def select_loop(cursor, start, table_prefix):
+#                 cursor.execute("select * from %sbooze" % (table_prefix))
+#                 oldrow = None
+#                 while 1:
+#                     row = cursor.fetchone()
+#                     if row is None:
+#                         break
+#                     oldrow = row
+#                     print "thread%d: %s" % (start, row)
+# 
+#                 if oldrow[0] != "9":
+#                     raise ValueError, "row '%s' %s is not 9" % (oldrow[0], type(oldrow[0]))
+# 
+#             thread1 = Thread(target=select_loop, args=(cur1, 0, self.table_prefix))
+#             thread2 = Thread(target=select_loop, args=(cur2, 1, self.table_prefix))
+#             
+#             thread1.start()
+#             thread2.start()
+#             thread1.join(10)
+#             thread2.join(5)
+#         finally:
+#             con.close()
