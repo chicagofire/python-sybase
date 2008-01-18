@@ -88,11 +88,15 @@ if os.name == 'posix':                  # unix
     # for Sybase 15.0
     lib_names += ['sybblk', 'sybct', 'sybcs', 'sybtcl', 'sybinsck', 'sybcomn', 'sybintl', 'sybunic']
     for name in lib_names:
+        extensions = [('_r', 'a'), ('_r', 'so'), ('', 'a'), ('', 'so')]
         if have64bit and sys.platform not in ['osf1V5']:
-            name += '_r64'
-        lib_name = os.path.join(sybase, 'lib', 'lib%s.a' % name)
-        if os.access(lib_name, os.R_OK):
-            syb_libs.append(name)
+            extensions = [('_r64', 'a'), ('_r64', 'so')]
+        for (ext1, ext2) in extensions:
+            lib_name = "%s%s" % (name, ext1)
+            lib_path = os.path.join(sybase, 'lib', 'lib%s.%s' % (lib_name, ext2))
+            if os.access(lib_path, os.R_OK):
+                syb_libs.append(lib_name)
+                break
 
 elif os.name == 'nt':                   # win32
     # Not sure how the installation location is specified under NT
