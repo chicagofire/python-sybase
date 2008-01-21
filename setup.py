@@ -88,7 +88,7 @@ if os.name == 'posix':                  # unix
     # for Sybase 15.0
     lib_names += ['sybblk', 'sybct', 'sybcs', 'sybtcl', 'sybinsck', 'sybcomn', 'sybintl', 'sybunic']
     for name in lib_names:
-        extensions = [('_r', 'a'), ('_r', 'so'), ('', 'a'), ('', 'so')]
+        extensions = [('', 'a'), ('', 'so'), ('_r', 'a'), ('_r', 'so')]
         if have64bit and sys.platform not in ['osf1V5']:
             extensions = [('_r64', 'a'), ('_r64', 'so')]
         for (ext1, ext2) in extensions:

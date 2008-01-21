@@ -1,7 +1,6 @@
 2008-01-18  Sébastien Sablé  <sable@users.sourceforge.net>
 
-	* setup.py: Better detection of Sybase libraries (using threadsafe
-	ones by default if available)
+	* setup.py: Better detection of Sybase libraries
 
 	* Sybase.py: Better thread safety
 
