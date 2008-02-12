@@ -1,4 +1,4 @@
-PYTHON_SRC=     /usr/lib/python2.4
+PYTHON_SRC=     /usr/lib/python2.5
 
 MKHOWTO=	$(PYTHON_SRC)/doc/tools/mkhowto
 

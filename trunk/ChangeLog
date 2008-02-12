@@ -1,3 +1,7 @@
+2008-02-12  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Releasing version 0.39pre1
+
 2008-01-18  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* setup.py: Better detection of Sybase libraries

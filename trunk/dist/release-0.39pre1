@@ -1,0 +1,60 @@
+Subject: Sybase module 0.39pre1 released
+To: python-sybase-misc@lists.sourceforge.net
+Cc: python-announce@python.org,freetds@franklin.oit.unc.edu,db-sig@python.org,python-list@python.org
+
+WHAT IS IT:
+
+The Sybase module provides a Python interface to the Sybase relational
+database system.  It supports all of the Python Database API, version
+2.0 with extensions.
+
+** This version is a pre-release not intended for production use **
+
+The module is available here:
+
+http://downloads.sourceforge.net/python-sybase/python-sybase-0.39pre1.tar.gz
+
+The module home page is here:
+
+http://python-sybase.sourceforge.net/
+
+MAJOR CHANGES SINCE 0.38:
+
+* Added type mapping as proposed in
+  http://www.uniqsys.com/~carsten/typemap.html by Carsten Haese
+* Handle engineer notation of numbers in numeric
+* Added support for CS_DATE_TYPE
+* Added support for python Decimal objects in databuf
+* Possibility to use ct_cursor for some requests
+* Refactoring - merged Fetchers, CTCursor and CmdCursor in Cursor
+* Refactored _cancel_cmd
+* Added a prepare method to Cursor
+* Additional 'locale' argument to connect and Connection to set the
+  locale of the connection thanks to patch by Harri Pasanen
+* Better compliance with DBAPI: returns None in nextset when no more set
+* Added conversion from string to int when assigning to a CS_INT_TYPE DataBuf
+
+BUGS CORRECTED SINCE 0.38:
+
+* Corrected documentation about CS_CONTEXT Objects thanks to bug
+  report by Derek Harland (close tracker 1748109)
+* Corrected bug in close() if connection killed from outside thanks to
+  patch by Derek Harland (close tracker 1746220)
+* Corrected bug if inherit from Sybase.Connection thanks to patch by
+  Derek Harland (close tracker 1719789)
+* Optimization in fetchall - using fetchmany instead of fetchone to
+  avoid locking time penalty, thanks to patch by Derek Harland (close
+  tracker 1746908)
+* Corrections to compile with bcp-support against freetds thanks to
+  patch by Klaus-Martin Hansche (close tracker 1724088)
+* Corrected documentation to compile with FreeTDS and Threads thanks
+  to Derek Harland (close tracker 1709043)
+* Corrected bug in databuf_alloc: Sybase reports the wrong maxlength
+  for numeric type - verified with Sybase 12.5 - thanks to patch
+  provided by Phil Porter
+* Better detection of Sybase libraries
+* the C API to datetime only exists since python 2.4 - disable
+  datetime with previous versions
+* Corrected python long handling (using CS_NUMERIC instead of CS_LONG
+  which is unspecified)
+* Corrected various compilation warnings (some linked to python 2.5)
