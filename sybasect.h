@@ -178,7 +178,9 @@ typedef struct {
 extern PyTypeObject CS_DATAFMTType;
 #define CS_DATAFMT_Check(obj) (obj->ob_type == &CS_DATAFMTType)
 void datetime_datafmt(CS_DATAFMT *fmt, int type);
+#ifdef CS_DATE_TYPE
 void date_datafmt(CS_DATAFMT *fmt);
+#endif
 void money_datafmt(CS_DATAFMT *fmt, int type);
 void numeric_datafmt(CS_DATAFMT *fmt, int precision, int scale);
 void char_datafmt(CS_DATAFMT *fmt);
