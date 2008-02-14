@@ -99,7 +99,11 @@ PyObject *databuf_alloc(PyObject *obj)
 	} else if (pydatetime_check(obj)) {
 	    datetime_datafmt(&self->fmt, CS_DATETIME_TYPE);
 	} else if (pydate_check(obj)) {
+#ifdef CS_DATE_TYPE
 	    date_datafmt(&self->fmt);
+#else
+	    datetime_datafmt(&self->fmt, CS_DATETIME_TYPE);
+#endif
 #endif
 #ifdef HAVE_DECIMAL
 	} else if (pydecimal_check(obj)) {

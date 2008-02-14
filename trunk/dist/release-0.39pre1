@@ -31,8 +31,10 @@ MAJOR CHANGES SINCE 0.38:
 * Added a prepare method to Cursor
 * Additional 'locale' argument to connect and Connection to set the
   locale of the connection thanks to patch by Harri Pasanen
-* Better compliance with DBAPI: returns None in nextset when no more set
-* Added conversion from string to int when assigning to a CS_INT_TYPE DataBuf
+* Better compliance with DBAPI: returns None in nextset when no more
+  set
+* Added conversion from string to int when assigning to a CS_INT_TYPE
+  DataBuf
 
 BUGS CORRECTED SINCE 0.38:
 
@@ -58,3 +60,8 @@ BUGS CORRECTED SINCE 0.38:
 * Corrected python long handling (using CS_NUMERIC instead of CS_LONG
   which is unspecified)
 * Corrected various compilation warnings (some linked to python 2.5)
+
+The full ChangeLog is here:
+
+https://python-sybase.svn.sourceforge.net/svnroot/python-sybase/tags/r0_39pre1/ChangeLog
+
