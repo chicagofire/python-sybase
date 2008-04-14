@@ -14,7 +14,7 @@ from sybasect import datetime as sybdatetime
 
 set_debug(sys.stderr)
 
-__version__ = '0.39'
+__version__ = '0.39x'
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
@@ -477,6 +477,125 @@ class Cursor:
         finally:
             self._unlock()
 
+    def _named_bind(self, params):
+        for name, value in params.items():
+            if self.inputmap is not None:
+                for tp in type(value).__mro__:
+                    converter = self.inputmap.get(tp, None)
+                    if converter is not None:
+                        break
+                if converter is not None:
+                    value = converter(value)
+
+            buf = DataBuf(value)
+            buf.name = name
+            self._params[name] = buf
+
+            if self._ct_cursor:
+                # declaring parameters fmt
+                fmt = CS_DATAFMT()
+                fmt.count = buf.count
+                fmt.datatype = buf.datatype
+                fmt.format = CS_FMT_UNUSED
+                fmt.maxlength = buf.maxlength
+                fmt.name = buf.name
+                fmt.precision = buf.precision
+                fmt.scale = buf.scale
+                fmt.status = CS_INPUTVALUE
+                fmt.strip = buf.strip
+                fmt.usertype = buf.usertype
+                status = self._cmd.ct_param(fmt)
+                if status != CS_SUCCEED:
+                    self._raise_error(Error('ct_param'))
+
+        if self._ct_cursor:
+            ## SSA: CS_CURSOR_ROWS does not seem to be taken into account
+            # nb_rows = 100
+            # self._cmd.ct_cursor(CS_CURSOR_ROWS, nb_rows)
+            # _ctx.debug_msg("using ct_cursor nb_rows %d\n" % nb_rows)
+            # if status != CS_SUCCEED:
+            #     self._raise_error(Error('ct_cursor rows'))
+
+            _ctx.debug_msg("cursor open\n")
+            status = self._cmd.ct_cursor(CS_CURSOR_OPEN)
+            if status != CS_SUCCEED:
+                self._raise_error(Error('ct_cursor open'))
+
+        for name in params.keys():
+            status = self._cmd.ct_setparam(self._params[name])
+            if status != CS_SUCCEED:
+                self._raise_error(Error('ct_param'))
+
+    def _named_execute(self, params):
+        for name, value in params.items():
+            if self.inputmap is not None:
+                for tp in type(value).__mro__:
+                    converter = self.inputmap.get(tp, None)
+                    if converter is not None:
+                        break
+                if converter is not None:
+                    value = converter(value)
+            self._params[name][0] = value
+
+    def _numeric_bind(self, params):
+        for value in params:
+            if self.inputmap is not None:
+                for tp in type(value).__mro__:
+                    converter = self.inputmap.get(tp, None)
+                    if converter is not None:
+                        break
+                if converter is not None:
+                    value = converter(value)
+
+            buf = DataBuf(value)
+            self._params.append(buf)
+
+            if self._ct_cursor:
+                # declaring parameters fmt
+                fmt = CS_DATAFMT()
+                fmt.count = buf.count
+                fmt.datatype = buf.datatype
+                fmt.format = CS_FMT_UNUSED
+                fmt.maxlength = buf.maxlength
+                fmt.precision = buf.precision
+                fmt.scale = buf.scale
+                fmt.status = CS_INPUTVALUE
+                fmt.strip = buf.strip
+                fmt.usertype = buf.usertype
+                status = self._cmd.ct_param(fmt)
+                if status != CS_SUCCEED:
+                    self._raise_error(Error('ct_param'))
+
+        if self._ct_cursor:
+            ## SSA: CS_CURSOR_ROWS does not seem to be taken into account
+            # nb_rows = 100
+            # self._cmd.ct_cursor(CS_CURSOR_ROWS, nb_rows)
+            # _ctx.debug_msg("using ct_cursor nb_rows %d\n" % nb_rows)
+            # if status != CS_SUCCEED:
+            #     self._raise_error(Error('ct_cursor rows'))
+
+            _ctx.debug_msg("cursor open\n")
+            status = self._cmd.ct_cursor(CS_CURSOR_OPEN)
+            if status != CS_SUCCEED:
+                self._raise_error(Error('ct_cursor open'))
+
+        for buf in self._params:
+            status = self._cmd.ct_setparam(buf)
+            if status != CS_SUCCEED:
+                self._raise_error(Error('ct_param'))
+
+    def _numeric_execute(self, params):
+        for i in range(len(params)):
+            value = params[i]
+            if self.inputmap is not None:
+                for tp in type(value).__mro__:
+                    converter = self.inputmap.get(tp, None)
+                    if converter is not None:
+                        break
+                if converter is not None:
+                    value = converter(value)
+            self._params[i][0] = value
+
     def execute(self, sql, params = {}, select = None):
         '''DB-API Cursor.execute()
         '''
@@ -484,65 +603,16 @@ class Cursor:
         try:
             if sql is not None:
                 self.prepare(sql, select)
-            if self._params is None:
-                self._params = {}
-                for name, value in params.items():
-                    if self.inputmap is not None:
-                        for tp in type(value).__mro__:
-                            converter = self.inputmap.get(tp, None)
-                            if converter is not None:
-                                break
-                        if converter is not None:
-                            value = converter(value)
-    
-                    buf = DataBuf(value)
-                    buf.name = name
-                    self._params[name] = buf
-    
-                    if self._ct_cursor:
-                        # declaring parameters fmt
-                        fmt = CS_DATAFMT()
-                        fmt.count = buf.count
-                        fmt.datatype = buf.datatype
-                        fmt.format = CS_FMT_UNUSED
-                        fmt.maxlength = buf.maxlength
-                        fmt.name = buf.name
-                        fmt.precision = buf.precision
-                        fmt.scale = buf.scale
-                        fmt.status = CS_INPUTVALUE
-                        fmt.strip = buf.strip
-                        fmt.usertype = buf.usertype
-                        status = self._cmd.ct_param(fmt)
-                        if status != CS_SUCCEED:
-                            self._raise_error(Error('ct_param'))
-    
-                if self._ct_cursor:
-                    ## SSA: CS_CURSOR_ROWS does not seem to be taken into account
-                    # nb_rows = 100
-                    # self._cmd.ct_cursor(CS_CURSOR_ROWS, nb_rows)
-                    # _ctx.debug_msg("using ct_cursor nb_rows %d\n" % nb_rows)
-                    # if status != CS_SUCCEED:
-                    #     self._raise_error(Error('ct_cursor rows'))
-    
-                    _ctx.debug_msg("cursor open\n")
-                    status = self._cmd.ct_cursor(CS_CURSOR_OPEN)
-                    if status != CS_SUCCEED:
-                        self._raise_error(Error('ct_cursor open'))
-    
-                for name in params.keys():
-                    status = self._cmd.ct_setparam(self._params[name])
-                    if status != CS_SUCCEED:
-                        self._raise_error(Error('ct_param'))
+            if type(params) is dict:
+                if self._params is None:
+                    self._params = {}
+                    self._named_bind(params)
+                self._named_execute(params)
             else:
-                for name, value in params.items():
-                    if self.inputmap is not None:
-                        for tp in type(value).__mro__:
-                            converter = self.inputmap.get(tp, None)
-                            if converter is not None:
-                                break
-                        if converter is not None:
-                            value = converter(value)
-                    self._params[name][0] = value
+                if self._params is None:
+                    self._params = []
+                    self._numeric_bind(params)
+                self._numeric_execute(params)
             self._start()
         finally:
             self._unlock()

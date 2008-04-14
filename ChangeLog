@@ -1,5 +1,7 @@
 2008-04-14  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Support for extra paramstyle 'numeric'
+
 	* Releasing version 0.39
 
 2008-02-14  Sébastien Sablé  <sable@users.sourceforge.net>
