@@ -1,3 +1,7 @@
+2008-04-14  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Releasing version 0.39
+
 2008-02-14  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Corrected "undefined symbol" date_datafmt for Sybase versions
