@@ -14,7 +14,7 @@ from sybasect import datetime as sybdatetime
 
 set_debug(sys.stderr)
 
-__version__ = '0.39pre1'
+__version__ = '0.39'
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
