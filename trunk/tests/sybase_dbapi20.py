@@ -37,6 +37,11 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
     def setUp(self):
         # Call superclass setUp In case this does something in the
         # future
+        try:
+            self.driver.paramstyle = self.paramstyle
+        except AttributeError:
+            self.driver.paramstyle = 'named'
+
         dbapi20.DatabaseAPI20Test.setUp(self) 
 
         try:
@@ -65,10 +70,18 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             ))
         self.failUnless(cur.rowcount in (-1,1))
 
-        cur.execute(
-            'insert into %sbooze values (@beer)' % self.table_prefix, 
-            {'@beer':"Cooper's"}
-            )
+        if self.driver.paramstyle == 'numeric':
+            cur.execute(
+                'insert into %sbooze values (@1)' % self.table_prefix,
+                ("Cooper's",)
+                )
+        elif self.driver.paramstyle == 'named':
+            cur.execute(
+                'insert into %sbooze values (@beer)' % self.table_prefix, 
+                {'@beer':"Cooper's"}
+                )
+        else:
+            self.fail('Invalid paramstyle')
         self.failUnless(cur.rowcount in (-1,1))
 
         cur.execute('select name from %sbooze' % self.table_prefix)
@@ -94,10 +107,18 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
             self.executeDDL1(con,cur)
             largs = [ ("Cooper's",) , ("Boag's",) ]
             margs = [ {'@beer': "Cooper's"}, {'@beer': "Boag's"} ]
-            cur.executemany(
-                'insert into %sbooze values (@beer)' % self.table_prefix,
-                margs
-                )
+            if self.driver.paramstyle == 'numeric':
+                cur.executemany(
+                    'insert into %sbooze values (@1)' % self.table_prefix,
+                    largs
+                    )
+            elif self.driver.paramstyle == 'named':
+                cur.executemany(
+                    'insert into %sbooze values (@beer)' % self.table_prefix,
+                    margs
+                    )
+            else:
+                self.fail('Unknown paramstyle')
             self.failUnless(cur.rowcount in (-1,2),
                 'insert using cursor.executemany set cursor.rowcount to '
                 'incorrect value %r' % cur.rowcount
