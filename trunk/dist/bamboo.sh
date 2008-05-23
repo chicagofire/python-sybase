@@ -9,8 +9,6 @@ ARCH=$(./config.guess)
 export ARCH
 SUPPORT_HOME=${SUPPORt_HOME:=/livraison/test/${ARCH}/support/support-2.6.x}
 export SUPPORT_HOME
-PATH=${SUPPORT_HOME}/bin:${PATH}
-export PATH
 
 case "${ARCH}" in
     hppa2.0w-hp-hpux11.23)
@@ -18,7 +16,7 @@ case "${ARCH}" in
     powerpc-ibm-aix5.3.0.0)
         export MAKE=gmake
         export ABI=32
-        export PATH=/usr/vac/bin:/usr/bin:${PATH}
+        export PATH=${SUPPORT_HOME}/bin:/usr/vac/bin:/usr/bin:${PATH}
         export CC=xlc_r
         export LIBPATH=${SUPPORT_HOME}/lib:/usr/lib:${LIBPATH}
 	export SYBASE=/sgbd_product/sybase/15.0
@@ -28,12 +26,11 @@ case "${ARCH}" in
         fi
         ;;
     sparc-sun-solaris2.10)
-	export PATH=/opt/SUNWspro/bin:/usr/sfw/bin:/usr/ccs/bin:/usr/xpg4/bin:$PATH
+	export PATH=${SUPPORT_HOME}/bin:/opt/SUNWspro/bin:/usr/sfw/bin:/usr/ccs/bin:/usr/xpg4/bin:$PATH
         export CC=cc
         export CFLAGS="-g -O"
         export MAKE=gmake
         export ABI=32
-
         export LD_LIBRARY_PATH=${SUPPORT_HOME}/lib:${LD_LIBRARY_PATH}
         export SYBASE=/sybase/product/15.0
         if [[ -f ${SYBASE}/SYBASE.sh ]]
@@ -42,6 +39,7 @@ case "${ARCH}" in
         fi
         ;;
     *)
+	export PATH=${SUPPORT_HOME}/bin:${PATH}
         export LD_LIBRARY_PATH=${SUPPORT_HOME}/lib:${LD_LIBRARY_PATH}
         if [[ -d /sybase/product/12.5 ]]
         then
