@@ -7,9 +7,10 @@ fi
 
 ARCH=$(./config.guess)
 export ARCH
-SUPPORT_HOME=/livraison/test/${ARCH}/support/support-2.6.x
+SUPPORT_HOME=${SUPPORt_HOME:=/livraison/test/${ARCH}/support/support-2.6.x}
 export SUPPORT_HOME
 PATH=${SUPPORT_HOME}/bin:${PATH}
+export PATH
 
 case "${ARCH}" in
     hppa2.0w-hp-hpux11.23)
