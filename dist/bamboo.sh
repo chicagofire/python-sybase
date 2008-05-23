@@ -7,7 +7,7 @@ fi
 
 ARCH=$(./config.guess)
 export ARCH
-SUPPORT_HOME=/livraison/test/${ARCH}/support/support-2.6.5
+SUPPORT_HOME=/livraison/test/${ARCH}/support/support-2.6.x
 export SUPPORT_HOME
 PATH=${SUPPORT_HOME}/bin:${PATH}
 
@@ -20,7 +20,7 @@ case "${ARCH}" in
         export PATH=/usr/vac/bin:/usr/bin:${PATH}
         export CC=xlc_r
         export LIBPATH=${SUPPORT_HOME}/lib:/usr/lib:${LIBPATH}
-        export SYBASE=/sybase/product/15.0
+	export SYBASE=/sgbd_product/sybase/15.0
         if [[ -f ${SYBASE}/SYBASE.sh ]]
         then
             . ${SYBASE}/SYBASE.sh
@@ -62,7 +62,7 @@ esac
 
 cd ..
 python setup.py install --prefix=./target
-PYTHONPATH=`pwd`/target/lib/python2.4/site-packages:${PYTHONPATH}
+PYTHONPATH=`pwd`/target/lib/python2.5/site-packages:${PYTHONPATH}
 export PYTHONPATH
 
 nosetests --source-folder=. --xml-report-folder=./target/nosexunit-xml --with-nosexunit -v
