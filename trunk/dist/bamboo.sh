@@ -7,7 +7,7 @@ fi
 
 ARCH=$(./config.guess)
 export ARCH
-SUPPORT_HOME=${SUPPORt_HOME:=/livraison/test/${ARCH}/support/support-2.6.x}
+SUPPORT_HOME=${SUPPORT_HOME:=/livraison/test/${ARCH}/support/support-2.6.x}
 export SUPPORT_HOME
 
 case "${ARCH}" in
