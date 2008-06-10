@@ -543,6 +543,12 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         self.assertEquals(b[0], 110.1)
         # self.assertEquals((b.precision, b.scale), (3, 1))
 
+        # # Test putting longer string in an old DataBuf
+        # b = DataBuf('100.001')
+        # b[0] = '1000.0001'
+        # self.assertEquals(b[0], '1000.0001')
+
+
 #     def testThreadLocking(self):
 #         con = self._connect()
 #         try:
