@@ -1,3 +1,8 @@
+2008-06-12  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Increase DataBuf maxlength for params of a request when using
+	CS_CHAR_TYPE params so that the buf can be reused
+
 2008-04-14  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Support for extra paramstyle 'numeric'

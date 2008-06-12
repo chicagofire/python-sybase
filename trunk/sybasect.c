@@ -1301,6 +1301,9 @@ static value_desc sybase_args[] = {
 #ifdef CS_MAX_PREC
     SYVAL(VAL_RESULT, CS_MAX_PREC),
 #endif
+#ifdef CS_MAX_CHAR
+    SYVAL(VAL_RESULT, CS_MAX_CHAR),
+#endif
 
 #ifdef CS_CONSTAT_CONNECTED
     SYVAL(VAL_CONSTAT, CS_CONSTAT_CONNECTED),

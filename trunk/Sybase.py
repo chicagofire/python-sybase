@@ -489,6 +489,22 @@ class Cursor:
 
             buf = DataBuf(value)
             buf.name = name
+            # Use customized maxlength for CS_CHAR_TYPE so that next
+            # params will fit
+            if buf.datatype == CS_CHAR_TYPE:
+                fmt = CS_DATAFMT()
+                fmt.count = buf.count
+                fmt.datatype = buf.datatype
+                fmt.format = CS_FMT_UNUSED
+                fmt.maxlength = CS_MAX_CHAR
+                fmt.name = buf.name
+                fmt.precision = buf.precision
+                fmt.scale = buf.scale
+                fmt.status = CS_INPUTVALUE
+                fmt.strip = buf.strip
+                fmt.usertype = buf.usertype
+                buf = DataBuf(fmt)
+            buf[0] = value
             self._params[name] = buf
 
             if self._ct_cursor:
@@ -548,6 +564,22 @@ class Cursor:
                     value = converter(value)
 
             buf = DataBuf(value)
+            # Use customized maxlength for CS_CHAR_TYPE so that next
+            # params will fit
+            if buf.datatype == CS_CHAR_TYPE:
+                fmt = CS_DATAFMT()
+                fmt.maxlength = CS_MAX_CHAR
+                fmt.count = buf.count
+                fmt.datatype = buf.datatype
+                fmt.format = CS_FMT_UNUSED
+                fmt.name = buf.name
+                fmt.precision = buf.precision
+                fmt.scale = buf.scale
+                fmt.status = CS_INPUTVALUE
+                fmt.strip = buf.strip
+                fmt.usertype = buf.usertype
+                buf = DataBuf(fmt)
+            buf[0] = value
             self._params.append(buf)
 
             if self._ct_cursor:
