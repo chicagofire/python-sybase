@@ -19,7 +19,7 @@ case "${ARCH}" in
         export PATH=${SUPPORT_HOME}/bin:/usr/vac/bin:/usr/bin:${PATH}
         export CC=xlc_r
         export LIBPATH=${SUPPORT_HOME}/lib:/usr/lib:${LIBPATH}
-	export SYBASE=/sgbd_product/sybase/15.0
+	export SYBASE=/sgbd_product/sybase/SDK_15.0_32bits
         if [[ -f ${SYBASE}/SYBASE.sh ]]
         then
             . ${SYBASE}/SYBASE.sh
@@ -65,4 +65,20 @@ PYTHONPATH=`pwd`/target/lib/python2.5/site-packages:${PYTHONPATH}
 export PYTHONPATH
 python setup.py install --prefix=./target
 
-nosetests --source-folder=. --xml-report-folder=./target/nosexunit-xml --with-nosexunit -v
+case "${ARCH}" in
+    powerpc-ibm-aix5.3.0.0)
+        export MAKE=gmake
+        export ABI=32
+        export PATH=${SUPPORT_HOME}/bin:/usr/vac/bin:/usr/bin:${PATH}
+        export CC=xlc_r
+        export LIBPATH=${SUPPORT_HOME}/lib:/usr/lib:${LIBPATH}
+        export SYBASE=/sgbd_product/sybase/15.0
+        if [[ -f ${SYBASE}/SYBASE.sh ]]
+        then
+            . ${SYBASE}/SYBASE.sh
+        fi
+        ;;
+    *)
+        ;;
+esac
+nosetests --exe --source-folder=tests --xml-report-folder=./target/nosexunit-xml --with-nosexunit -v
