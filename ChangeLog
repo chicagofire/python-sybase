@@ -1,8 +1,11 @@
 2008-06-17  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Sybase.py: Optimization: reuse command and cursor when calling
+	cursor.execute with same request
+
 	* Sybase.py: Use ct_setparam to define ct_cursor parameters types
 	instead of ct_param
-	
+
 	* Sybase.py: Use CS_DATETIME_TYPE when passing CS_DATE_TYPE to
 	ct_setparam with NULLDATA to avoid a sybase limitation
 
