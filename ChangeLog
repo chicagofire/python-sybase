@@ -1,5 +1,7 @@
 2008-06-17  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* sybasect.c: Adding CS_HAVE_CUROPEN property
+
 	* cmd.c: Correct passing CS_NULLDATA to ct_setparam
 	
 	* databuf.c: Correct passing None in a DataBuf (thanks to patch by
