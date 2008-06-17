@@ -784,6 +784,9 @@ static value_desc sybase_args[] = {
 #ifdef CS_CONFIG_BY_SERVERNAME
     SYVAL(VAL_PROPS, CS_CONFIG_BY_SERVERNAME),
 #endif
+#ifdef CS_HAVE_CUROPEN
+    SYVAL(VAL_PROPS, CS_HAVE_CUROPEN),
+#endif
 
 #ifdef CS_DS_CHAIN
     SYVAL(VAL_DIRSERV, CS_DS_CHAIN),
