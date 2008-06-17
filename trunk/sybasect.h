@@ -293,6 +293,7 @@ extern char pickle_datetime__doc__[];
 PyObject *pickle_datetime(PyObject *module, PyObject *args);
 PyObject *DateTime_FromString(PyObject *obj);
 PyObject *DateTime_FromPyDateTime(PyObject *obj);
+PyObject *DateTime_FromPyDate(PyObject *obj);
 
 #ifdef CS_DATE_TYPE
 typedef struct {
