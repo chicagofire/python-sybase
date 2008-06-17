@@ -268,6 +268,7 @@ static Py_ssize_t DataBuf_ass_item(PyObject *_self, Py_ssize_t i, PyObject *v)
     }
     if (v == Py_None) {
 	self->indicator[i] = CS_NULLDATA;
+	self->copied[i] = 0;
 	return 0;
     }
 
