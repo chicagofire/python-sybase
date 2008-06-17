@@ -404,6 +404,11 @@ static Py_ssize_t DataBuf_ass_item(PyObject *_self, Py_ssize_t i, PyObject *v)
 	    if (obj == NULL)
 		return -1;
 	    v = obj;
+        } else if (pydate_check(v)) {
+	    obj = DateTime_FromPyDate(v);
+	    if (obj == NULL)
+		return -1;
+	    v = obj;
         } else if (PyString_Check(v)) {
 	    obj2 = PyObject_Str(v);
 	    if (obj2 == NULL) {
@@ -479,7 +484,7 @@ static Py_ssize_t DataBuf_ass_item(PyObject *_self, Py_ssize_t i, PyObject *v)
     }
 
     Py_XDECREF(obj);
-    self->indicator[i] = 0;
+    self->indicator[i] = CS_GOODDATA;
     return 0;
 }
 
