@@ -248,6 +248,143 @@ static PyObject *CS_COMMAND_ct_command(CS_COMMANDObj *self, PyObject *args)
     }
 }
 
+static int property_type(int property)
+{
+    switch (property) {
+#ifdef CS_HAVE_CUROPEN
+    case CS_HAVE_CUROPEN:
+#endif
+	return OPTION_BOOL;
+    default:
+	return OPTION_UNKNOWN;
+    }
+}
+
+static char CS_COMMAND_ct_cmd_props__doc__[] = 
+"ct_cmd_props(CS_SET, property, value) -> status\n"
+"ct_cmd_props(CS_GET, property) -> status, value\n"
+#ifdef CS_CLEAR
+"ct_cmd_props(CS_CLEAR, property) -> status\n"
+#endif
+;
+
+static PyObject *CS_COMMAND_ct_cmd_props(CS_COMMANDObj *self, PyObject *args)
+{
+    int action, property;
+    PyObject *obj = NULL;
+    CS_RETCODE status;
+    CS_BOOL bool_value;
+
+    if (!first_tuple_int(args, &action))
+	return NULL;
+
+    if (self->cmd == NULL) {
+	PyErr_SetString(PyExc_TypeError, "CS_COMMAND has been dropped");
+	return NULL;
+    }
+
+    switch (action) {
+    case CS_SET:
+	/* ct_cmd_props(CS_SET, property, value) -> status */
+	if (!PyArg_ParseTuple(args, "iiO", &action, &property, &obj))
+	    return NULL;
+
+	switch (property_type(property)) {
+	case OPTION_BOOL:
+	    bool_value = PyInt_AsLong(obj);
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    /* PyErr_Clear(); */
+
+	    SY_CONN_BEGIN_THREADS(self);
+	    status = ct_cmd_props(self->cmd, CS_SET, property,
+				  &bool_value, CS_UNUSED, NULL);
+	    SY_CONN_END_THREADS(self);
+
+	    if (self->debug)
+		debug_msg("ct_cmd_props(cmd%d, CS_SET, %s, %d, CS_UNUSED,"
+			  " NULL) -> %s\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property), (int)bool_value,
+			  value_str(VAL_STATUS, status));
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    return PyInt_FromLong(status);
+
+
+	default:
+	    PyErr_SetString(PyExc_TypeError, "unhandled property value");
+	    return NULL;
+	}
+	break;
+
+    case CS_GET:
+	/* ct_cmd_props(CS_GET, property) -> status, value */
+	if (!PyArg_ParseTuple(args, "ii", &action, &property))
+	    return NULL;
+
+	switch (property_type(property)) {
+	case OPTION_BOOL:
+	    /* PyErr_Clear(); */
+
+	    SY_CONN_BEGIN_THREADS(self);
+	    status = ct_cmd_props(self->cmd, CS_GET, property,
+				  &bool_value, CS_UNUSED, NULL);
+	    SY_CONN_END_THREADS(self);
+
+	    if (self->debug)
+		debug_msg("ct_cmd_props(cmd%d, CS_GET, %s, &value, CS_UNUSED,"
+			  " NULL) -> %s, %d\n",
+			  self->serial,
+			  value_str(VAL_PROPS, property),
+			  value_str(VAL_STATUS, status), (int)bool_value);
+	    if (PyErr_Occurred())
+		return NULL;
+
+	    return Py_BuildValue("ii", status, bool_value);
+
+
+	default:
+	    PyErr_SetString(PyExc_TypeError, "unhandled property value");
+	    return NULL;
+	}
+	break;
+
+#ifdef CS_CLEAR
+    case CS_CLEAR:
+	/* ct_cmd_props(CS_CLEAR, property) -> status */
+	if (!PyArg_ParseTuple(args, "ii", &action, &property))
+	    return NULL;
+
+	/* PyErr_Clear(); */
+
+	SY_CONN_BEGIN_THREADS(self);
+	status = ct_cmd_props(self->cmd, CS_CLEAR, property,
+			      NULL, CS_UNUSED, NULL);
+	SY_CONN_END_THREADS(self);
+
+	if (self->debug)
+	    debug_msg("ct_cmd_props(cmd%d, CS_CLEAR, %s, NULL, CS_UNUSED,"
+		      " NULL) -> %s\n",
+		      self->serial,
+		      value_str(VAL_PROPS, property),
+		      value_str(VAL_STATUS, status));
+	if (PyErr_Occurred())
+	    return NULL;
+
+	return PyInt_FromLong(status);
+#endif
+
+    default:
+	PyErr_SetString(PyExc_TypeError, "unknown action");
+	return NULL;
+    }
+}
+
+
+
 #ifdef HAVE_CT_CURSOR
 static char CS_COMMAND_ct_cursor__doc__[] = 
 "ct_cursor(CS_CURSOR_DECLARE, cursor_id, sql [,options]) -> status\n"
@@ -1166,6 +1303,7 @@ static struct PyMethodDef CS_COMMAND_methods[] = {
     { "ct_cancel", (PyCFunction)CS_COMMAND_ct_cancel, METH_VARARGS, CS_COMMAND_ct_cancel__doc__ },
     { "ct_command", (PyCFunction)CS_COMMAND_ct_command, METH_VARARGS, CS_COMMAND_ct_command__doc__ },
     { "ct_cmd_drop", (PyCFunction)CS_COMMAND_ct_cmd_drop, METH_VARARGS, CS_COMMAND_ct_cmd_drop__doc__ },
+    { "ct_cmd_props", (PyCFunction)CS_COMMAND_ct_cmd_props, METH_VARARGS, CS_COMMAND_ct_cmd_props__doc__ },
 #ifdef HAVE_CT_CURSOR
     { "ct_cursor", (PyCFunction)CS_COMMAND_ct_cursor, METH_VARARGS, CS_COMMAND_ct_cursor__doc__ },
 #endif

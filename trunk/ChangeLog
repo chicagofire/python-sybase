@@ -1,5 +1,7 @@
 2008-06-17  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* cmd.c: Adding ct_cmd_props wrapper
+
 	* Adding implicit conversion for CS_DATE_TYPE in CS_DATETIME_TYPE DataBuf
 
 	* sybasect.c: Adding CS_HAVE_CUROPEN property
