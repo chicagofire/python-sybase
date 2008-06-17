@@ -526,19 +526,15 @@ class Cursor:
             if self._ct_cursor:
                 # declaring parameters fmt
                 fmt = CS_DATAFMT()
-                fmt.count = buf.count
                 fmt.datatype = buf.datatype
-                fmt.format = CS_FMT_UNUSED
                 fmt.maxlength = buf.maxlength
                 fmt.name = buf.name
-                fmt.precision = buf.precision
-                fmt.scale = buf.scale
                 fmt.status = CS_INPUTVALUE
-                fmt.strip = buf.strip
-                fmt.usertype = buf.usertype
-                status = self._cmd.ct_param(fmt)
+                buf = DataBuf(fmt)
+                buf[0] = None
+                status = self._cmd.ct_setparam(buf)
                 if status != CS_SUCCEED:
-                    self._raise_error(Error('ct_param'))
+                    self._raise_error(Error('ct_setparam'))
 
         if self._ct_cursor:
             ## SSA: CS_CURSOR_ROWS does not seem to be taken into account
@@ -617,18 +613,14 @@ class Cursor:
             if self._ct_cursor:
                 # declaring parameters fmt
                 fmt = CS_DATAFMT()
-                fmt.count = buf.count
                 fmt.datatype = buf.datatype
-                fmt.format = CS_FMT_UNUSED
                 fmt.maxlength = buf.maxlength
-                fmt.precision = buf.precision
-                fmt.scale = buf.scale
                 fmt.status = CS_INPUTVALUE
-                fmt.strip = buf.strip
-                fmt.usertype = buf.usertype
-                status = self._cmd.ct_param(fmt)
+                buf = DataBuf(fmt)
+                buf[0] = None
+                status = self._cmd.ct_setparam(buf)
                 if status != CS_SUCCEED:
-                    self._raise_error(Error('ct_param'))
+                    self._raise_error(Error('ct_setparam'))
 
         if self._ct_cursor:
             ## SSA: CS_CURSOR_ROWS does not seem to be taken into account
