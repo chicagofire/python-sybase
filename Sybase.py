@@ -489,14 +489,30 @@ class Cursor:
 
             buf = DataBuf(value)
             buf.name = name
-            # Use customized maxlength for CS_CHAR_TYPE so that next
-            # params will fit
             if buf.datatype == CS_CHAR_TYPE:
+                # Use customized maxlength for CS_CHAR_TYPE so that
+                # next params will fit
                 fmt = CS_DATAFMT()
+                fmt.maxlength = CS_MAX_CHAR
                 fmt.count = buf.count
                 fmt.datatype = buf.datatype
                 fmt.format = CS_FMT_UNUSED
-                fmt.maxlength = CS_MAX_CHAR
+                fmt.name = buf.name
+                fmt.precision = buf.precision
+                fmt.scale = buf.scale
+                fmt.status = CS_INPUTVALUE
+                fmt.strip = buf.strip
+                fmt.usertype = buf.usertype
+                buf = DataBuf(fmt)
+            elif buf.datatype == CS_DATE_TYPE:
+                # Sybase <= 15.0 does not support ct_setparam with
+                # NULLDATA on ct_cursor for CS_DATE_TYPE. We use a
+                # CS_DATETIME_TYPE instead
+                fmt = CS_DATAFMT()
+                fmt.count = buf.count
+                fmt.datatype = CS_DATETIME_TYPE
+                fmt.format = buf.format
+                fmt.maxlength = buf.maxlength
                 fmt.name = buf.name
                 fmt.precision = buf.precision
                 fmt.scale = buf.scale
@@ -540,7 +556,7 @@ class Cursor:
         for name in params.keys():
             status = self._cmd.ct_setparam(self._params[name])
             if status != CS_SUCCEED:
-                self._raise_error(Error('ct_param'))
+                self._raise_error(Error('ct_setparam'))
 
     def _named_execute(self, params):
         for name, value in params.items():
@@ -564,14 +580,30 @@ class Cursor:
                     value = converter(value)
 
             buf = DataBuf(value)
-            # Use customized maxlength for CS_CHAR_TYPE so that next
-            # params will fit
             if buf.datatype == CS_CHAR_TYPE:
+                # Use customized maxlength for CS_CHAR_TYPE so that
+                # next params will fit
                 fmt = CS_DATAFMT()
                 fmt.maxlength = CS_MAX_CHAR
                 fmt.count = buf.count
                 fmt.datatype = buf.datatype
                 fmt.format = CS_FMT_UNUSED
+                fmt.name = buf.name
+                fmt.precision = buf.precision
+                fmt.scale = buf.scale
+                fmt.status = CS_INPUTVALUE
+                fmt.strip = buf.strip
+                fmt.usertype = buf.usertype
+                buf = DataBuf(fmt)
+            elif buf.datatype == CS_DATE_TYPE:
+                # Sybase <= 15.0 does not support ct_setparam with
+                # NULLDATA on ct_cursor for CS_DATE_TYPE. We use a
+                # CS_DATETIME_TYPE instead
+                fmt = CS_DATAFMT()
+                fmt.count = buf.count
+                fmt.datatype = CS_DATETIME_TYPE
+                fmt.format = buf.format
+                fmt.maxlength = buf.maxlength
                 fmt.name = buf.name
                 fmt.precision = buf.precision
                 fmt.scale = buf.scale
