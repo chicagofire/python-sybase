@@ -333,6 +333,7 @@ class Cursor:
         self._rownum = -1
         self._fetching = False
         self._params = None
+        self._sql = None
 
     def _lock(self):
         self._owner._lock()
@@ -474,6 +475,7 @@ class Cursor:
             else:
                 self._ct_cursor = False
                 self._cmd.ct_command(CS_LANG_CMD, sql)
+            self._sql = sql
         finally:
             self._unlock()
 
@@ -657,8 +659,34 @@ class Cursor:
         '''
         self._lock()
         try:
-            if sql is not None:
+            if sql is not None and sql != self._sql:
                 self.prepare(sql, select)
+            else:
+                # Re-execute same request
+                if self._ct_cursor:
+                    # TODO: factorize with ct_cursor_close
+                    status = self._cmd.ct_cursor(CS_CURSOR_CLOSE)
+                    if status != CS_SUCCEED:
+                        self._raise_error(Error('ct_cursor close'))
+                    status = self._cmd.ct_send()
+                    if status != CS_SUCCEED:
+                        self._raise_error(Error('ct_send'))
+                    while 1:
+                        status, result = self._cmd.ct_results()
+                        if status != CS_SUCCEED:
+                            break
+
+
+                    # TODO: factorize with CS_CURSOR_OPEN in _named_bind and _numeric_bind
+
+                    # status, havecursor = self._cmd.ct_cmd_props(CS_GET, CS_HAVE_CUROPEN)
+                    # if status != CS_SUCCEED:
+                    #     self._raise_error(Error('ct_cmd_props'))
+                    
+                    status = self._cmd.ct_cursor(CS_CURSOR_OPEN, CS_RESTORE_OPEN)
+                    if status != CS_SUCCEED:
+                        self._raise_error(Error('ct_cursor reopen'))
+
             if type(params) is dict:
                 if self._params is None:
                     self._params = {}
