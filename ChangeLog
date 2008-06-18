@@ -1,3 +1,8 @@
+2008-06-18  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Sybase.py (Cursor.callproc): Corrected bug in type mapping in
+	callproc (thanks to report by Skip Montanaro)
+
 2008-06-17  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: Optimization: reuse command and cursor when calling
