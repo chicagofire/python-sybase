@@ -1172,12 +1172,16 @@ class Connection:
             outputmap = copy.copy(self.outputmap)
         return Cursor(self, inputmap, outputmap)
  
-    def bulkcopy(self, tablename, *args, **kw):
+    def bulkcopy(self, tablename, inputmap = None, outputmap = None, *args, **kw):
         # Fake an alternate way to specify direction=CS_BLK_OUT
+        if inputmap is None and self.inputmap:
+            inputmap = copy.copy(self.inputmap)
+        if outputmap is None and self.outputmap:
+            outputmap = copy.copy(self.outputmap)
         if kw.get('out', 0):
             del kw['out']
             kw['direction'] = CS_BLK_OUT
-        return Bulkcopy(self, tablename, *args, **kw)
+        return Bulkcopy(self, tablename, inputmap=inputmap, outputmap=outputmap, *args, **kw)
     
     def execute(self, sql):
         '''Backwards compatibility
@@ -1193,7 +1197,7 @@ class Connection:
 
 class Bulkcopy(object):
 
-    def __init__(self, conn, tablename, direction = CS_BLK_IN, arraysize = 20):
+    def __init__(self, conn, tablename, direction = CS_BLK_IN, arraysize = 20, inputmap = None, outputmap = None):
         '''Manage a BCP session for the named table'''
 
         if not conn.auto_commit:
@@ -1201,6 +1205,9 @@ class Bulkcopy(object):
         if direction not in (CS_BLK_IN, CS_BLK_OUT):
             raise ProgrammingError("Bulkcopy direction must be CS_BLK_IN or CS_BLK_OUT")
         
+        self.inputmap = inputmap
+        self.outputmap = outputmap
+
         self._direction = direction
         self._arraysize = arraysize     # no of rows to transfer at once
         
@@ -1274,8 +1281,17 @@ class Bulkcopy(object):
         if len(args) != len(self.bufs):
             raise Error("BCP has %d columns, data has %d columns" % (len(self.bufs), len(args)))
 
+        inputmap = self.inputmap
         for i in range(len(args)):
-            self.bufs[i][self._nextrow] = args[i]
+            value = args[i]
+            if inputmap is not None:
+                for tp in type(value).__mro__:
+                    converter = inputmap.get(tp, None)
+                    if converter is not None:
+                        break
+                if converter is not None:
+                    value = converter(value)
+            self.bufs[i][self._nextrow] = value
         self._nextrow += 1
 
         if self._nextrow == self._arraysize:
