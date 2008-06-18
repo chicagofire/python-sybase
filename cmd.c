@@ -1285,9 +1285,9 @@ static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
 		debug_msg(", NULL, NULL, CS_NULLDATA) -> %s\n",
 			  value_str(VAL_STATUS, status));
 	} else {
-		debug_msg(", databuf%d->buff (%s),"
+		debug_msg(", databuf%d->buff,"
 			  " &databuf%d->copied[0], &databuf%d->indicator[0]) -> %s\n",
-			  databuf->serial, databuf->buff, databuf->serial, databuf->serial,
+			  databuf->serial, databuf->serial, databuf->serial,
 			  value_str(VAL_STATUS, status));
 	}
     }
