@@ -387,7 +387,7 @@ class Cursor:
                     else:
                         if self.inputmap is not None:
                             for tp in type(value).__mro__:
-                                converter = cursor.inputmap.get(tp, None)
+                                converter = self.inputmap.get(tp, None)
                                 if converter is not None:
                                     break
                             if converter is not None:
@@ -402,7 +402,7 @@ class Cursor:
                 for value in params:
                     if self.inputmap is not None:
                         for tp in type(value).__mro__:
-                            converter = cursor.inputmap.get(tp, None)
+                            converter = self.inputmap.get(tp, None)
                             if converter is not None:
                                 break
                         if converter is not None:
