@@ -1,5 +1,7 @@
 2008-06-18  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* Sybase.py (Bulkcopy): Added support for inputmap in bulkcopy
+
 	* Sybase.py (Cursor.callproc): Corrected bug in type mapping in
 	callproc (thanks to report by Skip Montanaro)
 
