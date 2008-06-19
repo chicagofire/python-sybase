@@ -15,6 +15,7 @@ from sybasect import datetime as sybdatetime
 set_debug(sys.stderr)
 
 __version__ = '0.39x'
+__revision__ = "$Revision$"
 
 # DB-API values
 apilevel = '2.0'                        # DB API level supported
@@ -288,7 +289,7 @@ def _extract_row(bufs, n, outputmap=None):
     for buf in bufs:
         row[col] = _column_value(buf[n], buf.datatype, outputmap)
         col = col + 1
-    _ctx.debug_msg("_extract_row %s\n" % row)
+    # _ctx.debug_msg("_extract_row %s\n" % row)
     return tuple(row)
 
 
@@ -468,7 +469,7 @@ class Cursor:
             self._reset()
             if select is True or (select is None and sql.lower().startswith("select")):
                 self._ct_cursor = True
-                _ctx.debug_msg("using ct_cursor, %s\n" % sql)
+                # _ctx.debug_msg("using ct_cursor, %s\n" % sql)
                 status = self._cmd.ct_cursor(CS_CURSOR_DECLARE, "ctmp%x" % id(self), sql, CS_UNUSED)
                 if status != CS_SUCCEED:
                     self._raise_error(Error('ct_cursor declare'))
@@ -822,18 +823,17 @@ class Cursor:
         if status == CS_SUCCEED:
             pass
         elif status == CS_END_DATA:
-            # return self._mainloop()
             return 0
         elif status in (CS_ROW_FAIL, CS_FAIL, CS_CANCELED):
             raise Error('ct_fetch')
         if bufs[0].count > 1:
             for i in xrange(rows_read):
                 rows.append(_extract_row(bufs, i, self.outputmap))
-            _ctx.debug_msg('_fetch_rows -> %s\n' % rows)
+            # _ctx.debug_msg('_fetch_rows -> %s\n' % rows)
             return rows_read
         else:
             rows.append(_extract_row(bufs, 0, self.outputmap))
-            _ctx.debug_msg('_fetch_rows -> %s\n' % rows)
+            # _ctx.debug_msg('_fetch_rows -> %s\n' % rows)
             return 1
 
     def _start(self):
