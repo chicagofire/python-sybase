@@ -1,3 +1,7 @@
+2008-06-19  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Sybase.py: Added revision with svn keyword substitution
+
 2008-06-18  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py (Bulkcopy): Added support for inputmap in bulkcopy
