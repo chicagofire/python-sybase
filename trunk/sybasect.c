@@ -787,6 +787,12 @@ static value_desc sybase_args[] = {
 #ifdef CS_HAVE_CUROPEN
     SYVAL(VAL_PROPS, CS_HAVE_CUROPEN),
 #endif
+#ifdef CS_STICKY_BINDS
+    SYVAL(VAL_PROPS, CS_STICKY_BINDS),
+#endif
+#ifdef CS_HAVE_BINDS
+    SYVAL(VAL_PROPS, CS_HAVE_BINDS),
+#endif
 
 #ifdef CS_DS_CHAIN
     SYVAL(VAL_DIRSERV, CS_DS_CHAIN),
