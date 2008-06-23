@@ -1,3 +1,7 @@
+2008-06-23  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Added command properties CS_STICKY_BINDS and CS_HAVE_BINDS
+
 2008-06-19  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: Added revision with svn keyword substitution
