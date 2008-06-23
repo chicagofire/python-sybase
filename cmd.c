@@ -254,6 +254,12 @@ static int property_type(int property)
 #ifdef CS_HAVE_CUROPEN
     case CS_HAVE_CUROPEN:
 #endif
+#ifdef CS_STICKY_BINDS
+    case CS_STICKY_BINDS:
+#endif
+#ifdef CS_HAVE_BINDS
+    case CS_HAVE_BINDS:
+#endif
 	return OPTION_BOOL;
     default:
 	return OPTION_UNKNOWN;
