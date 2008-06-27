@@ -303,10 +303,10 @@ static PyObject *CS_COMMAND_ct_cmd_props(CS_COMMANDObj *self, PyObject *args)
 
 	    /* PyErr_Clear(); */
 
-	    SY_CONN_BEGIN_THREADS(self);
+	    SY_CONN_BEGIN_THREADS(self->conn);
 	    status = ct_cmd_props(self->cmd, CS_SET, property,
 				  &bool_value, CS_UNUSED, NULL);
-	    SY_CONN_END_THREADS(self);
+	    SY_CONN_END_THREADS(self->conn);
 
 	    if (self->debug)
 		debug_msg("ct_cmd_props(cmd%d, CS_SET, %s, %d, CS_UNUSED,"
@@ -335,10 +335,10 @@ static PyObject *CS_COMMAND_ct_cmd_props(CS_COMMANDObj *self, PyObject *args)
 	case OPTION_BOOL:
 	    /* PyErr_Clear(); */
 
-	    SY_CONN_BEGIN_THREADS(self);
+	    SY_CONN_BEGIN_THREADS(self->conn);
 	    status = ct_cmd_props(self->cmd, CS_GET, property,
 				  &bool_value, CS_UNUSED, NULL);
-	    SY_CONN_END_THREADS(self);
+	    SY_CONN_END_THREADS(self->conn);
 
 	    if (self->debug)
 		debug_msg("ct_cmd_props(cmd%d, CS_GET, %s, &value, CS_UNUSED,"
@@ -366,10 +366,10 @@ static PyObject *CS_COMMAND_ct_cmd_props(CS_COMMANDObj *self, PyObject *args)
 
 	/* PyErr_Clear(); */
 
-	SY_CONN_BEGIN_THREADS(self);
+	SY_CONN_BEGIN_THREADS(self->conn);
 	status = ct_cmd_props(self->cmd, CS_CLEAR, property,
 			      NULL, CS_UNUSED, NULL);
-	SY_CONN_END_THREADS(self);
+	SY_CONN_END_THREADS(self->conn);
 
 	if (self->debug)
 	    debug_msg("ct_cmd_props(cmd%d, CS_CLEAR, %s, NULL, CS_UNUSED,"
