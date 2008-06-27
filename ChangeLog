@@ -1,6 +1,11 @@
+2008-06-27  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* cmd.c: Corrected thread locking in ct_cmd_props (thanks to patch
+	by Cyrille Froehlich)
+
 2008-06-23  Sébastien Sablé  <sable@users.sourceforge.net>
 
-	* Added command properties CS_STICKY_BINDS and CS_HAVE_BINDS
+	* Add command properties CS_STICKY_BINDS and CS_HAVE_BINDS
 
 2008-06-19  Sébastien Sablé  <sable@users.sourceforge.net>
 
