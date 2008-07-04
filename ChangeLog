@@ -1,3 +1,8 @@
+2008-07-04  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Sybase.py: Added new exception DeadLockError when Sybase is in a
+	deadlock situation
+
 2008-06-27  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* cmd.c: Corrected thread locking in ct_cmd_props (thanks to patch

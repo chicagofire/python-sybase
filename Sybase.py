@@ -95,6 +95,10 @@ class StoredProcedureError(ProgrammingError):
     pass
 
 
+class DeadLockError(DatabaseError):
+    pass
+
+
 class NotSupportedError(DatabaseError):
     pass
 
@@ -259,6 +263,8 @@ def _servermsg_cb(ctx, conn, msg):
         raise IntegrityError(msg)
     elif mn == 2812: ## Procedure not found
         raise StoredProcedureError(msg)
+    elif mn == 1205: ## Deadlock situation
+        raise DeadLockError(msg)
     elif mn in (0, 5701, 5703, 5704) or ((mn >= 6200) and (mn < 6300)):
         # Non-errors:
         #    0      PRINT
