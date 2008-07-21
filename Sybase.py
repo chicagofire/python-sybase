@@ -832,15 +832,9 @@ class Cursor:
             return 0
         elif status in (CS_ROW_FAIL, CS_FAIL, CS_CANCELED):
             raise Error('ct_fetch')
-        if bufs[0].count > 1:
-            for i in xrange(rows_read):
-                rows.append(_extract_row(bufs, i, self.outputmap))
-            # _ctx.debug_msg('_fetch_rows -> %s\n' % rows)
-            return rows_read
-        else:
-            rows.append(_extract_row(bufs, 0, self.outputmap))
-            # _ctx.debug_msg('_fetch_rows -> %s\n' % rows)
-            return 1
+        for i in xrange(rows_read):
+            rows.append(_extract_row(bufs, i, self.outputmap))
+        return rows_read
 
     def _start(self):
         self._result_list = []
