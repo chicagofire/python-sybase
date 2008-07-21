@@ -1,3 +1,7 @@
+2008-07-21  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Sybase.py: Simplified _fetch_rows
+
 2008-07-04  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: Added new exception DeadLockError when Sybase is in a
