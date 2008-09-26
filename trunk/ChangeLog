@@ -1,3 +1,7 @@
+2008-09-26  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Sybase.py: Corrected invalid row count in fetchmany
+
 2008-07-21  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: Simplified _fetch_rows

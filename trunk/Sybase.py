@@ -754,6 +754,8 @@ class Cursor:
                 num = self.arraysize
             while num > self._rownum and self._fetching:
                 self._row_result()
+            if num > self._rownum:
+                num = self._rownum
             res = self._result_list[0:num]
             del self._result_list[0:num]
             self._rownum -= num
