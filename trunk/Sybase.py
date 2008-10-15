@@ -8,11 +8,14 @@ import time
 import string
 import threading
 import copy
+import logging
 from sybasect import *
 from sybasect import __have_freetds__
 from sybasect import datetime as sybdatetime
 
 set_debug(sys.stderr)
+log = logging.getLogger("sybase")
+log.setLevel(logging.DEBUG)
 
 __version__ = '0.39x'
 __revision__ = "$Revision$"
@@ -28,6 +31,8 @@ paramstyle = 'named'                    # Named style,
                                         # e.g. '...WHERE name=@name'
 
 use_datetime = 0                        # Deprecated: date type
+
+DEBUG = False
 
 # DB-API exceptions
 #
@@ -236,6 +241,7 @@ def _fmt_server(msg):
             parts.append('%s %s' % (label, value))
     text = '%s\n%s' % (string.join(parts, ', '), msg.text)
     _ctx.debug_msg(text)
+    if DEBUG: log.debug(text)
     return text
 
 
@@ -244,6 +250,7 @@ def _fmt_client(msg):
            '%s' % (CS_LAYER(msg.msgnumber), CS_ORIGIN(msg.msgnumber),
                    msg.msgstring)
     _ctx.debug_msg(text)
+    if DEBUG: log.debug(text)
     return text
 
 
@@ -352,8 +359,12 @@ class Cursor:
         if self._owner._is_connected and self._cmd:
             self.close()
 
+    def __repr__(self):
+        return 'Cursor(%r)' % id(self)
+
     def _cancel_cmd(self):
         _ctx.debug_msg('_cancel_cmd\n')
+        if DEBUG: log.debug("%r: _cancel_cmd" % self)
         if self._fetching:
             status = self._cmd.ct_cancel(CS_CANCEL_CURRENT)
         while 1:
@@ -435,6 +446,7 @@ class Cursor:
             raise ProgrammingError('cursor is already closed')
 
         _ctx.debug_msg("_close_cursor starts\n")
+        if DEBUG: log.debug("%r: close" % self)
 
         self._reset()
         self._cmd.ct_cmd_drop()
@@ -476,10 +488,12 @@ class Cursor:
             if select is True or (select is None and sql.lower().startswith("select")):
                 self._ct_cursor = True
                 # _ctx.debug_msg("using ct_cursor, %s\n" % sql)
+                if DEBUG: log.debug("%r: allocate ct_cursor" % self)
                 status = self._cmd.ct_cursor(CS_CURSOR_DECLARE, "ctmp%x" % id(self), sql, CS_UNUSED)
                 if status != CS_SUCCEED:
                     self._raise_error(Error('ct_cursor declare'))
             else:
+                if DEBUG: log.debug("%r: allocate command" % self)
                 self._ct_cursor = False
                 self._cmd.ct_command(CS_LANG_CMD, sql)
             self._sql = sql
@@ -553,7 +567,8 @@ class Cursor:
             # if status != CS_SUCCEED:
             #     self._raise_error(Error('ct_cursor rows'))
 
-            _ctx.debug_msg("cursor open\n")
+            # _ctx.debug_msg("ct_cursor open\n")
+            # if DEBUG: log.debug("ct_cursor open")
             status = self._cmd.ct_cursor(CS_CURSOR_OPEN)
             if status != CS_SUCCEED:
                 self._raise_error(Error('ct_cursor open'))
@@ -639,7 +654,8 @@ class Cursor:
             # if status != CS_SUCCEED:
             #     self._raise_error(Error('ct_cursor rows'))
 
-            _ctx.debug_msg("cursor open\n")
+            # _ctx.debug_msg("ct_cursor open\n")
+            # if DEBUG: log.debug("ct_cursor open")
             status = self._cmd.ct_cursor(CS_CURSOR_OPEN)
             if status != CS_SUCCEED:
                 self._raise_error(Error('ct_cursor open'))
@@ -666,11 +682,13 @@ class Cursor:
         '''
         self._lock()
         try:
+            if DEBUG: log.debug("%r: execute %r with %r" % (self, sql, params))
             if sql is not None and sql != self._sql:
-                self.prepare(sql, select)
+                self.prepare(sql, select=select)
             else:
                 # Re-execute same request
                 if self._ct_cursor:
+                    if DEBUG: log.debug("%r: reuse ct_cursor" % self)
                     # TODO: factorize with ct_cursor_close
                     status = self._cmd.ct_cursor(CS_CURSOR_CLOSE)
                     if status != CS_SUCCEED:
@@ -693,6 +711,8 @@ class Cursor:
                     status = self._cmd.ct_cursor(CS_CURSOR_OPEN, CS_RESTORE_OPEN)
                     if status != CS_SUCCEED:
                         self._raise_error(Error('ct_cursor reopen'))
+                else:
+                    if DEBUG: log.debug("%r: reuse command" % self)
 
             if type(params) is dict:
                 if self._params is None:
@@ -818,6 +838,7 @@ class Cursor:
                 raise Error('ct_bind')
             bufs.append(buf)
         _ctx.debug_msg("_row_bind -> %s\n" % bufs)
+        if DEBUG: log.debug("%r: row_bind -> %r\n" % (self, bufs))
         return bufs
 
     def _fetch_rows(self, bufs, rows):
@@ -905,6 +926,7 @@ class Cursor:
 
     def _raise_error(self, exc):
         _ctx.debug_msg("Cursor._raise_error\n")
+        if DEBUG: log.debug("%r: raise_error" % self)
         self._reset()
         raise exc
 
@@ -1028,14 +1050,19 @@ class Connection:
         else:
             raise AttributeError(name)
 
+    def __repr__(self):
+        return 'Connection(%r)' % id(self)
+
     def _lock(self):
         if self._do_locking:
             _ctx.debug_msg("locking\n")
+            if DEBUG: log.debug("locking")
             self._connlock.acquire()
 
     def _unlock(self):
         if self._do_locking:
             _ctx.debug_msg("unlocking\n")
+            if DEBUG: log.debug("unlocking")
             self._connlock.release()
 
     def _raise_error(self, exc):
@@ -1099,6 +1126,7 @@ class Connection:
         '''DBI-API Connection.close()
         '''
         _ctx.debug_msg("Connection.close\n")
+        if DEBUG: log.debug("%r: close" % self)
         if not self._is_connected:
             raise ProgrammingError('Connection is already closed')
         conn = self._conn
