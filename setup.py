@@ -90,7 +90,7 @@ if os.name == 'posix':                  # unix
     for name in lib_names:
         extensions = [('', 'a'), ('', 'so'), ('_r', 'a'), ('_r', 'so')]
         if have64bit and sys.platform not in ['osf1V5']:
-            extensions = [('_r64', 'a'), ('_r64', 'so')]
+            extensions = [('_r64', 'a'), ('_r64', 'so')] + extensions
         for (ext1, ext2) in extensions:
             lib_name = "%s%s" % (name, ext1)
             lib_path = os.path.join(sybase, 'lib', 'lib%s.%s' % (lib_name, ext2))
