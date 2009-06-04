@@ -1,3 +1,8 @@
+2009-06-04  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* datafmt.c (money_datafmt): Corrected money type when using
+	CS_MONEY4 (close bug 2615821)
+
 2009-03-06  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* setup.py: Improved libraries detection for 64bits platforms 

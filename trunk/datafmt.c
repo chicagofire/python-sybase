@@ -11,7 +11,7 @@
 void money_datafmt(CS_DATAFMT *fmt, int type)
 {
     memset(fmt, 0, sizeof(*fmt));
-    fmt->datatype = CS_MONEY_TYPE;
+    fmt->datatype = type;
     if (type == CS_MONEY_TYPE)
 	fmt->maxlength = sizeof(CS_MONEY);
     else
