@@ -748,6 +748,26 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
+    def test_execute_storedproc(self):
+        con = self._connect()
+        try:
+            # create procedure lower
+            cur = con.cursor()
+            try:
+                cur.execute("drop procedure lower")
+                self.commit(con)
+            except con.DatabaseError:
+                pass
+            cur.execute("create procedure lower(@name varchar(256)) as select lower(@name) commit transaction")
+            self.commit(con)
+            cur = con.cursor()
+            cur.execute("lower FOO")
+            r = cur.fetchall()
+            self.assertEqual(len(r), 1, 'execute produced no result set')
+            self.assertEqual(len(r[0]), 1, 'execute produced invalid result set')
+            self.assertEqual(r[0][0], 'foo', 'execute produced invalid results')
+        finally:
+            con.close()
 
 ### Multi threads
 #
