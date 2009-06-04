@@ -60,8 +60,8 @@ esac
 
 
 cd ..
-mkdir -p ./target/lib/python2.5/site-packages
-PYTHONPATH=`pwd`/target/lib/python2.5/site-packages:${PYTHONPATH}
+mkdir -p ./target/lib/python2.6/site-packages
+PYTHONPATH=`pwd`/target/lib/python2.6/site-packages:${PYTHONPATH}
 export PYTHONPATH
 python setup.py install --prefix=./target
 
@@ -81,4 +81,4 @@ case "${ARCH}" in
     *)
         ;;
 esac
-nosetests --exe --source-folder=tests --xml-report-folder=./target/nosexunit-xml --with-nosexunit -v
+nosetests --exe --source-folder=tests --core-target=./target/nosexunit-xml --with-nosexunit -v
