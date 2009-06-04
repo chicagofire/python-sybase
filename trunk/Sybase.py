@@ -332,6 +332,8 @@ class Cursor:
         self._ct_cursor = False
         self._fetching = False
         self._reset()
+        if not self._owner._conn:
+            raise ProgrammingError('Connection has been closed')
         status, self._cmd = self._owner._conn.ct_cmd_alloc()
         if status != CS_SUCCEED:
             self._raise_error(Error('ct_cmd_alloc'))
