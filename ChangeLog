@@ -1,5 +1,7 @@
 2009-06-04  Sébastien Sablé  <sable@users.sourceforge.net>
 
+	* tests/sybase_dbapi20.py: Added unitary test for bug 1768935
+
 	* datafmt.c (money_datafmt): Corrected money type when using
 	CS_MONEY4 (close bug 2615821)
 

@@ -732,6 +732,23 @@ class TestSybase(dbapi20.DatabaseAPI20Test):
         finally:
             con.close()
 
+    def test_bugtracker_1768935(self):
+        con = self._connect()
+        try:
+            cur = con.cursor()
+            cur.execute('create table %sbooze (num numeric(12,0) NULL)' % self.table_prefix)
+            self.commit(con)
+            for value in range(20):
+                cur.execute("insert into %sbooze values (@beer)" % self.table_prefix, {'@beer': value})
+            self.commit(con)
+            cur.execute("select * from %sbooze" % self.table_prefix)
+            self.assertEqual(len(cur.fetchone()), 1)
+            self.assertEqual(len(cur.fetchmany(10)), 10)
+            self.assertEqual(len(cur.fetchmany(10)), 9)
+        finally:
+            con.close()
+
+
 ### Multi threads
 #
 #     def test_multi_threads(self):
