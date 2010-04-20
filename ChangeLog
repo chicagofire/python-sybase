@@ -1,3 +1,7 @@
+2010-04-20  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Sybase.py: Ignore additional non-errors (1918 and 11932)
+
 2009-06-04  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Raise exception when opening a cursor on a closed connection
