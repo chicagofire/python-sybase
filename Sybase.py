@@ -1387,7 +1387,7 @@ class Bulkcopy(object):
         self._totalcount += 1
         rownum = self._nextrow
         self._nextrow += 1
-        return _extract_row(self.bufs, rownum)
+        return _extract_row(self.bufs, rownum, self.outputmap)
 
 
 def connect(dsn, user, passwd, database = None,
