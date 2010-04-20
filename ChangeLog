@@ -1,6 +1,6 @@
 2010-04-20  Sébastien Sablé  <sable@users.sourceforge.net>
 
-	* Sybase.py: Ignore additional non-errors (1918 and 11932) - test
+	* Sybase.py: Ignore additional non-errors (1918 and 11932)
 
 	* Sybase.py: Use outputmap in bulkcopy mode (thanks to patch by
 	Cyrille Froehlich)
