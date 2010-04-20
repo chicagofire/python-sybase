@@ -2,6 +2,9 @@
 
 	* Sybase.py: Ignore additional non-errors (1918 and 11932)
 
+	* Sybase.py: Use outputmap in bulkcopy mode (thanks to patch by
+	Cyrille Froehlich)
+
 2009-06-04  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Raise exception when opening a cursor on a closed connection
