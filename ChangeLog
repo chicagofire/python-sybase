@@ -1,3 +1,7 @@
+2010-09-29  Sébastien Sablé  <sable@users.sourceforge.net>
+
+	* Sybase.py: support for Python without threads
+
 2010-04-20  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: Ignore additional non-errors (1918 and 11932)

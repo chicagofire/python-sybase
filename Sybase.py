@@ -6,7 +6,10 @@
 import sys
 import time
 import string
-import threading
+try:
+    import threading
+except ImportError:
+    import dummy_threading as threading
 import copy
 import logging
 from sybasect import *
