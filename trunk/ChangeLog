@@ -1,3 +1,7 @@
+2010-12-09  Robert Boehne  <rboehne@users.sourceforge.net>
+
+	* Sybase.py: Use only spaces for indentation.
+
 2010-09-29  Sébastien Sablé  <sable@users.sourceforge.net>
 
 	* Sybase.py: support for Python without threads
