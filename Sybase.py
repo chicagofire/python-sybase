@@ -114,15 +114,15 @@ class NotSupportedError(DatabaseError):
 class DBAPITypeObject:
 
     def __init__(self, *values):
-	self.values = values
+        self.values = values
 
     def __cmp__(self, other):
-	if other in self.values:
-	    return 0
-	if other < self.values:
-	    return 1
-	else:
-	    return -1
+        if other in self.values:
+            return 0
+        if other < self.values:
+            return 1
+        else:
+            return -1
 
     def __add__(self, other):
         values = self.values + other.values
