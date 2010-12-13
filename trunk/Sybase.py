@@ -208,15 +208,15 @@ else:
 try:
     import datetime
     DateTimeAsPython = {
-        CS_DATETIME_TYPE: lambda val: datetime.datetime(val.year, val.month + 1, val.day,
-                                                        val.hour, val.minute,
-                                                        val.second, val.msecond * 1000),
-        CS_DATETIME4_TYPE: lambda val: datetime.datetime(val.year, val.month + 1, val.day,
-                                                         val.hour, val.minute,
-                                                         val.second, val.msecond * 1000) }
+        CS_DATETIME_TYPE: lambda val: val is not None and datetime.datetime(val.year, val.month + 1, val.day,
+                                                                            val.hour, val.minute,
+                                                                            val.second, val.msecond * 1000) or val,
+        CS_DATETIME4_TYPE: lambda val: val is not None and datetime.datetime(val.year, val.month + 1, val.day,
+                                                                             val.hour, val.minute,
+                                                                             val.second, val.msecond * 1000) or val }
     if _have_cs_date_type:
         DateTimeAsPython.update({
-            CS_DATE_TYPE: lambda val: datetime.date(val.year, val.month + 1, val.day) })
+            CS_DATE_TYPE: lambda val: val is not None and datetime.date(val.year, val.month + 1, val.day) or val })
     DATETIME += DBAPITypeObject(datetime.datetime, datetime.date, datetime.time)
     def Date(year, month, day):
         return datetime.datetime(year, month, day)
