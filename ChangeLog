@@ -1,3 +1,8 @@
+2010-12-13  Robert Boehne  <rboehne@users.sourceforge.net>
+
+	* Sybase.py: Modify the DateTimeAsPython output conversion to
+	return None when NULL is output.
+
 2010-12-09  Robert Boehne  <rboehne@users.sourceforge.net>
 
 	* Sybase.py: Use only spaces for indentation.
