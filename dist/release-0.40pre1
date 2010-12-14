@@ -43,5 +43,5 @@ Correct passing None in a DataBuf (thanks to patch by Bram Kuijvenhoven)
 
 The full ChangeLog is here:
 
-https://python-sybase.svn.sourceforge.net/svnroot/python-sybase/tags/r0_39pre1/ChangeLog
+https://python-sybase.svn.sourceforge.net/svnroot/python-sybase/tags/r0_40pre1/ChangeLog
 
