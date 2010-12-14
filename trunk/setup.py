@@ -244,7 +244,7 @@ class my_sdist(sdist):
         sdist.run(self)
 
 setup(name="python-sybase",
-      version="0.39x",
+      version="0.40pre1",
       maintainer=u"Sebastien Sable",
       maintainer_email="sable@users.sourceforge.net",
       description=doclines[0],
