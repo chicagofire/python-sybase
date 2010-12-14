@@ -1,5 +1,11 @@
 2010-12-13  Robert Boehne  <rboehne@users.sourceforge.net>
 
+	* setup.py, Sybase.py, sybasect.c, doc/sybase.tex:
+	Changing release to 0.40pre1
+	* dist/release-0.40pre1: New file for 0.40pre1 release.
+
+2010-12-13  Robert Boehne  <rboehne@users.sourceforge.net>
+
 	* Sybase.py: Modify the DateTimeAsPython output conversion to
 	return None when NULL is output.
 
