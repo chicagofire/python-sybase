@@ -93,7 +93,7 @@ if os.name == 'posix':                  # unix
             extensions = [('_r64', 'a'), ('_r64', 'so')] + extensions
         for (ext1, ext2) in extensions:
             lib_name = "%s%s" % (name, ext1)
-            lib_path = os.path.join(sybase, 'lib', 'lib%s.%s' % (lib_name, ext2))
+            lib_path = os.path.join(sybase, (have64bit and 'lib64' or 'lib'), 'lib%s.%s' % (lib_name, ext2))
             if os.access(lib_path, os.R_OK):
                 syb_libs.append(lib_name)
                 break

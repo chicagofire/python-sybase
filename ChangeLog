@@ -1,3 +1,8 @@
+2011-05-05  Robert Boehne  <rboehne@users.sourceforge.net>
+
+	* setup.py: Handle the path change for sybase when building
+	a 64-bit version.
+
 2010-12-13  Robert Boehne  <rboehne@users.sourceforge.net>
 
 	* setup.py, Sybase.py, sybasect.c, doc/sybase.tex:
