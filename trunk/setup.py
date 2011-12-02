@@ -108,7 +108,9 @@ elif os.name == 'nt':                   # win32
                 'the SYBASE environment variable.\n')
             sys.exit(1)
     syb_libs = ['libblk', 'libct', 'libcs']
-
+    # This seems a bit sloppy to me, but is no worse than what's above.
+    if sybase.find('15') > 0:
+        syb_libs = ['libsybblk', 'libsybct', 'libsybcs']
 else:                                   # unknown
     import sys
     sys.stderr.write(
