@@ -24,7 +24,8 @@ echo "Creating /tmp/sybase-dist"
 rm -rf sybase-dist
 mkdir sybase-dist
 cd sybase-dist
-svn -q export -r$TAG -d sybase-$REL object-craft/sybase
+mkdir sybase-$REL
+svn -q export  http://python-sybase.svn.sourceforge.net/svnroot/python-sybase/tags/$TAG  ./sybase-$REL
 if [ ! -f sybase-$REL/setup.py ]; then
     echo "Could not export code"
     exit 1
