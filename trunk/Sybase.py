@@ -20,7 +20,7 @@ set_debug(sys.stderr)
 log = logging.getLogger("sybase")
 log.setLevel(logging.DEBUG)
 
-__version__ = '0.40pre1'
+__version__ = '0.40pre2'
 __revision__ = "$Revision$"
 
 # DB-API values
