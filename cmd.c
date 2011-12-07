@@ -1275,8 +1275,7 @@ static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
     SY_CONN_BEGIN_THREADS(self->conn);
     if(databuf->indicator[0] == CS_NULLDATA) {
 	    status = ct_setparam(self->cmd, &databuf->fmt,
-				 NULL, &databuf->copied[0],
-				 &databuf->indicator[0]);
+				 NULL, NULL, &databuf->indicator[0]);
     } else {
 	    status = ct_setparam(self->cmd, &databuf->fmt,
 				 databuf->buff, &databuf->copied[0],
