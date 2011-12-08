@@ -2,6 +2,8 @@
 REL=$1
 EXT=$2
 
+SVNROOT=http://python-sybase.svn.sourceforge.net/svnroot/python-sybase
+
 if [ "x$REL" = "x" ]; then
     echo "usage: dist-sybase release"
     echo "       where release is something like 0.04"
@@ -12,7 +14,7 @@ if [ "x$EXT" != "x" ]; then
     SSH_USER="rboehne"
 fi
 
-echo "Packaging release $REL from http://python-sybase.svn.sourceforge.net/svnroot/python-sybase/"
+echo "Packaging release $REL from $SVNROOT"
 
 # Get tag from release number
 TAG=`echo $REL | sed -e 's/\./_/;s/^/r/'`
@@ -23,7 +25,10 @@ echo "Creating /tmp/sybase-dist"
 rm -rf sybase-dist
 mkdir sybase-dist
 cd sybase-dist
-svn -q export http://python-sybase.svn.sourceforge.net/svnroot/python-sybase/tags/$TAG  ./sybase-$TAG
+
+svn copy $SVNROOT/trunk $SVNROOT/tags/$TAG  -m "Tagging the $REL release."
+
+svn -q export $SVNROOT/tags/$TAG  ./sybase-$TAG
 if [ ! -f sybase-$TAG/setup.py ]; then
     echo "Could not export code"
     exit 1
