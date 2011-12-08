@@ -9,11 +9,10 @@ if [ "x$REL" = "x" ]; then
 fi
 
 if [ "x$EXT" != "x" ]; then
-    SSH_PORT=-p22002
-    SCP_PORT=-P22002
+    SSH_USER="rboehne"
 fi
 
-echo "Packaging release $REL from $CVSROOT"
+echo "Packaging release $REL from http://python-sybase.svn.sourceforge.net/svnroot/python-sybase/"
 
 # Get tag from release number
 TAG=`echo $REL | sed -e 's/\./_/;s/^/r/'`
@@ -24,22 +23,21 @@ echo "Creating /tmp/sybase-dist"
 rm -rf sybase-dist
 mkdir sybase-dist
 cd sybase-dist
-mkdir sybase-$REL
-svn -q export  http://python-sybase.svn.sourceforge.net/svnroot/python-sybase/tags/$TAG  ./sybase-$REL
-if [ ! -f sybase-$REL/setup.py ]; then
+svn -q export http://python-sybase.svn.sourceforge.net/svnroot/python-sybase/tags/$TAG  ./sybase-$TAG
+if [ ! -f sybase-$TAG/setup.py ]; then
     echo "Could not export code"
     exit 1
 fi
 
 # Use setup.py to create source distribution
-cd sybase-$REL
+cd sybase-$TAG
 python setup.py sdist
 if [ "$?" != "0" ]; then
     echo "Fix up release numbers!"
     exit 1
 fi
 
-cp dist/sybase-$REL.tar.gz ..
+cp dist/python-sybase-$REL.tar.gz ..
 
 echo "Building documentation"
 cd doc
@@ -53,23 +51,26 @@ tar czf ../../sybase-html.tar.gz sybase
 
 echo "Cleaning up"
 cd ../..
-rm -rf sybase-$REL
+rm -rf sybase-$TAG
 
 echo "New version of Sybase is available in /tmp/sybase-dist"
 
 echo "Moving new release to web server"
-tmpdir=/var/www/projects/sybase/.new
-www=numbat
-ssh $SSH_PORT $www mkdir $tmpdir
-scp $SCP_PORT sybase-$REL.tar.gz sybase.pdf sybase-booklet.ps.gz sybase-html.tar.gz $www:$tmpdir
-ssh $SSH_PORT $www \
-"(cd $tmpdir
-  tar xzf sybase-html.tar.gz
-  mv sybase-$REL.tar.gz sybase.pdf sybase-booklet.ps.gz sybase-html.tar.gz ../download
-  mv ../sybase ../sybase-
-  mv sybase ..
-  rm -rf ../sybase-
-  cd ..
-  rm -rf $tmpdir)"
+webdir=/home/project-web/python-sybase/htdocs
+fildir=/home/frs/project/p/py/python-sybase
+www=$SSH_USER,python-sybase@shell.sourceforge.net
+ssh -t $www create
+# create a directory for the source download
+ssh -t $www mkdir -p $fildir/python-sybase/python-sybase-$REL/
+if [ -f python-sybase-$REL.zip ]; then
+    scp python-sybase-$REL.zip  $www:$fildir/python-sybase/python-sybase-$REL/
+fi
+scp python-sybase-$REL.tar.gz  $www:$fildir/python-sybase/python-sybase-$REL/
 
-exit 0
+scp sybase.pdf sybase-booklet.ps.gz sybase-html.tar.gz $www:$webdir
+
+ssh $www \
+"(cd $webdir
+  tar xzf sybase-html.tar.gz
+  mv pyrhon-sybase-$REL.tar.gz sybase.pdf sybase-booklet.ps.gz sybase-html.tar.gz ./download)"
+
