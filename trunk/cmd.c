@@ -1273,29 +1273,19 @@ static PyObject *CS_COMMAND_ct_setparam(CS_COMMANDObj *self, PyObject *args)
     /* PyErr_Clear(); */
 
     SY_CONN_BEGIN_THREADS(self->conn);
-    if(databuf->indicator[0] == CS_NULLDATA) {
-	    status = ct_setparam(self->cmd, &databuf->fmt,
-				 NULL, NULL, &databuf->indicator[0]);
-    } else {
-	    status = ct_setparam(self->cmd, &databuf->fmt,
-				 databuf->buff, &databuf->copied[0],
-				 &databuf->indicator[0]);
-    }
+    status = ct_setparam(self->cmd, &databuf->fmt,
+			 databuf->buff, &databuf->copied[0],
+			 &databuf->indicator[0]);
     SY_CONN_END_THREADS(self->conn);
 
     if (self->debug) {
 	debug_msg("ct_setparam(cmd%d, &databuf%d->fmt=",
 		  self->serial, databuf->serial);
 	datafmt_debug(&databuf->fmt);
-	if(databuf->indicator[0] == CS_NULLDATA) {
-		debug_msg(", NULL, NULL, CS_NULLDATA) -> %s\n",
-			  value_str(VAL_STATUS, status));
-	} else {
-		debug_msg(", databuf%d->buff,"
-			  " &databuf%d->copied[0], &databuf%d->indicator[0]) -> %s\n",
-			  databuf->serial, databuf->serial, databuf->serial,
-			  value_str(VAL_STATUS, status));
-	}
+	debug_msg(", databuf%d->buff,"
+		  " &databuf%d->copied[0], &databuf%d->indicator[0]) -> %s\n",
+		  databuf->serial, databuf->serial, databuf->serial,
+		  value_str(VAL_STATUS, status));
     }
     if (PyErr_Occurred())
 	return NULL;
