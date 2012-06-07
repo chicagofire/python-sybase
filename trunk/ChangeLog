@@ -1,3 +1,10 @@
+2012-06-06  Robert Boehne  <rboehne@users.sourceforge.net>
+
+	* cmd.c: Revert to an earlier version of the NULL input handling
+	code in CS_COMMAND_ct_setparam() that did nothing special
+	for NULL inputs, which seems to be the only thing that I can
+	get to actually work.
+
 2011-12-07  Robert Boehne  <rboehne@users.sourceforge.net>
 
 	* setup.py, Sybase.py, sybasect.c, doc/sybase.tex:
