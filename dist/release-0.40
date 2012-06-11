@@ -7,8 +7,6 @@ The Sybase module provides a Python interface to the Sybase relational
 database system.  It supports all of the Python Database API, version
 2.0 with extensions.
 
-** This version is a pre-release not intended for production use **
-
 The module is available here:
 
 http://downloads.sourceforge.net/python-sybase/python-sybase-0.40.tar.gz
