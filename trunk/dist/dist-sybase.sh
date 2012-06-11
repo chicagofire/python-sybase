@@ -2,7 +2,7 @@
 REL=$1
 EXT=$2
 
-SVNROOT=http://python-sybase.svn.sourceforge.net/svnroot/python-sybase
+SVNROOT=https://python-sybase.svn.sourceforge.net/svnroot/python-sybase
 
 if [ "x$REL" = "x" ]; then
     echo "usage: dist-sybase release"
