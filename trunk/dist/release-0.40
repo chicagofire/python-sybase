@@ -1,0 +1,47 @@
+Subject: Sybase module 0.40 released
+To: python-sybase-misc@lists.sourceforge.net
+Cc: python-announce@python.org,freetds@lists.ibiblio.org,db-sig@python.org,python-list@python.org
+
+WHAT IS IT:
+The Sybase module provides a Python interface to the Sybase relational
+database system.  It supports all of the Python Database API, version
+2.0 with extensions.
+
+** This version is a pre-release not intended for production use **
+
+The module is available here:
+
+http://downloads.sourceforge.net/python-sybase/python-sybase-0.40.tar.gz
+
+The module home page is here:
+
+http://python-sybase.sourceforge.net/
+
+MAJOR CHANGES SINCE 0.39:
+
+Modify the DateTimeAsPython output conversion to return None when NULL is output
+support for Python without threads
+Ignore additional non-error codes from Sybase (1918 and 11932)
+Use outputmap in bulkcopy mode (thanks to patch by Cyrille Froehlich)
+Raise exception when opening a cursor on a closed connection
+Added unit tests
+Added new exception DeadLockError when Sybase is in a deadlock situation
+Add command properties CS_STICKY_BINDS and CS_HAVE_BINDS
+Added support for inputmap in bulkcopy
+reuse command and cursor when calling cursor.execute with same request
+Use ct_setparam to define ct_cursor parameters types instead of ct_param
+implicit conversion for CS_DATE_TYPE in CS_DATETIME_TYPE DataBuf
+Adding ct_cmd_props wrapper
+Increase DataBuf maxlength for params of a request when using CS_CHAR_TYPE params so that the buf can be reused
+
+BUGS CORRECTED SINCE 0.39:
+
+Corrected money type when using CS_MONEY4 (close bug 2615821)
+Corrected thread locking in ct_cmd_props (thanks to patch by Cyrille Froehlich)
+Corrected bug in type mapping in callproc (thanks to report by Skip Montanaro)
+Correct passing None in a DataBuf (thanks to patch by Bram Kuijvenhoven)
+
+The full ChangeLog is here:
+
+https://python-sybase.svn.sourceforge.net/svnroot/python-sybase/tags/r0_40/ChangeLog
+
